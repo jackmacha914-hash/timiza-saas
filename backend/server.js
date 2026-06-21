@@ -99,6 +99,7 @@ app.use('/api/transport/payments', require('./routes/transportPayments'));
 app.use('/api/transport/attendance', require('./routes/transportAttendance'));
 app.use('/api/meals', require('./routes/meals'));
 app.use('/api/other-charges', require('./routes/otherCharges'));
+app.use('/api/schools', require('./routes/schoolRoutes'));
 
 
 // -------------------------
