@@ -1,52 +1,73 @@
 const mongoose = require('mongoose');
 
 const borrowingSchema = new mongoose.Schema({
-  bookId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+
+  school: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true,
+    index: true
+  },
+
+  bookId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Book',
-    required: true 
+    required: true
   },
-  bookTitle: { 
-    type: String, 
-    required: true 
+
+  bookTitle: {
+    type: String,
+    required: true
   },
-  borrowerId: { 
-    type: String, 
-    required: true 
+
+  borrowerId: {
+    type: String,
+    required: true
   },
-  borrowerName: { 
-    type: String, 
-    required: true 
+
+  borrowerName: {
+    type: String,
+    required: true
   },
-  className: { 
-    type: String, 
-    required: true 
+
+  className: {
+    type: String,
+    required: true
   },
-  issueDate: { 
-    type: Date, 
+
+  issueDate: {
+    type: Date,
     default: Date.now,
-    required: true 
+    required: true
   },
-  dueDate: { 
-    type: Date, 
-    required: true 
+
+  dueDate: {
+    type: Date,
+    required: true
   },
-  returnDate: { 
-    type: Date 
+
+  returnDate: {
+    type: Date
   },
-  returned: { 
-    type: Boolean, 
-    default: false 
+
+  returned: {
+    type: Boolean,
+    default: false
   },
-  fine: { 
-    type: Number, 
-    default: 0 
+
+  fine: {
+    type: Number,
+    default: 0
   }
+
 }, { timestamps: true });
 
-// Indexes for better query performance
-borrowingSchema.index({ bookId: 1, returned: 1 });
-borrowingSchema.index({ borrowerId: 1, returned: 1 });
-borrowingSchema.index({ dueDate: 1 });
+// Indexes
+borrowingSchema.index({ school: 1 });
+borrowingSchema.index({ school: 1, bookId: 1, returned: 1 });
+borrowingSchema.index({ school: 1, borrowerId: 1, returned: 1 });
+borrowingSchema.index({ school: 1, dueDate: 1 });
 
-module.exports = mongoose.models.Borrowing || mongoose.model('Borrowing', borrowingSchema);
+module.exports =
+  mongoose.models.Borrowing ||
+  mongoose.model('Borrowing', borrowingSchema);
