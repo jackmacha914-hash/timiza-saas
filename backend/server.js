@@ -24,6 +24,8 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+const tenant = require('./middleware/tenant');
+app.use(tenant);
 
 // -------------------------
 // Body parsers
