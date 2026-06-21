@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
@@ -8,18 +7,21 @@ async function createSuperAdmin() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
 
-    const hashedPassword =
-      await bcrypt.hash('super123', 10);
+    const existing = await User.findOne({ email: 'admin@timiza.com' });
 
-    await User.deleteOne({
-      email: 'admin@timiza.com'
-    });
+    if (existing) {
+      console.log('⚠️ Super Admin already exists');
+      process.exit();
+    }
+
+    const hashedPassword = await bcrypt.hash('super123', 10);
 
     await User.create({
       name: 'Timiza Super Admin',
       email: 'admin@timiza.com',
       password: hashedPassword,
-      role: 'superadmin'
+      role: 'superadmin',
+      schoolId: null
     });
 
     console.log('✅ Super Admin Created');
