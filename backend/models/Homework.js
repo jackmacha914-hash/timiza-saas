@@ -1,55 +1,77 @@
 const mongoose = require('mongoose');
 
 const HomeworkSchema = new mongoose.Schema({
+
+  // ===============================
+  // SAAS TENANT ISOLATION
+  // ===============================
+  school: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true,
+    index: true
+  },
+
   title: {
     type: String,
     required: true,
     trim: true
   },
+
   description: {
     type: String,
     trim: true
   },
+
   dueDate: {
     type: Date,
     required: true
   },
+
   classAssigned: {
     type: String,
     required: true,
     trim: true
   },
+
   teacher: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
+
   file: {
     type: String,
     trim: true
   },
+
   submissions: [{
     student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
+
     file: {
       type: String,
       trim: true
     },
+
     originalFilename: {
       type: String,
       trim: true
     },
+
     submittedAt: {
       type: Date,
       default: Date.now
     },
+
     comments: {
       type: String,
       trim: true
     },
+
     grade: {
       type: Number,
       min: 0,
@@ -59,22 +81,34 @@ const HomeworkSchema = new mongoose.Schema({
         message: 'Grade must be an integer'
       }
     },
+
     gradeComments: {
       type: String,
       trim: true
     },
+
     gradedAt: {
       type: Date
     },
+
     gradedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }
-  }],
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  }]
+
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('Homework', HomeworkSchema);
+
+// ===============================
+// INDEXES
+// ===============================
+HomeworkSchema.index({ school: 1, classAssigned: 1 });
+HomeworkSchema.index({ school: 1, teacher: 1 });
+HomeworkSchema.index({ school: 1, dueDate: 1 });
+
+module.exports =
+  mongoose.models.Homework ||
+  mongoose.model('Homework', HomeworkSchema);
