@@ -2,10 +2,16 @@
 const mongoose = require('mongoose');
 
 const accountSchema = new mongoose.Schema({
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true
+    },
+
     description: { type: String, required: true },
     amount: { type: Number, required: true },
     date: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
 const Account = mongoose.model('Account', accountSchema);
 
