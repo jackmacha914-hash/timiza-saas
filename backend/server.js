@@ -25,7 +25,7 @@ app.use(cors({
   credentials: true
 }));
 const tenant = require('./middleware/tenant');
-app.use(tenant);
+app.use('/api', tenant);
 
 // -------------------------
 // Body parsers
@@ -69,36 +69,38 @@ app.get('/favicon.ico', (req, res) => {
 
 // -------------------------
 // API routes
+const requireSchool = require('./middleware/requireSchool');
+
 app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/assignments', require('./routes/assignmentRoutes'));
-app.use('/api/grades', require('./routes/gradesRoutes'));
+app.use('/api/assignments', requireSchool, require('./routes/assignmentRoutes'));
+app.use('/api/grades', requireSchool, require('./routes/gradesRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
-app.use('/api/profile', require('./routes/profileRoutes'));
-app.use('/api/resources', require('./routes/resourceRoutes'));
-app.use('/api/clubs', require('./routes/clubs'));
-app.use('/api/books', require('./routes/books'));
-app.use('/api/events', require('./routes/events'));
-app.use('/api/accounts', require('./routes/accounts'));
-app.use('/api/stats', require('./routes/stats'));
-app.use('/api/users', require('./routes/schoolUserRoutes'));
-app.use('/api/contact', require('./routes/contact'));
-app.use('/api/students', require('./routes/studentRoutes'));
-app.use('/api/classes', require('./routes/classRoutes'));
-app.use('/api/homeworks', require('./routes/homeworkRoutes'));
-app.use('/api/reportcards', require('./routes/reportCardRoutes'));
-app.use('/api/teachers', require('./routes/teacherRoutes'));
-app.use('/api/attendance', require('./routes/attendanceRoutes'));
-app.use('/api/fees', require('./routes/fees'));
-app.use('/api/library', require('./routes/library'));
-app.use('/api/marks', require('./routes/marksRoutes'));
-app.use('/api/quizzes', require('./routes/quizRoutes'));
-app.use('/api/health', require('./routes/health'));
+app.use('/api/profile', requireSchool, require('./routes/profileRoutes'));
+app.use('/api/resources', requireSchool, require('./routes/resourceRoutes'));
+app.use('/api/clubs', requireSchool, require('./routes/clubs'));
+app.use('/api/books', requireSchool, require('./routes/books'));
+app.use('/api/events', requireSchool, require('./routes/events'));
+app.use('/api/accounts', requireSchool, require('./routes/accounts'));
+app.use('/api/stats', requireSchool, require('./routes/stats'));
+app.use('/api/users', requireSchool, require('./routes/schoolUserRoutes'));
+app.use('/api/contact', requireSchool, require('./routes/contact'));
+app.use('/api/students', requireSchool, require('./routes/studentRoutes'));
+app.use('/api/classes', requireSchool, require('./routes/classRoutes'));
+app.use('/api/homeworks', requireSchool, require('./routes/homeworkRoutes'));
+app.use('/api/reportcards', requireSchool, require('./routes/reportCardRoutes'));
+app.use('/api/teachers', requireSchool, require('./routes/teacherRoutes'));
+app.use('/api/attendance', requireSchool, require('./routes/attendanceRoutes'));
+app.use('/api/fees', requireSchool, require('./routes/fees'));
+app.use('/api/library', requireSchool, require('./routes/library'));
+app.use('/api/marks', requireSchool, require('./routes/marksRoutes'));
+app.use('/api/quizzes', requireSchool, require('./routes/quizRoutes'));
+app.use('/api/health', requireSchool, require('./routes/health'));
 app.use('/api/transport', require('./routes/transportRoutes'));
-app.use('/api/transport/fees', require('./routes/transportFees'));
-app.use('/api/transport/payments', require('./routes/transportPayments'));
-app.use('/api/transport/attendance', require('./routes/transportAttendance'));
-app.use('/api/meals', require('./routes/meals'));
-app.use('/api/other-charges', require('./routes/otherCharges'));
+app.use('/api/transport/fees', requireSchool, require('./routes/transportFees'));
+app.use('/api/transport/payments', requireSchool, require('./routes/transportPayments'));
+app.use('/api/transport/attendance', requireSchool, require('./routes/transportAttendance'));
+app.use('/api/meals', requireSchool, require('./routes/meals'));
+app.use('/api/other-charges', requireSchool, require('./routes/otherCharges'));
 app.use('/api/schools', require('./routes/schoolRoutes'));
 
 
@@ -110,7 +112,7 @@ app.use('/api/schools', require('./routes/schoolRoutes'));
 // -------------------------
 
 // Always serve login for root and /login
-app.get(['/', '/'], (req, res) => {
+app.get('/', (req, res) => {
   res.sendFile(path.join(pagesPath, 'login.html'));
 });
 
