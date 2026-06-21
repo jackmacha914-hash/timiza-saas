@@ -1,62 +1,107 @@
 const mongoose = require('mongoose');
 
 const GradeSchema = new mongoose.Schema({
-    student: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true 
+
+    // ===============================
+    // SAAS TENANT ISOLATION
+    // ===============================
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true,
+        index: true
     },
-    studentName: { 
-        type: String, 
-        required: true 
+
+    student: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
-    class: { 
-        type: String, 
-        required: true 
+
+    studentName: {
+        type: String,
+        required: true
     },
-    subject: { 
-        type: String, 
-        required: true 
+
+    class: {
+        type: String,
+        required: true
     },
-    score: { 
-        type: Number, 
+
+    subject: {
+        type: String,
+        required: true
+    },
+
+    score: {
+        type: Number,
         required: true,
         min: 0,
         max: 100
     },
+
     term: {
         type: String,
         required: true,
         enum: ['Term 1', 'Term 2', 'Term 3']
     },
+
     academicYear: {
         type: String,
         required: true,
-        match: [/^\d{4}-\d{4}$/, 'Please enter a valid academic year (e.g., 2024-2025)']
+        match: [
+            /^\d{4}-\d{4}$/,
+            'Please enter a valid academic year (e.g., 2024-2025)'
+        ]
     },
-    teacher: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true 
+
+    teacher: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
+
     comments: {
         type: String,
         default: ''
     },
+
     isFinalized: {
         type: Boolean,
         default: false
     }
-}, { 
+
+}, {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
 });
 
-// Index for faster querying
-GradeSchema.index({ student: 1, subject: 1, term: 1, academicYear: 1 }, { unique: true });
 
-// Virtual for grade letter
+// ===============================
+// INDEXES
+// ===============================
+
+// Prevent duplicate grades INSIDE one school only
+GradeSchema.index(
+    {
+        school: 1,
+        student: 1,
+        subject: 1,
+        term: 1,
+        academicYear: 1
+    },
+    { unique: true }
+);
+
+GradeSchema.index({ school: 1, class: 1 });
+GradeSchema.index({ school: 1, teacher: 1 });
+GradeSchema.index({ school: 1, subject: 1 });
+
+
+// ===============================
+// GRADE LETTER
+// ===============================
 GradeSchema.virtual('grade').get(function() {
     if (this.score >= 80) return 'A';
     if (this.score >= 70) return 'A-';
@@ -68,7 +113,10 @@ GradeSchema.virtual('grade').get(function() {
     return 'E';
 });
 
-// Virtual for remarks
+
+// ===============================
+// REMARKS
+// ===============================
 GradeSchema.virtual('remarks').get(function() {
     if (this.score >= 70) return 'Excellent';
     if (this.score >= 60) return 'Very Good';
@@ -77,21 +125,30 @@ GradeSchema.virtual('remarks').get(function() {
     return 'Needs Improvement';
 });
 
-// Pre-save hook to ensure data consistency
+
+// ===============================
+// AUTO POPULATE STUDENT NAME
+// ===============================
 GradeSchema.pre('save', async function(next) {
-    // If student name is not provided, fetch it from the student document
+
     if (!this.studentName && this.student) {
         try {
             const User = mongoose.model('User');
+
             const student = await User.findById(this.student);
+
             if (student) {
                 this.studentName = student.name;
             }
+
         } catch (error) {
             return next(error);
         }
     }
+
     next();
 });
 
-module.exports = mongoose.model('Grade', GradeSchema);
+module.exports =
+    mongoose.models.Grade ||
+    mongoose.model('Grade', GradeSchema);
