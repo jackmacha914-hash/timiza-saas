@@ -1,8 +1,37 @@
-// models/Driver.js
 const mongoose = require('mongoose');
+
 const DriverSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  license: { type: String, required: true },
-  busId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bus' }
+  school: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true,
+    index: true
+  },
+
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+
+  license: {
+    type: String,
+    required: true,
+    trim: true
+  },
+
+  busId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Bus'
+  }
+
+}, {
+  timestamps: true
 });
-module.exports = mongoose.model('Driver', DriverSchema);
+
+// Faster lookups per school
+DriverSchema.index({ school: 1, name: 1 });
+
+module.exports =
+  mongoose.models.Driver ||
+  mongoose.model('Driver', DriverSchema);
