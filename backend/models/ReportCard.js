@@ -1,87 +1,142 @@
-// models/ReportCard.js
 const mongoose = require('mongoose');
-const path = require('path');
 
 const reportCardSchema = new mongoose.Schema({
-  studentId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+
+  // ======================
+  // MULTI-SCHOOL SUPPORT
+  // ======================
+  school: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
     required: true,
     index: true
   },
-  studentName: { 
-    type: String, 
-    required: true 
+
+  studentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  year: { 
-    type: String, 
+
+  studentName: {
+    type: String,
     required: true,
-    index: true
+    trim: true
   },
-  term: { 
-    type: String, 
-    required: true,
-    index: true
+
+  year: {
+    type: String,
+    required: true
   },
-  comments: { 
-    type: String 
+
+  term: {
+    type: String,
+    required: true
   },
-  path: { 
-    type: String, 
-    required: true 
+
+  comments: {
+    type: String,
+    default: ''
   },
+
+  path: {
+    type: String,
+    required: true
+  },
+
   htmlPath: {
     type: String,
     required: true
   },
+
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
+
   status: {
     type: String,
     enum: ['draft', 'published', 'archived'],
     default: 'published'
   },
+
   htmlContent: {
     type: String,
     default: ''
   }
-}, { 
+
+}, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-// Virtual for file URL
-reportCardSchema.virtual('fileUrl').get(function() {
+
+// ======================
+// VIRTUALS
+// ======================
+reportCardSchema.virtual('fileUrl').get(function () {
   if (!this.path) return null;
   return `/uploads/report-cards/${this.path}`;
 });
 
-// Indexes for better query performance
-reportCardSchema.index({ studentId: 1, year: 1, term: 1 });
-reportCardSchema.index({ uploadedBy: 1 });
-reportCardSchema.index({ status: 1 });
 
-// Pre-save hook to ensure consistent data
+// ======================
+// INDEXES
+// ======================
+
+// Fast student lookups per school
+reportCardSchema.index({
+  school: 1,
+  studentId: 1
+});
+
+// One report card per student per term/year per school
+reportCardSchema.index({
+  school: 1,
+  studentId: 1,
+  year: 1,
+  term: 1
+}, {
+  unique: true
+});
+
+// Admin queries
+reportCardSchema.index({
+  school: 1,
+  uploadedBy: 1
+});
+
+reportCardSchema.index({
+  school: 1,
+  status: 1
+});
+
+
+// ======================
+// CLEANUP
+// ======================
 reportCardSchema.pre('save', function(next) {
-  // Ensure studentName is properly formatted
+
   if (this.studentName) {
     this.studentName = this.studentName.trim();
   }
-  
-  // Ensure term is properly formatted (e.g., 'Term 1' instead of 'term 1')
+
   if (this.term) {
-    this.term = this.term.trim();
-    // Capitalize first letter of each word in term
-    this.term = this.term.split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    this.term = this.term
+      .trim()
+      .split(' ')
+      .map(word =>
+        word.charAt(0).toUpperCase() +
+        word.slice(1).toLowerCase()
+      )
       .join(' ');
   }
-  
+
   next();
 });
 
-module.exports = mongoose.model('ReportCard', reportCardSchema);
+module.exports =
+  mongoose.models.ReportCard ||
+  mongoose.model('ReportCard', reportCardSchema);
