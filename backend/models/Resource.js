@@ -1,24 +1,66 @@
-// models/Resource.js
-
 const mongoose = require('mongoose');
 
 const resourceSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  path: { type: String, required: true },
-  classAssigned: { 
-    type: String, 
+
+  // ======================
+  // MULTI-SCHOOL SUPPORT
+  // ======================
+  school: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    required: true,
+    index: true
+  },
+
+  name: {
+    type: String,
     required: true,
     trim: true
   },
-  uploadedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User',
+
+  path: {
+    type: String,
     required: true
   },
+
+  classAssigned: {
+    type: String,
+    required: true,
+    trim: true
+  },
+
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
+
 }, {
-  timestamps: true,
+  timestamps: true
 });
 
-const Resource = mongoose.model('Resource', resourceSchema);
 
-module.exports = Resource;
+// ======================
+// INDEXES
+// ======================
+
+// Get resources by school
+resourceSchema.index({
+  school: 1
+});
+
+// Get resources for a class in a school
+resourceSchema.index({
+  school: 1,
+  classAssigned: 1
+});
+
+// Get resources uploaded by a user
+resourceSchema.index({
+  school: 1,
+  uploadedBy: 1
+});
+
+module.exports =
+  mongoose.models.Resource ||
+  mongoose.model('Resource', resourceSchema);
