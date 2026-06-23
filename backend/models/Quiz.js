@@ -1,10 +1,6 @@
 const mongoose = require('mongoose');
 
 const quizSchema = new mongoose.Schema({
-
-    // ======================
-    // MULTI-SCHOOL SUPPORT
-    // ======================
     school: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'School',
@@ -12,8 +8,8 @@ const quizSchema = new mongoose.Schema({
         index: true
     },
 
-    title: { 
-        type: String, 
+    title: {
+        type: String,
         required: [true, 'Quiz title is required'],
         trim: true
     },
@@ -26,59 +22,54 @@ const quizSchema = new mongoose.Schema({
     class: {
         type: String,
         required: [true, 'Class is required'],
-        index: true,
         trim: true
     },
 
     subject: {
         type: String,
         required: [true, 'Subject is required'],
-        index: true,
         trim: true
     },
 
-    teacherId: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true,
-        index: true
+    teacherId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Teacher ID is required']
     },
 
-    questions: [
-        {
-            questionText: { 
-                type: String, 
-                required: true,
-                trim: true
-            },
+    questions: [{
+        questionText: {
+            type: String,
+            required: [true, 'Question text is required'],
+            trim: true
+        },
 
-            options: [{ 
-                type: String, 
-                required: true,
-                trim: true
-            }],
+        options: [{
+            type: String,
+            required: true,
+            trim: true
+        }],
 
-            correctAnswer: { 
-                type: Number, 
-                required: true,
-                min: 0
-            },
+        correctAnswer: {
+            type: Number,
+            required: [true, 'Correct answer index is required'],
+            min: 0
+        },
 
-            points: {
-                type: Number,
-                default: 1,
-                min: 0
-            },
+        points: {
+            type: Number,
+            default: 1,
+            min: 0
+        },
 
-            explanation: {
-                type: String,
-                trim: true
-            }
+        explanation: {
+            type: String,
+            trim: true
         }
-    ],
+    }],
 
-    timeLimit: { 
-        type: Number, 
+    timeLimit: {
+        type: Number,
         default: 30,
         min: 1
     },
@@ -90,10 +81,9 @@ const quizSchema = new mongoose.Schema({
         max: 100
     },
 
-    isPublished: { 
-        type: Boolean, 
-        default: false,
-        index: true
+    isPublished: {
+        type: Boolean,
+        default: false
     },
 
     allowMultipleAttempts: {
@@ -107,24 +97,33 @@ const quizSchema = new mongoose.Schema({
     }
 
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
 
-// ======================
-// INDEXES (SAAS OPTIMIZED)
-// ======================
+// Tenant-aware indexes
+quizSchema.index({ school: 1, teacherId: 1 });
 quizSchema.index({ school: 1, class: 1 });
 quizSchema.index({ school: 1, subject: 1 });
 quizSchema.index({ school: 1, isPublished: 1 });
-quizSchema.index({ title: 'text', description: 'text' });
 
-
-// ======================
-// VIRTUAL
-// ======================
-quizSchema.virtual('totalPoints').get(function () {
-    return this.questions.reduce((sum, q) => sum + (q.points || 1), 0);
+// Search index
+quizSchema.index({
+    title: 'text',
+    description: 'text'
 });
 
-module.exports = mongoose.models.Quiz || mongoose.model('Quiz', quizSchema);
+
+// Total quiz points
+quizSchema.virtual('totalPoints').get(function () {
+    return this.questions.reduce(
+        (sum, q) => sum + (q.points || 1),
+        0
+    );
+});
+
+module.exports =
+    mongoose.models.Quiz ||
+    mongoose.model('Quiz', quizSchema);
