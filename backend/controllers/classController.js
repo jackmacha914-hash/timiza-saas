@@ -1,158 +1,309 @@
 const Class = require('../models/Class');
 const User = require('../models/User');
 
-// Create a new class
+// Create Class
 const createClass = async (req, res) => {
-  try {
-    const { name, description, subject, schedule, academicYear } = req.body;
-    
-    const newClass = new Class({
-      name,
-      description,
-      teacher: req.user.id,
-      subject,
-      schedule,
-      academicYear,
-      students: []
-    });
+try {
+const { name, description, subject, schedule, academicYear } = req.body;
 
-    await newClass.save();
-    res.status(201).json(newClass);
-  } catch (error) {
-    console.error('Error creating class:', error);
-    res.status(500).json({ message: 'Server error creating class' });
-  }
+```
+const newClass = new Class({
+  school: req.user.school,
+  name,
+  description,
+  teacher: req.user.id,
+  subject,
+  schedule,
+  academicYear,
+  students: []
+});
+
+await newClass.save();
+
+res.status(201).json({
+  success: true,
+  data: newClass
+});
+```
+
+} catch (error) {
+console.error('Error creating class:', error);
+
+```
+res.status(500).json({
+  success: false,
+  message: 'Server error creating class'
+});
+```
+
+}
 };
 
-// Get all classes for a teacher
+// Get Teacher Classes
 const getTeacherClasses = async (req, res) => {
-  try {
-    const classes = await Class.find({ teacher: req.user.id })
-      .populate('students', 'name email')
-      .sort({ createdAt: -1 });
-    
-    res.json(classes);
-  } catch (error) {
-    console.error('Error fetching classes:', error);
-    res.status(500).json({ message: 'Server error fetching classes' });
-  }
+try {
+const classes = await Class.find({
+school: req.user.school,
+teacher: req.user.id
+})
+.populate('students', 'name email class')
+.sort({ createdAt: -1 });
+
+```
+res.json({
+  success: true,
+  data: classes
+});
+```
+
+} catch (error) {
+console.error('Error fetching classes:', error);
+
+```
+res.status(500).json({
+  success: false,
+  message: 'Server error fetching classes'
+});
+```
+
+}
 };
 
-// Get class by ID
+// Get Class By ID
 const getClassById = async (req, res) => {
-  try {
-    const classData = await Class.findById(req.params.id)
-      .populate('teacher', 'name email')
-      .populate('students', 'name email');
-    
-    if (!classData) {
-      return res.status(404).json({ message: 'Class not found' });
-    }
-    
-    res.json(classData);
-  } catch (error) {
-    console.error('Error fetching class:', error);
-    res.status(500).json({ message: 'Server error fetching class' });
-  }
+try {
+const classData = await Class.findOne({
+_id: req.params.id,
+school: req.user.school
+})
+.populate('teacher', 'name email')
+.populate('students', 'name email class');
+
+```
+if (!classData) {
+  return res.status(404).json({
+    success: false,
+    message: 'Class not found'
+  });
+}
+
+res.json({
+  success: true,
+  data: classData
+});
+```
+
+} catch (error) {
+console.error('Error fetching class:', error);
+
+```
+res.status(500).json({
+  success: false,
+  message: 'Server error fetching class'
+});
+```
+
+}
 };
 
-// Update class
+// Update Class
 const updateClass = async (req, res) => {
-  try {
-    const { name, description, subject, schedule, academicYear } = req.body;
-    
-    const updatedClass = await Class.findOneAndUpdate(
-      { _id: req.params.id, teacher: req.user.id },
-      { name, description, subject, schedule, academicYear },
-      { new: true, runValidators: true }
-    );
-    
-    if (!updatedClass) {
-      return res.status(404).json({ message: 'Class not found or not authorized' });
-    }
-    
-    res.json(updatedClass);
-  } catch (error) {
-    console.error('Error updating class:', error);
-    res.status(500).json({ message: 'Server error updating class' });
+try {
+const { name, description, subject, schedule, academicYear } = req.body;
+
+```
+const updatedClass = await Class.findOneAndUpdate(
+  {
+    _id: req.params.id,
+    school: req.user.school,
+    teacher: req.user.id
+  },
+  {
+    name,
+    description,
+    subject,
+    schedule,
+    academicYear
+  },
+  {
+    new: true,
+    runValidators: true
   }
+);
+
+if (!updatedClass) {
+  return res.status(404).json({
+    success: false,
+    message: 'Class not found or not authorized'
+  });
+}
+
+res.json({
+  success: true,
+  data: updatedClass
+});
+```
+
+} catch (error) {
+console.error('Error updating class:', error);
+
+```
+res.status(500).json({
+  success: false,
+  message: 'Server error updating class'
+});
+```
+
+}
 };
 
-// Delete class
+// Delete Class
 const deleteClass = async (req, res) => {
-  try {
-    const deletedClass = await Class.findOneAndDelete({
-      _id: req.params.id,
-      teacher: req.user.id
-    });
-    
-    if (!deletedClass) {
-      return res.status(404).json({ message: 'Class not found or not authorized' });
-    }
-    
-    res.json({ message: 'Class deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting class:', error);
-    res.status(500).json({ message: 'Server error deleting class' });
-  }
+try {
+const deletedClass = await Class.findOneAndDelete({
+_id: req.params.id,
+school: req.user.school,
+teacher: req.user.id
+});
+
+```
+if (!deletedClass) {
+  return res.status(404).json({
+    success: false,
+    message: 'Class not found or not authorized'
+  });
+}
+
+res.json({
+  success: true,
+  message: 'Class deleted successfully'
+});
+```
+
+} catch (error) {
+console.error('Error deleting class:', error);
+
+```
+res.status(500).json({
+  success: false,
+  message: 'Server error deleting class'
+});
+```
+
+}
 };
 
-// Add student to class
+// Add Student To Class
 const addStudentToClass = async (req, res) => {
-  try {
-    const { studentId } = req.body;
-    
-    // Check if student exists and is a student
-    const student = await User.findById(studentId);
-    if (!student || student.role !== 'student') {
-      return res.status(400).json({ message: 'Invalid student' });
-    }
-    
-    const updatedClass = await Class.findOneAndUpdate(
-      { _id: req.params.id, teacher: req.user.id },
-      { $addToSet: { students: studentId } },
-      { new: true }
-    );
-    
-    if (!updatedClass) {
-      return res.status(404).json({ message: 'Class not found or not authorized' });
-    }
-    
-    res.json(updatedClass);
-  } catch (error) {
-    console.error('Error adding student to class:', error);
-    res.status(500).json({ message: 'Server error adding student to class' });
+try {
+const { studentId } = req.body;
+
+```
+const student = await User.findOne({
+  _id: studentId,
+  school: req.user.school,
+  role: 'student'
+});
+
+if (!student) {
+  return res.status(400).json({
+    success: false,
+    message: 'Student not found in this school'
+  });
+}
+
+const updatedClass = await Class.findOneAndUpdate(
+  {
+    _id: req.params.id,
+    school: req.user.school,
+    teacher: req.user.id
+  },
+  {
+    $addToSet: { students: studentId }
+  },
+  {
+    new: true
   }
+).populate('students', 'name email class');
+
+if (!updatedClass) {
+  return res.status(404).json({
+    success: false,
+    message: 'Class not found or not authorized'
+  });
+}
+
+res.json({
+  success: true,
+  data: updatedClass
+});
+```
+
+} catch (error) {
+console.error('Error adding student:', error);
+
+```
+res.status(500).json({
+  success: false,
+  message: 'Server error adding student'
+});
+```
+
+}
 };
 
-// Remove student from class
+// Remove Student From Class
 const removeStudentFromClass = async (req, res) => {
-  try {
-    const { studentId } = req.body;
-    
-    const updatedClass = await Class.findOneAndUpdate(
-      { _id: req.params.id, teacher: req.user.id },
-      { $pull: { students: studentId } },
-      { new: true }
-    );
-    
-    if (!updatedClass) {
-      return res.status(404).json({ message: 'Class not found or not authorized' });
-    }
-    
-    res.json(updatedClass);
-  } catch (error) {
-    console.error('Error removing student from class:', error);
-    res.status(500).json({ message: 'Server error removing student from class' });
+try {
+const { studentId } = req.body;
+
+```
+const updatedClass = await Class.findOneAndUpdate(
+  {
+    _id: req.params.id,
+    school: req.user.school,
+    teacher: req.user.id
+  },
+  {
+    $pull: { students: studentId }
+  },
+  {
+    new: true
   }
+).populate('students', 'name email class');
+
+if (!updatedClass) {
+  return res.status(404).json({
+    success: false,
+    message: 'Class not found or not authorized'
+  });
+}
+
+res.json({
+  success: true,
+  data: updatedClass
+});
+```
+
+} catch (error) {
+console.error('Error removing student:', error);
+
+```
+res.status(500).json({
+  success: false,
+  message: 'Server error removing student'
+});
+```
+
+}
 };
 
 module.exports = {
-  createClass,
-  getTeacherClasses,
-  getClassById,
-  updateClass,
-  deleteClass,
-  addStudentToClass,
-  removeStudentFromClass
+createClass,
+getTeacherClasses,
+getClassById,
+updateClass,
+deleteClass,
+addStudentToClass,
+removeStudentFromClass
 };
