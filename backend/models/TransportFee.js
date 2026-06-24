@@ -1,16 +1,51 @@
 const mongoose = require('mongoose');
 
 const transportFeeSchema = new mongoose.Schema({
-    routeId: {
+
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true,
+        index: true
+    },
+
+    route: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Route',
-        required: true,
-        unique: true   // one fee per route
+        required: true
     },
+
     amount: {
         type: Number,
-        required: true
+        required: true,
+        min: 0
     }
-}, { timestamps: true });
 
-module.exports = mongoose.model('TransportFee', transportFeeSchema);
+}, {
+    timestamps: true
+});
+
+
+// One transport fee per route PER SCHOOL
+transportFeeSchema.index(
+    {
+        school: 1,
+        route: 1
+    },
+    {
+        unique: true
+    }
+);
+
+
+// Reporting indexes
+transportFeeSchema.index({
+    school: 1
+});
+
+module.exports =
+    mongoose.models.TransportFee ||
+    mongoose.model(
+        'TransportFee',
+        transportFeeSchema
+    );
