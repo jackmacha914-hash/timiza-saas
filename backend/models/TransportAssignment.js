@@ -1,27 +1,62 @@
 const mongoose = require('mongoose');
 
 const transportAssignmentSchema = new mongoose.Schema({
+
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true,
+        index: true
+    },
+
     student: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Student',
+        ref: 'User',
         required: true
     },
+
     route: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'TransportRoute',
+        ref: 'Route',
         required: true
     },
+
     bus: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Bus'
     },
+
     assignedAt: {
         type: Date,
         default: Date.now
     }
+
+}, {
+    timestamps: true
 });
 
-module.exports = mongoose.model(
-    'TransportAssignment',
-    transportAssignmentSchema
+
+// Prevent duplicate assignment
+transportAssignmentSchema.index(
+    { school: 1, student: 1 },
+    { unique: true }
 );
+
+
+// Fast lookups
+transportAssignmentSchema.index({
+    school: 1,
+    route: 1
+});
+
+transportAssignmentSchema.index({
+    school: 1,
+    bus: 1
+});
+
+module.exports =
+    mongoose.models.TransportAssignment ||
+    mongoose.model(
+        'TransportAssignment',
+        transportAssignmentSchema
+    );
