@@ -1,37 +1,80 @@
 const mongoose = require('mongoose');
 
-const transportAttendanceSchema = new mongoose.Schema(
-  {
-    studentId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Student',
-      required: true
+const transportAttendanceSchema = new mongoose.Schema({
+
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true,
+        index: true
     },
-    routeId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'TransportRoute',
-      required: true
+
+    student: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
-    busId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'TransportBus'
+
+    route: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Route',
+        required: true
     },
+
+    bus: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Bus'
+    },
+
     date: {
-      type: String, // YYYY-MM-DD
-      required: true
+        type: Date,
+        required: true,
+        default: Date.now
     },
+
     present: {
-      type: Boolean,
-      default: true
+        type: Boolean,
+        default: true
     }
-  },
-  { timestamps: true }
-);
 
-/* Prevent duplicate attendance per student per day per route */
+}, {
+    timestamps: true
+});
+
+
+// One attendance record per student per route per day
 transportAttendanceSchema.index(
-  { studentId: 1, routeId: 1, date: 1 },
-  { unique: true }
+    {
+        school: 1,
+        student: 1,
+        route: 1,
+        date: 1
+    },
+    {
+        unique: true
+    }
 );
 
-module.exports = mongoose.model('TransportAttendance', transportAttendanceSchema);
+
+// Fast reporting
+transportAttendanceSchema.index({
+    school: 1,
+    date: 1
+});
+
+transportAttendanceSchema.index({
+    school: 1,
+    route: 1
+});
+
+transportAttendanceSchema.index({
+    school: 1,
+    bus: 1
+});
+
+module.exports =
+    mongoose.models.TransportAttendance ||
+    mongoose.model(
+        'TransportAttendance',
+        transportAttendanceSchema
+    );
