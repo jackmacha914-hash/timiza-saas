@@ -5,7 +5,7 @@ exports.getClubs = async (req, res) => {
 try {
 const { search, type, advisor } = req.query;
 
-```
+
 const filter = {
   school: req.user.school
 };
@@ -47,17 +47,17 @@ res.json({
   count: clubs.length,
   data: clubs
 });
-```
+
 
 } catch (err) {
 console.error('Error fetching clubs:', err);
 
-```
+
 res.status(500).json({
   success: false,
   error: 'Server error fetching clubs'
 });
-```
+
 
 }
 };
@@ -70,7 +70,7 @@ _id: req.params.id,
 school: req.user.school
 });
 
-```
+
 if (!club) {
   return res.status(404).json({
     success: false,
@@ -82,17 +82,17 @@ res.json({
   success: true,
   data: club
 });
-```
+
 
 } catch (err) {
 console.error('Error fetching club:', err);
 
-```
+
 res.status(500).json({
   success: false,
   error: 'Server error fetching club'
 });
-```
+
 
 }
 };
@@ -107,7 +107,7 @@ description,
 type
 } = req.body;
 
-```
+
 if (!name || !advisor) {
   return res.status(400).json({
     success: false,
@@ -142,17 +142,17 @@ res.status(201).json({
   success: true,
   data: newClub
 });
-```
+
 
 } catch (err) {
 console.error('Error creating club:', err);
 
-```
+
 res.status(500).json({
   success: false,
   error: 'Error creating club'
 });
-```
+
 
 }
 };
@@ -172,7 +172,7 @@ runValidators: true
 }
 );
 
-```
+
 if (!club) {
   return res.status(404).json({
     success: false,
@@ -184,17 +184,17 @@ res.json({
   success: true,
   data: club
 });
-```
+
 
 } catch (err) {
 console.error('Error updating club:', err);
 
-```
+
 res.status(500).json({
   success: false,
   error: 'Error updating club'
 });
-```
+
 
 }
 };
@@ -207,7 +207,7 @@ _id: req.params.id,
 school: req.user.school
 });
 
-```
+
 if (!club) {
   return res.status(404).json({
     success: false,
@@ -219,17 +219,17 @@ res.json({
   success: true,
   message: 'Club deleted successfully'
 });
-```
+
 
 } catch (err) {
 console.error('Error deleting club:', err);
 
-```
+
 res.status(500).json({
   success: false,
   error: 'Error deleting club'
 });
-```
+
 
 }
 };
