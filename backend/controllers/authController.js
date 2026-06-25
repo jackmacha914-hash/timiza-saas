@@ -13,7 +13,7 @@ check('password')
 .isLength({ min: 6 })
 .withMessage('Password must be at least 6 characters'),
 
-```
+
 async (req, res) => {
     const errors = validationResult(req);
 
@@ -176,7 +176,7 @@ async (req, res) => {
         });
     }
 }
-```
+
 
 ];
 
