@@ -104,7 +104,12 @@ const sendReportCard = async (req, res) => {
         }
         
         // Check if student exists
-        const student = await User.findById(studentId).session(session);
+        const student = await User.findOne({
+        _id: studentId,
+        school: req.user.school,
+        role: 'student'
+        }).session(session);
+        
         if (!student) {
             return res.status(404).json({
                 success: false,
@@ -114,6 +119,7 @@ const sendReportCard = async (req, res) => {
         
         // Create report card record
         const reportCard = new ReportCard({
+            school: req.user.school,
             studentId,
             studentName: `${student.firstName} ${student.lastName}`,
             term,
@@ -170,7 +176,9 @@ const getStudentReportCards = async (req, res) => {
         const { studentId } = req.params;
         
         // Build query based on user role
-        let query = {};
+        let query = {
+        school: req.user.school
+         };
         
         // If no studentId is provided, use the current user's ID for students
         // Admins and teachers can see all report cards
@@ -228,7 +236,10 @@ const getReportCard = async (req, res) => {
         const { id } = req.params;
         
         // Find the report card
-        const reportCard = await ReportCard.findById(id).session(session);
+        const reportCard = await ReportCard.findOne({
+        _id: id,
+       school: req.user.school
+       }).session(session);
         
         if (!reportCard) {
             return res.status(404).json({
@@ -301,7 +312,9 @@ const getReportCard = async (req, res) => {
 const getAllReportCards = async (req, res) => {
     try {
         // Get all report cards with student information
-        const reportCards = await ReportCard.find()
+        const reportCards = await ReportCard.find({
+        school: req.user.school
+         })
             .populate('studentId', 'firstName lastName email')
             .sort({ createdAt: -1 });
 
