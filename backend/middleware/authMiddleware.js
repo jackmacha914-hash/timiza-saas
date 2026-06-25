@@ -6,7 +6,7 @@ require('dotenv').config();
 const authenticateUser = async (req, res, next) => {
 const authHeader = req.headers.authorization;
 
-```
+
 if (
     !authHeader ||
     !authHeader.startsWith('Bearer ')
@@ -74,7 +74,7 @@ try {
         msg: 'Invalid token'
     });
 }
-```
+
 
 };
 
@@ -87,7 +87,6 @@ String(role)
 .trim()
 );
 
-```
 return (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({
@@ -115,7 +114,7 @@ return (req, res, next) => {
 
     next();
 };
-```
+
 
 };
 
