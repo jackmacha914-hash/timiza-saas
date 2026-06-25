@@ -1,10 +1,12 @@
+```javascript
 // Helper function to get dashboard URL based on user role
 function getDashboardURL(role) {
     switch (role) {
-        case 'admin':   return '/index.html';
-        case 'teacher': return '/teacher.html';
-        case 'student': return '/student.html';
-        default:        return '/login.html';
+        case 'superadmin': return '/superadmin.html';
+        case 'admin':      return '/index.html';
+        case 'teacher':    return '/teacher.html';
+        case 'student':    return '/student.html';
+        default:           return '/login.html';
     }
 }
 
@@ -36,33 +38,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const email = document.getElementById('login-email')?.value;
             const password = document.getElementById('login-password')?.value;
+            const schoolCode = document.getElementById('school-code')?.value;
 
-            if (!email || !password) {
-                showError('Please enter both email and password');
+            if (!email || !password || !schoolCode) {
+                showError('Please enter school code, email and password');
                 return;
             }
 
             try {
                 const response = await apiFetch(`${API_CONFIG.AUTH_URL}/login`, {
                     method: 'POST',
-                    body: JSON.stringify({ email, password }),
+                    body: JSON.stringify({
+                        email,
+                        password,
+                        schoolCode
+                    }),
                 });
 
                 if (response?.token) {
                     localStorage.setItem('token', response.token);
+
                     if (response.user) {
-                        localStorage.setItem('user', JSON.stringify(response.user));
+                        localStorage.setItem(
+                            'user',
+                            JSON.stringify(response.user)
+                        );
                     }
+
                     const role = response.user?.role || 'student';
                     window.location.href = getDashboardURL(role);
+
                 } else {
                     showError('No authentication token received');
                 }
+
             } catch (error) {
                 console.error('Login error:', error);
-                showError(error.message || 'Login failed. Please try again.');
-                const passwordField = document.getElementById('login-password');
-                if (passwordField) passwordField.value = '';
+
+                showError(
+                    error.message ||
+                    'Login failed. Please try again.'
+                );
+
+                const passwordField =
+                    document.getElementById('login-password');
+
+                if (passwordField) {
+                    passwordField.value = '';
+                }
             }
         });
     }
@@ -73,9 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (showRegisterLink) {
         showRegisterLink.addEventListener('click', (e) => {
             e.preventDefault();
+
             loginForm.style.display = 'none';
             registerForm.style.display = 'block';
             formTitle.textContent = 'Create Account';
+
             document.getElementById('error-message').textContent = '';
         });
     }
@@ -83,25 +108,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (showLoginLink) {
         showLoginLink.addEventListener('click', (e) => {
             e.preventDefault();
+
             registerForm.style.display = 'none';
             loginForm.style.display = 'block';
             formTitle.textContent = 'Login';
+
             document.getElementById('register-message').textContent = '';
         });
     }
 
     // ---------------------------
-    // ROLE SELECT (show/hide class field)
+    // ROLE SELECT
     // ---------------------------
     if (roleSelect && classGroup) {
-        roleSelect.addEventListener('change', function() {
-            const classInput = document.getElementById('class');
+        roleSelect.addEventListener('change', function () {
+
+            const classInput =
+                document.getElementById('class');
+
             if (this.value === 'student') {
                 classGroup.style.display = 'block';
-                if (classInput) classInput.setAttribute('required', 'required');
+
+                if (classInput) {
+                    classInput.setAttribute(
+                        'required',
+                        'required'
+                    );
+                }
+
             } else {
+
                 classGroup.style.display = 'none';
-                if (classInput) classInput.removeAttribute('required');
+
+                if (classInput) {
+                    classInput.removeAttribute(
+                        'required'
+                    );
+                }
             }
         });
     }
@@ -113,50 +156,121 @@ document.addEventListener('DOMContentLoaded', () => {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const name = document.getElementById('register-name')?.value;
-            const email = document.getElementById('register-email')?.value;
-            const password = document.getElementById('register-password')?.value;
-            const confirmPassword = document.getElementById('confirm-password')?.value;
-            const role = document.getElementById('role')?.value;
-            const studentClass = role === 'student' ? document.getElementById('class')?.value : '';
+            const name =
+                document.getElementById('register-name')?.value;
 
-            if (password !== confirmPassword) {
-                showError('Passwords do not match', 'register-message');
+            const email =
+                document.getElementById('register-email')?.value;
+
+            const password =
+                document.getElementById('register-password')?.value;
+
+            const confirmPassword =
+                document.getElementById('confirm-password')?.value;
+
+            const role =
+                document.getElementById('role')?.value;
+
+            const schoolCode =
+                document.getElementById('register-school-code')?.value;
+
+            const studentClass =
+                role === 'student'
+                    ? document.getElementById('class')?.value
+                    : '';
+
+            if (!schoolCode) {
+                showError(
+                    'Please enter school code',
+                    'register-message'
+                );
                 return;
             }
-            if (role === 'student' && !studentClass) {
-                showError('Please select a class', 'register-message');
+
+            if (password !== confirmPassword) {
+                showError(
+                    'Passwords do not match',
+                    'register-message'
+                );
+                return;
+            }
+
+            if (
+                role === 'student' &&
+                !studentClass
+            ) {
+                showError(
+                    'Please select a class',
+                    'register-message'
+                );
                 return;
             }
 
             try {
-                const response = await apiFetch(`${API_CONFIG.AUTH_URL}/register`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name,
-                        email,
-                        password,
-                        role,
-                        studentClass: role === 'student' ? studentClass : undefined
-                    }),
-                });
 
-                const registerMessage = document.getElementById('register-message');
+                const response = await apiFetch(
+                    `${API_CONFIG.AUTH_URL}/register`,
+                    {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            name,
+                            email,
+                            password,
+                            role,
+                            schoolCode,
+                            studentClass:
+                                role === 'student'
+                                    ? studentClass
+                                    : undefined
+                        }),
+                    }
+                );
+
+                const registerMessage =
+                    document.getElementById(
+                        'register-message'
+                    );
+
                 if (registerMessage) {
-                    registerMessage.textContent = 'Registration successful! Please login.';
+
+                    registerMessage.textContent =
+                        'Registration successful! Please login.';
+
                     registerMessage.style.color = 'green';
+
                     registerForm.reset();
+
                     setTimeout(() => {
-                        registerForm.style.display = 'none';
-                        loginForm.style.display = 'block';
-                        formTitle.textContent = 'Login';
-                        registerMessage.textContent = '';
+
+                        registerForm.style.display =
+                            'none';
+
+                        loginForm.style.display =
+                            'block';
+
+                        formTitle.textContent =
+                            'Login';
+
+                        registerMessage.textContent =
+                            '';
+
                     }, 2000);
                 }
+
             } catch (error) {
-                console.error('Registration error:', error);
-                showError(error.message || 'Registration failed. Please try again.', 'register-message');
+
+                console.error(
+                    'Registration error:',
+                    error
+                );
+
+                showError(
+                    error.message ||
+                    'Registration failed. Please try again.',
+                    'register-message'
+                );
             }
         });
     }
 });
+```
