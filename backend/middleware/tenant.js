@@ -1,4 +1,3 @@
-```javascript
 const School = require('../models/School');
 
 async function tenant(req, res, next) {
@@ -56,4 +55,4 @@ async function tenant(req, res, next) {
 }
 
 module.exports = tenant;
-```
+
