@@ -199,10 +199,25 @@ exports.loginUser = async (req, res) => {
     }
 
     try {
-        const school = await School.findOne({
-            code: schoolCode,
-            active: true
-        });
+        console.log('=== LOGIN DEBUG ===');
+console.log('Received schoolCode:', schoolCode);
+
+const allSchools = await School.find({});
+console.log(
+    'Schools in database:',
+    allSchools.map(s => ({
+        name: s.name,
+        code: s.code,
+        active: s.active
+    }))
+);
+
+const school = await School.findOne({
+    code: schoolCode,
+    active: true
+});
+
+console.log('Matched school:', school);
 
         if (!school) {
             return res.status(404).json({
