@@ -1,3 +1,4 @@
+```javascript
 const School = require('../models/School');
 
 async function tenant(req, res, next) {
@@ -5,63 +6,54 @@ async function tenant(req, res, next) {
     let host = req.headers.host;
 
     if (!host) {
-      return res.status(400).json({ message: "No host found" });
+      return res.status(400).json({
+        message: "No host found"
+      });
     }
 
-    // remove port (localhost:5000)
+    // Remove localhost port
     host = host.replace(':5000', '');
 
     console.log("Incoming host:", host);
 
-    const parts = host.split('.');
-
-    let slug = null;
-
-    // CASE 1: subdomain exists (greenhill.timizaanalytics.com)
-    if (
-      parts.length >= 3 &&
-      !host.includes('localhost') &&
-      !host.includes('127.0.0.1')
-    ) {
-      slug = parts[0];
-    }
-
-    // CASE 2: main domain (superadmin)
+    // Main SaaS domains
     const mainDomains = [
       'timizaanalytics.com',
       'www.timizaanalytics.com',
-      'timizaanalytics.vercel.app'
+      'timizaanalytics.vercel.app',
+      'timiza-saas.onrender.com',
+      'localhost'
     ];
 
-    if (mainDomains.includes(host)) {
-      req.school = null;
-      return next();
+    // ====================================================
+    // SCHOOL CODE MODE
+    // ====================================================
+    // We DO NOT identify schools using the domain.
+    // The school will be identified during login using:
+    //
+    //    schoolCode + email + password
+    //
+    // After login, the authenticated user's JWT contains
+    // the school ID, which will be used by protected routes.
+    // ====================================================
+
+    req.school = null;
+
+    // Optional logging
+    if (mainDomains.includes(host) || host.includes('localhost')) {
+      console.log("Running in School Code mode.");
     }
 
-    // CASE 3: no subdomain (fallback)
-    if (!slug) {
-      req.school = null;
-      return next();
-    }
-
-    const school = await School.findOne({ slug });
-
-    if (!school) {
-      return res.status(404).json({
-        message: "School not found"
-      });
-    }
-
-    req.school = school;
-
-    console.log("Tenant resolved:", school.name);
-
-    next();
+    return next();
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Tenant error" });
+    console.error("Tenant middleware error:", err);
+
+    return res.status(500).json({
+      message: "Tenant error"
+    });
   }
 }
 
 module.exports = tenant;
+```
