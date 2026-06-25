@@ -286,7 +286,6 @@ res.status(500).json({
       ? error.stack
       : undefined
 });
-```
 
 }
 };
