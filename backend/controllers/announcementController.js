@@ -5,7 +5,7 @@ exports.createAnnouncement = async (req, res) => {
 try {
 const { text } = req.body;
 
-```
+
 const announcement = new Announcement({
   text,
   school: req.user.school,
@@ -19,17 +19,17 @@ res.status(201).json({
   success: true,
   announcement
 });
-```
+
 
 } catch (err) {
 console.error(err);
 
-```
+
 res.status(500).json({
   success: false,
   error: err.message
 });
-```
+
 
 }
 };
@@ -41,19 +41,19 @@ const announcements = await Announcement.find({
 school: req.user.school
 }).sort({ createdAt: -1 });
 
-```
+
 res.json(announcements);
-```
+
 
 } catch (err) {
 console.error(err);
 
-```
+
 res.status(500).json({
   success: false,
   error: err.message
 });
-```
+
 
 }
 };
@@ -66,7 +66,7 @@ _id: req.params.id,
 school: req.user.school
 });
 
-```
+
 if (!announcement) {
   return res.status(404).json({
     success: false,
@@ -78,17 +78,17 @@ res.json({
   success: true,
   message: 'Announcement deleted successfully'
 });
-```
+
 
 } catch (err) {
 console.error('Error deleting announcement:', err);
 
-```
+
 res.status(500).json({
   success: false,
   error: 'Failed to delete announcement'
 });
-```
+
 
 }
 };
