@@ -8,7 +8,7 @@ const { class: className, date } = req.query;
 const teacherId = req.user.id;
 const school = req.user.school;
 
-```
+
 const attendance = await Attendance.findOne({
   school,
   class: className,
@@ -49,7 +49,6 @@ res.json({
   date: new Date(date),
   records
 });
-```
 
 } catch (error) {
 console.error('Error fetching attendance:', error);
@@ -67,7 +66,7 @@ const { class: className, date, records } = req.body;
 const teacherId = req.user.id;
 const school = req.user.school;
 
-```
+
 if (!className || !date || !Array.isArray(records)) {
   return res.status(400).json({
     message: 'Missing required fields'
@@ -99,7 +98,7 @@ const attendance = await Attendance.findOneAndUpdate(
 ).populate('records.studentId', 'name email');
 
 res.status(201).json(attendance);
-```
+
 
 } catch (error) {
 console.error('Error saving attendance:', error);
@@ -117,7 +116,7 @@ const { id } = req.params;
 const teacherId = req.user.id;
 const school = req.user.school;
 
-```
+
 if (!id.match(/^[0-9a-fA-F]{24}$/)) {
   return res.status(400).json({
     message: 'Invalid attendance record ID'
@@ -156,7 +155,7 @@ const response = {
 };
 
 res.json(response);
-```
+
 
 } catch (error) {
 console.error('Error fetching attendance record:', error);
@@ -173,7 +172,7 @@ try {
 const { class: className, start, end } = req.query;
 const { id: userId, role, school } = req.user;
 
-```
+
 console.log('=== Attendance History Request ===');
 console.log('Query params:', { className, start, end });
 console.log('User:', { userId, role, school });
@@ -265,7 +264,7 @@ const response = {
 console.log('=== End of Attendance History Request ===');
 
 res.json(response.data);
-```
+
 
 } catch (error) {
 console.error('Error in getAttendanceHistory:', {
@@ -277,7 +276,7 @@ user: req.user
 }
 });
 
-```
+
 res.status(500).json({
   success: false,
   message: 'Error fetching attendance history',
