@@ -231,7 +231,7 @@ exports.saveMarks = asyncHandler(async (req, res, next) => {
     
     // Check if marks already exist for this student, subject, term, and year
     const existingGrade = await Grade.findOne({
-        school: req.user.school
+        school: req.user.school,
         student,
         subject,
         term,
