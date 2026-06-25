@@ -1,71 +1,171 @@
-// controllers/schoolUserController.js
+const bcrypt = require('bcryptjs');
 const SchoolUser = require('../models/SchoolUser');
-const User = require('../models/User');  // Import the User model
+const User = require('../models/User');
 
-// Delete a user
+// Delete User
 exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    
-    // First try to delete from SchoolUser collection
-    let deletedUser = await SchoolUser.findByIdAndDelete(userId);
-    
-    // If not found in SchoolUser, try the User collection
+
+    let deletedUser = await SchoolUser.findOneAndDelete({
+      _id: userId,
+      school: req.user.school
+    });
+
     if (!deletedUser) {
-      deletedUser = await User.findByIdAndDelete(userId);
+      deletedUser = await User.findOneAndDelete({
+        _id: userId,
+        school: req.user.school
+      });
     }
-    
+
     if (!deletedUser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
-    
-    res.json({ message: 'User deleted successfully' });
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+
   } catch (err) {
     console.error('Error deleting user:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message
+    });
   }
 };
 
-// Get all users (admins, teachers, students) with filtering support
+// Get All Users
 exports.getAllUsers = async (req, res) => {
   try {
     const { search, role, status } = req.query;
-    let filter = {};
+
+    let filter = {
+      school: req.user.school
+    };
 
     if (search) {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { username: { $regex: search, $options: 'i' } }
+        {
+          name: {
+            $regex: search,
+            $options: 'i'
+          }
+        },
+        {
+          email: {
+            $regex: search,
+            $options: 'i'
+          }
+        },
+        {
+          username: {
+            $regex: search,
+            $options: 'i'
+          }
+        }
       ];
     }
-    if (role) filter.role = role;
-    if (status) filter.status = status;
 
-    const users = await SchoolUser.find(filter);
-    res.json(users);
+    if (role) {
+      filter.role = role;
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    const users = await SchoolUser.find(filter).sort({
+      createdAt: -1
+    });
+
+    res.json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    console.error('Error fetching users:', err);
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message
+    });
   }
 };
 
-// Create a new user (teacher/student)
+// Create User
 exports.createUser = async (req, res) => {
-  const { name, email, password, role, subject, studentClass } = req.body;
-
   try {
-    const newUser = new SchoolUser({
+    const {
       name,
       email,
-      password,  // Consider hashing the password for security
+      password,
       role,
-      subject: role === 'teacher' ? subject : undefined,
-      studentClass: role === 'student' ? studentClass : undefined,
+      subject,
+      studentClass
+    } = req.body;
+
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, password and role are required'
+      });
+    }
+
+    const existingUser = await SchoolUser.findOne({
+      email,
+      school: req.user.school
     });
 
-    await newUser.save();  // Save the new user to the database
-    res.status(201).json({ message: 'User created successfully' });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User already exists in this school'
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new SchoolUser({
+      school: req.user.school,
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      subject: role === 'teacher' ? subject : undefined,
+      studentClass: role === 'student' ? studentClass : undefined
+    });
+
+    await newUser.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role
+      }
+    });
+
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    console.error('Error creating user:', err);
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message
+    });
   }
 };
