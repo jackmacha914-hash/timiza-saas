@@ -3,12 +3,29 @@ const User = require('../models/User');
 // Get Teacher Profile
 exports.getTeacherProfile = async (req, res) => {
     try {
-        const teacher = await User.findById(req.user.id).select('-password');
-        if (!teacher) return res.status(404).json({ msg: "Teacher not found" });
+        const teacher = await User.findOne({
+            _id: req.user.id,
+            school: req.user.school
+        }).select('-password');
 
-        res.json(teacher);
+        if (!teacher) {
+            return res.status(404).json({
+                success: false,
+                message: "Teacher not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            data: teacher
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error fetching teacher profile:', err);
+
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 };
 
@@ -17,15 +34,34 @@ exports.updateTeacherProfile = async (req, res) => {
     try {
         const { name, subject } = req.body;
 
-        const teacher = await User.findById(req.user.id);
-        if (!teacher) return res.status(404).json({ msg: "Teacher not found" });
+        const teacher = await User.findOne({
+            _id: req.user.id,
+            school: req.user.school
+        });
 
-        teacher.name = name || teacher.name;
-        teacher.subject = subject || teacher.subject;
+        if (!teacher) {
+            return res.status(404).json({
+                success: false,
+                message: "Teacher not found"
+            });
+        }
+
+        if (name) teacher.name = name;
+        if (subject) teacher.subject = subject;
 
         await teacher.save();
-        res.json({ msg: "Profile updated successfully", teacher });
+
+        res.json({
+            success: true,
+            message: "Profile updated successfully",
+            data: teacher
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error updating teacher profile:', err);
+
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 };
