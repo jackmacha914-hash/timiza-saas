@@ -201,6 +201,8 @@ exports.loginUser = async (req, res) => {
     try {
         console.log('=== LOGIN DEBUG ===');
 console.log('Received schoolCode:', schoolCode);
+        const schools = await School.find({});
+console.log('Schools in database:', schools);
 
 const allSchools = await School.find({});
 console.log(
