@@ -181,7 +181,7 @@ exports.getStudentProfile = async (req, res) => {
             photoUrl: photoUrl,  // Add photoUrl at the root level for easy access
             photoPath: photoPath, // Add clean photo path
             profile: {
-                ...(student.profile ? student.profile.toObject() : {}),
+                ...(student.profile || {}),
                 class: studentClass,  // Ensure class is in profile
                 grade: student.grade || (student.profile && student.profile.grade) || '',
                 subjects: (student.profile && student.profile.subjects) || [],
@@ -341,25 +341,19 @@ exports.uploadProfilePhoto = async (req, res) => {
 
         // Update user's profile photo with both full URL and relative path
         await User.findOneAndUpdate(
-{
-    _id: userId,
-    school: req.user.school
-},
-{
-    $set: {
-        ...
+    {
+        _id: userId,
+        school: req.user.school
+    },
+    {
+        $set: {
+            'profile.photo': fullPhotoUrl,
+            'profile.photoPath': photoPath,
+            'profile.originalFilename': req.file.originalname,
+            'profile.photoUploadedAt': new Date()
+        }
     }
-}
 );
-        , {
-            $set: { 
-                'profile.photo': fullPhotoUrl,
-                'profile.photoPath': photoPath, // Store relative path for future reference
-                'profile.originalFilename': req.file.originalname,
-                'profile.photoUploadedAt': new Date()
-            }
-        });
-        
         // Delete old profile photo if it exists and is different
         const user = await User.findById(userId);
         if (user?.profile?.photoPath && user.profile.photoPath !== photoPath) {
