@@ -73,6 +73,7 @@ exports.saveStudentMarks = asyncHandler(async (req, res, next) => {
         try {
             // Use findOneAndUpdate with upsert to handle concurrent updates atomically
             const filter = {
+                school: req.user.school,
                 student: studentId,
                 subject,
                 term: term || 'Term 1',
@@ -81,6 +82,7 @@ exports.saveStudentMarks = asyncHandler(async (req, res, next) => {
             
             const update = {
                 $set: {
+                    school: req.user.school,
                     studentName: `${student.firstName} ${student.lastName}`,
                     class: student.className || 'Grade 8',
                     score: marks,
@@ -229,6 +231,7 @@ exports.saveMarks = asyncHandler(async (req, res, next) => {
     
     // Check if marks already exist for this student, subject, term, and year
     const existingGrade = await Grade.findOne({
+        school: req.user.school
         student,
         subject,
         term,
@@ -245,6 +248,7 @@ exports.saveMarks = asyncHandler(async (req, res, next) => {
     } else {
         // Create new grade
         grade = await Grade.create({
+            school: req.user.school,
             student,
             studentName,
             class: className,
@@ -261,10 +265,11 @@ exports.saveMarks = asyncHandler(async (req, res, next) => {
     try {
         // Get all marks for this student, term, and year
         const marks = await Grade.find({
-            student,
-            term,
-            academicYear
-        });
+    school: req.user.school,
+    student: req.params.studentId,
+    term,
+    academicYear
+     })
 
         if (marks.length > 0) {
             // Generate HTML for the report card
@@ -404,7 +409,9 @@ exports.saveMarks = asyncHandler(async (req, res, next) => {
 // @access  Private
 exports.getStudentMarks = asyncHandler(async (req, res, next) => {
     const { term, academicYear } = req.query;
-    const query = { student: req.params.studentId };
+    const query = { 
+        school: req.user.school,
+        student: req.params.studentId };
     
     if (term) query.term = term;
     if (academicYear) query.academicYear = academicYear;
@@ -425,7 +432,9 @@ exports.getStudentMarks = asyncHandler(async (req, res, next) => {
 // @access  Private/Teacher
 exports.getClassMarks = asyncHandler(async (req, res, next) => {
     const { term, academicYear } = req.query;
-    const query = { class: req.params.className };
+    const query = {
+        school: req.user.school,
+        class: req.params.className };
     
     if (term) query.term = term;
     if (academicYear) query.academicYear = academicYear;
@@ -446,7 +455,9 @@ exports.getClassMarks = asyncHandler(async (req, res, next) => {
 // @access  Private/Teacher
 exports.getSubjectMarks = asyncHandler(async (req, res, next) => {
     const { term, academicYear } = req.query;
-    const query = { subject: req.params.subject };
+    const query = { 
+        school: req.user.school,
+        subject: req.params.subject };
     
     if (term) query.term = term;
     if (academicYear) query.academicYear = academicYear;
@@ -466,7 +477,10 @@ exports.getSubjectMarks = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/v1/marks/finalize/:id
 // @access  Private/Teacher
 exports.finalizeMarks = asyncHandler(async (req, res, next) => {
-    const grade = await Grade.findById(req.params.id);
+    const grade = await Grade.findOne({
+    _id: req.params.id,
+    school: req.user.school
+     });
     
     if (!grade) {
         return next(new ErrorResponse(`Grade not found with id of ${req.params.id}`, 404));
@@ -501,7 +515,10 @@ exports.getStudentReportCard = asyncHandler(async (req, res, next) => {
         }
         
         // First, get the student information
-        const student = await User.findById(req.params.studentId)
+        const student = await User.findOne({
+    _id: req.params.studentId,
+    school: req.user.school
+     })
             .select('firstName lastName email className')
             .lean();
             
@@ -577,9 +594,10 @@ exports.deleteStudentMarks = asyncHandler(async (req, res, next) => {
     try {
         // Build query
         const query = {
-            student: studentId,
-            term: term
-        };
+        school: req.user.school,
+        student: studentId,
+        term: term
+          };
 
         // Add academic year to query if provided
         if (academicYear) {
@@ -595,6 +613,7 @@ exports.deleteStudentMarks = asyncHandler(async (req, res, next) => {
 
         // Also delete corresponding report card
         await ReportCard.findOneAndDelete({
+            school: req.user.school,
             studentId: studentId,
             term: term,
             academicYear: query.academicYear
