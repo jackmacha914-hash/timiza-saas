@@ -6,7 +6,7 @@ const createClass = async (req, res) => {
 try {
 const { name, description, subject, schedule, academicYear } = req.body;
 
-```
+
 const newClass = new Class({
   school: req.user.school,
   name,
@@ -24,17 +24,17 @@ res.status(201).json({
   success: true,
   data: newClass
 });
-```
+
 
 } catch (error) {
 console.error('Error creating class:', error);
 
-```
+
 res.status(500).json({
   success: false,
   message: 'Server error creating class'
 });
-```
+
 
 }
 };
@@ -49,22 +49,22 @@ teacher: req.user.id
 .populate('students', 'name email class')
 .sort({ createdAt: -1 });
 
-```
+
 res.json({
   success: true,
   data: classes
 });
-```
+
 
 } catch (error) {
 console.error('Error fetching classes:', error);
 
-```
+
 res.status(500).json({
   success: false,
   message: 'Server error fetching classes'
 });
-```
+
 
 }
 };
@@ -79,7 +79,7 @@ school: req.user.school
 .populate('teacher', 'name email')
 .populate('students', 'name email class');
 
-```
+
 if (!classData) {
   return res.status(404).json({
     success: false,
@@ -91,17 +91,17 @@ res.json({
   success: true,
   data: classData
 });
-```
+
 
 } catch (error) {
 console.error('Error fetching class:', error);
 
-```
+
 res.status(500).json({
   success: false,
   message: 'Server error fetching class'
 });
-```
+
 
 }
 };
@@ -111,7 +111,7 @@ const updateClass = async (req, res) => {
 try {
 const { name, description, subject, schedule, academicYear } = req.body;
 
-```
+
 const updatedClass = await Class.findOneAndUpdate(
   {
     _id: req.params.id,
@@ -142,17 +142,17 @@ res.json({
   success: true,
   data: updatedClass
 });
-```
+
 
 } catch (error) {
 console.error('Error updating class:', error);
 
-```
+
 res.status(500).json({
   success: false,
   message: 'Server error updating class'
 });
-```
+
 
 }
 };
@@ -166,7 +166,7 @@ school: req.user.school,
 teacher: req.user.id
 });
 
-```
+
 if (!deletedClass) {
   return res.status(404).json({
     success: false,
@@ -178,17 +178,17 @@ res.json({
   success: true,
   message: 'Class deleted successfully'
 });
-```
+
 
 } catch (error) {
 console.error('Error deleting class:', error);
 
-```
+
 res.status(500).json({
   success: false,
   message: 'Server error deleting class'
 });
-```
+
 
 }
 };
@@ -198,7 +198,7 @@ const addStudentToClass = async (req, res) => {
 try {
 const { studentId } = req.body;
 
-```
+
 const student = await User.findOne({
   _id: studentId,
   school: req.user.school,
@@ -237,17 +237,17 @@ res.json({
   success: true,
   data: updatedClass
 });
-```
+
 
 } catch (error) {
 console.error('Error adding student:', error);
 
-```
+
 res.status(500).json({
   success: false,
   message: 'Server error adding student'
 });
-```
+
 
 }
 };
@@ -257,7 +257,7 @@ const removeStudentFromClass = async (req, res) => {
 try {
 const { studentId } = req.body;
 
-```
+
 const updatedClass = await Class.findOneAndUpdate(
   {
     _id: req.params.id,
@@ -283,17 +283,17 @@ res.json({
   success: true,
   data: updatedClass
 });
-```
+
 
 } catch (error) {
 console.error('Error removing student:', error);
 
-```
+
 res.status(500).json({
   success: false,
   message: 'Server error removing student'
 });
-```
+
 
 }
 };
