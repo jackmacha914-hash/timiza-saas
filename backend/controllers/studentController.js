@@ -22,12 +22,13 @@ exports.getStudentsByClass = async (req, res) => {
         console.log(`Fetching students for class: ${className}`);
         
         const query = {
-            role: 'student',
-            $or: [
-                { class: className },
-                { 'profile.class': className }
-            ]
-        };
+    school: req.user.school,
+    role: 'student',
+    $or: [
+        { class: className },
+        { 'profile.class': className }
+    ]
+};
         
         console.log('MongoDB query:', JSON.stringify(query, null, 2));
         
@@ -80,10 +81,20 @@ exports.getStudents = async (req, res) => {
         const role = req.path === '/teachers' ? 'teacher' : 'student';
         
         if (role === 'student') {
-            const users = await User.find({ role: 'student' }).select('-password');
+            const users = await 
+                User.find({
+            school: req.user.school,
+          role: 'student'
+          })
+                .select('-password');
             res.json(users);
         } else {
-            const users = await User.find({ role: 'teacher' }).select('-password');
+            const users = await
+                User.find({
+    school: req.user.school,
+    role: 'teacher'
+})
+                .select('-password');
             res.json(users);
         }
     } catch (err) {
@@ -108,7 +119,10 @@ exports.getStudentProfile = async (req, res) => {
             });
         }
 
-        const student = await User.findById(userId)
+        const student = await User.findOne({
+    _id: userId,
+    school: req.user.school
+})
             .select('-password')
             .populate('profile.subjects', 'name')
             .lean();
@@ -210,7 +224,10 @@ exports.updateStudentProfile = async (req, res) => {
         console.log('Updating profile with:', { name, email, rootClass, profile });
 
         // Find the student
-        const student = await User.findById(userId);
+        const student = await User.findOne({
+    _id: userId,
+    school: req.user.school
+});
         if (!student) {
             return res.status(404).json({ 
                 success: false,
@@ -323,7 +340,18 @@ exports.uploadProfilePhoto = async (req, res) => {
         const fullPhotoUrl = `${baseUrl}${photoPath}`;
 
         // Update user's profile photo with both full URL and relative path
-        await User.findByIdAndUpdate(userId, {
+        await User.findOneAndUpdate(
+{
+    _id: userId,
+    school: req.user.school
+},
+{
+    $set: {
+        ...
+    }
+}
+);
+        , {
             $set: { 
                 'profile.photo': fullPhotoUrl,
                 'profile.photoPath': photoPath, // Store relative path for future reference
@@ -369,7 +397,10 @@ exports.uploadProfilePhoto = async (req, res) => {
 exports.changePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        const user = await User.findById(req.user.id);
+        const user = await User.findOne({
+    _id: req.user.id,
+    school: req.user.school
+});
 
         if (!user) {
             return res.status(404).json({ error: "User not found" });
@@ -431,7 +462,10 @@ exports.registerUser = async (req, res) => {
         }
 
         // Check if user already exists
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({
+    email,
+    school: req.user.school
+});
         if (existingUser) {
             return res.status(400).json({
                 error: 'User already exists',
@@ -476,6 +510,7 @@ exports.registerUser = async (req, res) => {
 
         // Create user object
         const user = new User({
+            school: req.user.school,
             name,
             email,
             password: phone, // Using phone as password (will be hashed)
@@ -570,13 +605,17 @@ exports.registerStudent = async (req, res) => {
         }
 
         // Check if user exists
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+    email,
+    school: req.user.school
+});
         if (user) {
             return res.status(400).json({ msg: "User already exists" });
         }
 
         // Create new user
         const newUser = new User({
+            school: req.user.school,
             name,
             email,
             password,
