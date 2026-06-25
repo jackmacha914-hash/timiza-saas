@@ -180,129 +180,126 @@ async (req, res) => {
 
 ];
 
+
 // User Login
 exports.loginUser = async (req, res) => {
-console.log('=== Login Request ===');
-console.log(
-'Request body:',
-JSON.stringify(req.body, null, 2)
-);
-
-```
-const { email, password, schoolCode } = req.body;
-
-if (!email || !password || !schoolCode) {
-    return res.status(400).json({
-        success: false,
-        msg: 'Email, password and school code are required'
-    });
-}
-
-try {
-    const school = await School.findOne({
-        code: schoolCode,
-        active: true
-    });
-
-    if (!school) {
-        return res.status(404).json({
-            success: false,
-            msg: 'Invalid school code'
-        });
-    }
-
-    const user = await User.findOne({
-        school: school._id,
-        email: {
-            $regex: new RegExp(
-                '^' + email + '$',
-                'i'
-            )
-        }
-    });
-
-    if (!user) {
-        return res.status(401).json({
-            success: false,
-            msg: 'Invalid email or password'
-        });
-    }
-
-    const isMatch = await bcrypt.compare(
-        password,
-        user.password
+    console.log('=== Login Request ===');
+    console.log(
+        'Request body:',
+        JSON.stringify(req.body, null, 2)
     );
 
-    if (!isMatch) {
-        return res.status(401).json({
+    const { email, password, schoolCode } = req.body;
+
+    if (!email || !password || !schoolCode) {
+        return res.status(400).json({
             success: false,
-            msg: 'Invalid email or password'
+            msg: 'Email, password and school code are required'
         });
     }
 
-    const payload = {
-        id: user._id,
-        role: user.role,
-        school: user.school
-    };
+    try {
+        const school = await School.findOne({
+            code: schoolCode,
+            active: true
+        });
 
-    const token = jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        {
-            expiresIn: '1h'
+        if (!school) {
+            return res.status(404).json({
+                success: false,
+                msg: 'Invalid school code'
+            });
         }
-    );
 
-    const userData = {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        school: user.school,
-        class: user.class
-    };
+        const user = await User.findOne({
+            school: school._id,
+            email: {
+                $regex: new RegExp(
+                    '^' + email + '$',
+                    'i'
+                )
+            }
+        });
 
-    res.json({
-        success: true,
-        msg: 'Login successful',
-        token,
-        role: user.role,
-        user: userData
-    });
-} catch (err) {
-    console.error(err);
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                msg: 'Invalid email or password'
+            });
+        }
 
-    res.status(500).json({
-        msg: 'Server error'
-    });
-}
-```
+        const isMatch = await bcrypt.compare(
+            password,
+            user.password
+        );
 
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                msg: 'Invalid email or password'
+            });
+        }
+
+        const payload = {
+            id: user._id,
+            role: user.role,
+            school: user.school
+        };
+
+        const token = jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            {
+                expiresIn: '1h'
+            }
+        );
+
+        const userData = {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            school: user.school,
+            class: user.class
+        };
+
+        res.json({
+            success: true,
+            msg: 'Login successful',
+            token,
+            role: user.role,
+            user: userData
+        });
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            msg: 'Server error'
+        });
+    }
 };
 
 // Get User Profile
 exports.getUserProfile = async (req, res) => {
-try {
-const user = await User.findById(req.user.id).select(
-'-password'
-);
+    try {
+        const user = await User.findById(req.user.id)
+            .select('-password');
 
-```
-    if (!user) {
-        return res.status(404).json({
-            msg: 'User not found'
+        if (!user) {
+            return res.status(404).json({
+                msg: 'User not found'
+            });
+        }
+
+        res.json(user);
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            msg: 'Server error'
         });
     }
-
-    res.json(user);
-} catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-        msg: 'Server error'
-    });
-}
-```
-
 };
+```
