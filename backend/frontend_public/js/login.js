@@ -1,4 +1,3 @@
-```javascript
 // Helper function to get dashboard URL based on user role
 function getDashboardURL(role) {
     switch (role) {
@@ -273,4 +272,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-```
+
