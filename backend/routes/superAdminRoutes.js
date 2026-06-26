@@ -13,6 +13,11 @@ router.post(
     superAdminController.createSchool
 );
 
+router.patch(
+    "/schools/:id/status",
+    superAdminController.toggleSchoolStatus
+);
+
 // load all schools
 router.get(
     "/schools",
