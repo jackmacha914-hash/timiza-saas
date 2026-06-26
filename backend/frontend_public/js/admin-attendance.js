@@ -77,7 +77,7 @@ class AdminAttendanceManager {
                 end: endDate
             });
             
-            const url = `https://luckyjuniorschool.onrender.com/api/attendance/history?${params.toString()}`;
+            const url = `https://timiza-saas.onrender.com/api/attendance/history?${params.toString()}`;
             console.log('Fetching attendance data from:', url);
             
             const response = await fetch(url, {
