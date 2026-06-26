@@ -228,15 +228,26 @@ console.log('Matched school:', school);
             });
         }
 
-        const user = await User.findOne({
-            school: school._id,
-            email: {
-                $regex: new RegExp(
-                    '^' + email + '$',
-                    'i'
-                )
-            }
-        });
+        console.log("School ID:", school._id);
+
+const users = await User.find({ school: school._id });
+
+console.log(
+    "Users in this school:",
+    users.map(u => ({
+        email: u.email,
+        role: u.role
+    }))
+);
+
+const user = await User.findOne({
+    school: school._id,
+    email: {
+        $regex: new RegExp("^" + email + "$", "i")
+    }
+});
+
+console.log("Matched user:", user);
 
         if (!user) {
             return res.status(401).json({
