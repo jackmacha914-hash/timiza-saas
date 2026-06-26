@@ -2,7 +2,7 @@
 
 // Ensure API base is always defined
 window.API_CONFIG = {
-  API_BASE_URL: "https://luckyjuniorschool.onrender.com/api"
+  API_BASE_URL: "https://timiza-saas.onrender.com/api"
 };
 
 // Core apiFetch wrapper
