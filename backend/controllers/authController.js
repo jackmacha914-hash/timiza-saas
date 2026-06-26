@@ -260,6 +260,7 @@ console.log("Matched user:", user);
             password,
             user.password
         );
+        console.log("Password match:", isMatch);
 
         if (!isMatch) {
             return res.status(401).json({
