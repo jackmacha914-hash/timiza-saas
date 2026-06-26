@@ -1,43 +1,95 @@
-const API="https://timiza-saas.onrender.com/api";
+const API = "https://timiza-saas.onrender.com/api";
 
-const button=document.getElementById("createSchoolBtn");
+document
+    .getElementById("createSchoolBtn")
+    .addEventListener("click", createSchool);
 
-button.addEventListener("click",createSchool);
+loadSchools();
 
-async function createSchool(){
+async function createSchool() {
 
-    const schoolName=document.getElementById("schoolName").value;
+    const schoolName =
+        document.getElementById("schoolName").value;
 
-    const adminName=document.getElementById("adminName").value;
+    const adminName =
+        document.getElementById("adminName").value;
 
-    const adminEmail=document.getElementById("adminEmail").value;
+    const adminEmail =
+        document.getElementById("adminEmail").value;
 
-    const adminPassword=document.getElementById("adminPassword").value;
+    const adminPassword =
+        document.getElementById("adminPassword").value;
 
-    const response=await fetch(API+"/superadmin/create-school",{
+    const response = await fetch(
+        API + "/superadmin/create-school",
+        {
+            method: "POST",
 
-        method:"POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
 
-        headers:{
-            "Content-Type":"application/json"
-        },
+            body: JSON.stringify({
 
-        body:JSON.stringify({
+                schoolName,
 
-            schoolName,
+                adminName,
 
-            adminName,
+                adminEmail,
 
-            adminEmail,
+                adminPassword
 
-            adminPassword
+            })
 
-        })
+        });
+
+    const data = await response.json();
+
+    if (data.success) {
+
+        alert("School Created!");
+
+        loadSchools();
+
+    } else {
+
+        alert(data.message);
+
+    }
+
+}
+
+async function loadSchools() {
+
+    const response =
+        await fetch(API + "/superadmin/schools");
+
+    const schools =
+        await response.json();
+
+    const tbody =
+        document.querySelector("#schoolsTable tbody");
+
+    tbody.innerHTML = "";
+
+    schools.forEach(school => {
+
+        tbody.innerHTML += `
+
+        <tr>
+
+            <td>${school.name}</td>
+
+            <td>${school.code}</td>
+
+            <td>${school.contactEmail || "-"}</td>
+
+            <td>${school.active ? "🟢 Active" : "🔴 Suspended"}</td>
+
+        </tr>
+
+        `;
 
     });
-
-    const data=await response.json();
-
-    alert(JSON.stringify(data,null,2));
 
 }
