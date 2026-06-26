@@ -24,30 +24,28 @@ async function createSchool() {
         API + "/superadmin/create-school",
         {
             method: "POST",
-
             headers: {
                 "Content-Type": "application/json"
             },
-
             body: JSON.stringify({
-
                 schoolName,
-
                 adminName,
-
                 adminEmail,
-
                 adminPassword
-
             })
-
-        });
+        }
+    );
 
     const data = await response.json();
 
     if (data.success) {
 
-        alert("School Created!");
+        alert("✅ School Created Successfully!");
+
+        document.getElementById("schoolName").value = "";
+        document.getElementById("adminName").value = "";
+        document.getElementById("adminEmail").value = "";
+        document.getElementById("adminPassword").value = "";
 
         loadSchools();
 
@@ -70,42 +68,65 @@ async function loadSchools() {
     const tbody =
         document.querySelector("#schoolsTable tbody");
 
-    tbody.innerHTML += `
-<tr>
+    tbody.innerHTML = "";
 
-    <td>${school.name}</td>
+    schools.forEach(school => {
 
-    <td>${school.code}</td>
+        tbody.innerHTML += `
 
-    <td>
-        ${
-            school.active
-            ? "🟢 Active"
-            : "🔴 Suspended"
-        }
-    </td>
+        <tr>
 
-    <td>
+            <td>${school.name}</td>
 
-        <button
-            onclick="viewSchool('${school._id}')">
-            View
-        </button>
+            <td>${school.code}</td>
 
-        <button
-            onclick="toggleSchool('${school._id}')">
-            ${
-                school.active
-                ? "Suspend"
-                : "Activate"
-            }
-        </button>
+            <td>
+                ${
+                    school.active
+                        ? "🟢 Active"
+                        : "🔴 Suspended"
+                }
+            </td>
 
-    </td>
+            <td>
 
-</tr>
-`;
+                <button onclick="viewSchool('${school._id}')">
+                    View
+                </button>
+
+                <button onclick="toggleSchool('${school._id}')">
+                    ${
+                        school.active
+                            ? "Suspend"
+                            : "Activate"
+                    }
+                </button>
+
+            </td>
+
+        </tr>
+
+        `;
 
     });
+
+}
+
+async function toggleSchool(id) {
+
+    await fetch(
+        API + "/superadmin/schools/" + id + "/status",
+        {
+            method: "PATCH"
+        }
+    );
+
+    loadSchools();
+
+}
+
+function viewSchool(id) {
+
+    alert("School ID: " + id);
 
 }
