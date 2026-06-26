@@ -96,4 +96,22 @@ exports.createSchool = async (req, res) => {
         });
 
     }
+    };
+    // LOAD SCHOOLS
+    exports.getSchools = async (req, res) => {
+
+    try {
+
+        const schools = await School.find()
+            .sort({ createdAt: -1 });
+
+        res.json(schools);
+
+    } catch (err) {
+
+        res.status(500).json({
+            message: err.message
+        });
+
+    }
 };
