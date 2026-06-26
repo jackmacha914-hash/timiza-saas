@@ -102,7 +102,7 @@ app.use('/api/transport/attendance', requireSchool, require('./routes/transportA
 app.use('/api/meals', requireSchool, require('./routes/meals'));
 app.use('/api/other-charges', requireSchool, require('./routes/otherCharges'));
 app.use('/api/schools', require('./routes/schoolRoutes'));
-app.use('/api/superadmin', ('./routes/superAdminRoutes'));
+app.use('/api/superadmin', require('./routes/superAdminRoutes'));
 
 
 // -------------------------
