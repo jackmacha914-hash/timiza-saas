@@ -1,31 +1,26 @@
-const bcrypt = require("bcryptjs");
-
 const School = require("../models/School");
 const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 
-// Generate School Code
 function generateSchoolCode(name) {
+    const letters = name
+        .replace(/[^A-Za-z]/g, "")
+        .toUpperCase()
+        .substring(0, 4);
 
-    const clean = name
-        .replace(/[^a-zA-Z ]/g, "")
-        .trim()
-        .split(" ")
-        .map(word => word.substring(0, 5).toUpperCase())
-        .join("");
+    const numbers = Math.floor(100 + Math.random() * 900);
 
-    return clean;
+    return `${letters}${numbers}`;
 }
 
 exports.createSchool = async (req, res) => {
-
     try {
 
         const {
             schoolName,
             adminName,
             adminEmail,
-            adminPassword,
-            phone
+            adminPassword
         } = req.body;
 
         if (
@@ -35,34 +30,18 @@ exports.createSchool = async (req, res) => {
             !adminPassword
         ) {
             return res.status(400).json({
-                success: false,
-                message: "Missing required fields"
+                message: "All fields are required."
             });
         }
 
-        // Generate base code
-        const baseCode = generateSchoolCode(schoolName);
-
-        let counter = 1;
+        // Generate unique school code
         let schoolCode;
 
-        while (true) {
+        do {
+            schoolCode = generateSchoolCode(schoolName);
+        } while (await School.findOne({ code: schoolCode }));
 
-            schoolCode =
-                baseCode +
-                String(counter).padStart(3, "0");
-
-            const exists = await School.findOne({
-                code: schoolCode
-            });
-
-            if (!exists) break;
-
-            counter++;
-        }
-
-        // Create School
-
+        // Create school
         const school = await School.create({
 
             name: schoolName,
@@ -73,19 +52,15 @@ exports.createSchool = async (req, res) => {
                 .toLowerCase()
                 .replace(/\s+/g, "-"),
 
-            phone,
-
             active: true
 
         });
 
         // Hash password
-
         const hashedPassword =
             await bcrypt.hash(adminPassword, 10);
 
-        // Create Admin
-
+        // Create admin
         const admin = await User.create({
 
             school: school._id,
@@ -96,29 +71,19 @@ exports.createSchool = async (req, res) => {
 
             password: hashedPassword,
 
-            role: "admin",
-
-            class: "",
-
-            classAssigned: "",
-
-            profile: {}
+            role: "admin"
 
         });
 
-        res.json({
+        res.status(201).json({
 
             success: true,
 
             school,
 
-            admin: {
+            admin,
 
-                name: admin.name,
-
-                email: admin.email
-
-            }
+            loginCode: schoolCode
 
         });
 
@@ -127,13 +92,8 @@ exports.createSchool = async (req, res) => {
         console.error(err);
 
         res.status(500).json({
-
-            success: false,
-
             message: err.message
-
         });
 
     }
-
 };
