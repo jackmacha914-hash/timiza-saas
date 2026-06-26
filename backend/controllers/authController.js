@@ -230,13 +230,31 @@ console.log('Matched school:', school);
 
         console.log("School ID:", school._id);
 
-const users = await User.find({ school: school._id });
+console.log("========== ALL USERS ==========");
+
+const allUsers = await User.find({});
+
+console.log(
+    allUsers.map(u => ({
+        id: u._id,
+        email: u.email,
+        role: u.role,
+        school: u.school
+    }))
+);
+
+console.log("===============================");
+
+const users = await User.find({
+    school: school._id
+});
 
 console.log(
     "Users in this school:",
     users.map(u => ({
         email: u.email,
-        role: u.role
+        role: u.role,
+        school: u.school
     }))
 );
 
