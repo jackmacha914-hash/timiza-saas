@@ -9,6 +9,8 @@ const validateClass = (value) => {
 };
 
 const userSchema = new mongoose.Schema({
+  console.log("USER SCHEMA KEYS:");
+  console.log(Object.keys({
 
   school: {
     type: mongoose.Schema.Types.ObjectId,
