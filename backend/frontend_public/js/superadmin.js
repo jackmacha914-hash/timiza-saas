@@ -70,25 +70,41 @@ async function loadSchools() {
     const tbody =
         document.querySelector("#schoolsTable tbody");
 
-    tbody.innerHTML = "";
+    tbody.innerHTML += `
+<tr>
 
-    schools.forEach(school => {
+    <td>${school.name}</td>
 
-        tbody.innerHTML += `
+    <td>${school.code}</td>
 
-        <tr>
+    <td>
+        ${
+            school.active
+            ? "🟢 Active"
+            : "🔴 Suspended"
+        }
+    </td>
 
-            <td>${school.name}</td>
+    <td>
 
-            <td>${school.code}</td>
+        <button
+            onclick="viewSchool('${school._id}')">
+            View
+        </button>
 
-            <td>${school.contactEmail || "-"}</td>
+        <button
+            onclick="toggleSchool('${school._id}')">
+            ${
+                school.active
+                ? "Suspend"
+                : "Activate"
+            }
+        </button>
 
-            <td>${school.active ? "🟢 Active" : "🔴 Suspended"}</td>
+    </td>
 
-        </tr>
-
-        `;
+</tr>
+`;
 
     });
 
