@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timiza SaaS - Super Admin</title>
+
+    <link rel="stylesheet" href="/css/superadmin.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Timiza SaaS</h1>
+
+    <h2>Super Admin Dashboard</h2>
+
+    <div class="card">
+
+        <h3>Create School</h3>
+
+        <input
+            id="schoolName"
+            placeholder="School Name"
+        >
+
+        <input
+            id="adminName"
+            placeholder="Admin Name"
+        >
+
+        <input
+            id="adminEmail"
+            placeholder="Admin Email"
+        >
+
+        <input
+            id="adminPassword"
+            type="password"
+            placeholder="Temporary Password"
+        >
+
+        <button id="createSchoolBtn">
+            Create School
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h3>Schools</h3>
+
+        <table id="schoolsTable">
+
+            <thead>
+
+                <tr>
+
+                    <th>School</th>
+
+                    <th>Code</th>
+
+                    <th>Admin</th>
+
+                    <th>Status</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<script src="/js/superadmin.js"></script>
+
+</body>
+</html>
