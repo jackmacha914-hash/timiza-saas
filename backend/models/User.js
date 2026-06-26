@@ -1,3 +1,4 @@
+console.log("USING USER MODEL:", __filename);
 const mongoose = require('mongoose');
 
 // Validate class format (e.g., 'Grade 1', 'Form 1')
