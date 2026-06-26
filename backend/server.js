@@ -67,6 +67,12 @@ app.get('/favicon.ico', (req, res) => {
   });
 });
 
+app.get('/superadmin', (req, res) => {
+    res.sendFile(
+        path.join(publicFrontendPath, 'pages', 'superadmin.html')
+    );
+});
+
 // -------------------------
 // API routes
 const requireSchool = require('./middleware/requireSchool');
