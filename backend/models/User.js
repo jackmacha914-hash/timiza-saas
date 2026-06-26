@@ -9,10 +9,7 @@ const validateClass = (value) => {
 };
 
 const userSchema = new mongoose.Schema({
-  console.log("USER SCHEMA KEYS:");
-  console.log(Object.keys({
-
-  school: {
+    school: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'School',
     required: function () {
