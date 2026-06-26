@@ -8,7 +8,7 @@
     <title>Admin Dashboard</title>
    <script>
 // Base URL of your deployed backend
-const NEW_API_BASE = 'https://luckyjuniorschool.onrender.com';
+const NEW_API_BASE = 'https://timiza-saas.onrender.com';
 
 // Save the original fetch
 const originalFetch = window.fetch;
@@ -4275,7 +4275,7 @@ window.fetch = async (input, init = {}) => {
             if (!studentsList) return;
 
             try {
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/students');
+                const response = await fetch('https://timiza-saas.onrender.com/api/students');
                 const data = await response.json();
                 
                 if (!data || !Array.isArray(data.students)) {
@@ -4319,7 +4319,7 @@ window.fetch = async (input, init = {}) => {
             }
 
             try {
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/students/teachers');
+                const response = await fetch('https://timiza-saas.onrender.com/api/students/teachers');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -4361,7 +4361,7 @@ window.fetch = async (input, init = {}) => {
         // Delete functions (to be implemented)
         function deleteStudent(studentId) {
             if (confirm('Are you sure you want to delete this student?')) {
-                fetch(`https://luckyjuniorschool.onrender.com/api/students/${studentId}`, {
+                fetch(`https://timiza-saas.onrender.com/api/students/${studentId}`, {
                     method: 'DELETE'
                 })
                 .then(() => loadStudents())
@@ -4371,7 +4371,7 @@ window.fetch = async (input, init = {}) => {
 
         function deleteTeacher(teacherId) {
             if (confirm('Are you sure you want to delete this teacher?')) {
-                fetch(`https://luckyjuniorschool.onrender.com/api/students/${teacherId}`, {
+                fetch(`https://timiza-saas.onrender.com/api/students/${teacherId}`, {
                     method: 'DELETE'
                 })
                 .then(() => loadTeachers())
@@ -4383,7 +4383,7 @@ window.fetch = async (input, init = {}) => {
         // Load profile data
         async function loadProfile() {
             try {
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/students/profile');
+                const response = await fetch('https://timiza-saas.onrender.com/api/students/profile');
                 const profileData = await response.json();
                 
                 if (profileData && profileData.name) {
@@ -4511,7 +4511,7 @@ window.fetch = async (input, init = {}) => {
                 // Disable submit button to prevent multiple submissions
                 if (submitBtn) submitBtn.disabled = true;
 
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/students/change-password', {
+                const response = await fetch('https://timiza-saas.onrender.com/api/students/change-password', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4562,7 +4562,7 @@ window.fetch = async (input, init = {}) => {
                 
                 // Fetch attendance data for today
 
-                const response = await fetch(`https://luckyjuniorschool.onrender.com/api/attendance/history?start=${today}&end=${today}`, {
+                const response = await fetch(`https://timiza-saas.onrender.com/api/attendance/history?start=${today}&end=${today}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     }
@@ -4707,7 +4707,7 @@ window.fetch = async (input, init = {}) => {
                 console.log('   - Testing endpoint: /api/attendance/history');
                 
 
-                const response = await fetch(`https://luckyjuniorschool.onrender.com/api/attendance/history?start=${today}&end=${today}`, {
+                const response = await fetch(`https://timiza-saas.onrender.com/api/attendance/history?start=${today}&end=${today}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -4817,7 +4817,7 @@ window.fetch = async (input, init = {}) => {
 
                 // Use the correct registration endpoint
 
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/auth/register', {
+                const response = await fetch('https://timiza-saas.onrender.com/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -5020,17 +5020,17 @@ window.fetch = async (input, init = {}) => {
     <!-- API Configuration -->
    <script>
     window.API_CONFIG = { 
-        BASE_URL: 'https://luckyjuniorschool.onrender.com',
-        API_BASE_URL: 'https://luckyjuniorschool.onrender.com/api',
-        AUTH_URL: 'https://luckyjuniorschool.onrender.com/api/auth',
-        STUDENTS_URL: 'https://luckyjuniorschool.onrender.com/api/students',
-        TEACHERS_URL: 'https://luckyjuniorschool.onrender.com/api/teachers',
-        ATTENDANCE_URL: 'https://luckyjuniorschool.onrender.com/api/attendance',
-        FEES_URL: 'https://luckyjuniorschool.onrender.com/api/fees',
-        PAYMENTS_URL: 'https://luckyjuniorschool.onrender.com/api/payments',
-        CLASSES_URL: 'https://luckyjuniorschool.onrender.com/api/classes',
-        CLUBS_URL: 'https://luckyjuniorschool.onrender.com/api/clubs',
-        BOOKS_URL: 'https://luckyjuniorschool.onrender.com/api/books'
+        BASE_URL: 'https://timiza-saas.onrender.com',
+        API_BASE_URL: 'https://timiza-saas.onrender.com/api',
+        AUTH_URL: 'https://timiza-saas.onrender.com/api/auth',
+        STUDENTS_URL: 'https://timiza-saas.onrender.com/api/students',
+        TEACHERS_URL: 'https://timiza-saas.onrender.com/api/teachers',
+        ATTENDANCE_URL: 'https://timiza-saas.onrender.com/api/attendance',
+        FEES_URL: 'https://timiza-saas.onrender.com/api/fees',
+        PAYMENTS_URL: 'https://timiza-saas.onrender.com/api/payments',
+        CLASSES_URL: 'https://timiza-saas.onrender.com/api/classes',
+        CLUBS_URL: 'https://timiza-saas.onrender.com/api/clubs',
+        BOOKS_URL: 'https://timiza-saas.onrender.com/api/books'
     };
 </script>
 
@@ -5089,12 +5089,12 @@ window.fetch = async (input, init = {}) => {
                 
                 console.log('Using class for attendance:', userClass);
 
-                const url = `https://luckyjuniorschool.onrender.com/api/attendance/history?class=${encodeURIComponent(userClass)}&start=${sevenDaysAgoStr}&end=${todayStr}`;
+                const url = `https://timiza-saas.onrender.com/api/attendance/history?class=${encodeURIComponent(userClass)}&start=${sevenDaysAgoStr}&end=${todayStr}`;
 await fetchAndDisplayAttendance(url);
 } else {
     console.log('Admin user - fetching all classes first');
     // First, get the list of all classes
-    const classesResponse = await fetch('https://luckyjuniorschool.onrender.com/api/classes', {
+    const classesResponse = await fetch('https://timiza-saas.onrender.com/api/classes', {
         headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -5128,7 +5128,7 @@ await fetchAndDisplayAttendance(url);
                     
                     try {
                         // Try with the exact class name first
-                        let classResponse = await fetch(`https://luckyjuniorschool.onrender.com/api/attendance/history?class=${encodeURIComponent(className)}&start=${sevenDaysAgoStr}&end=${todayStr}`, {
+                        let classResponse = await fetch(`https://timiza-saas.onrender.com/api/attendance/history?class=${encodeURIComponent(className)}&start=${sevenDaysAgoStr}&end=${todayStr}`, {
     headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
     }
@@ -5161,7 +5161,7 @@ await fetchAndDisplayAttendance(url);
                     for (const className of allClasses) {
                         try {
 
-                            const response = await fetch(`https://luckyjuniorschool.onrender.com/api/attendance/history?class=${encodeURIComponent(className)}&start=${thirtyDaysAgoStr}&end=${todayStr}`, {
+                            const response = await fetch(`https://timiza-saas.onrender.com/api/attendance/history?class=${encodeURIComponent(className)}&start=${thirtyDaysAgoStr}&end=${todayStr}`, {
                                 headers: {
                                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                                 }
@@ -5324,14 +5324,14 @@ await fetchAndDisplayAttendance(url);
             console.log('Fetching fees from API...');
             // Fetch all fees with student population to get expected fees
             const [feesResponse, paymentsResponse] = await Promise.all([
-                fetch('https://luckyjuniorschool.onrender.com/api/fees?populate=student', {
+                fetch('https://timiza-saas.onrender.com/api/fees?populate=student', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 }),
                 // Fetch payments data to calculate actual fees paid
-                fetch('https://luckyjuniorschool.onrender.com/api/payments?status=completed', {
+                fetch('https://timiza-saas.onrender.com/api/payments?status=completed', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
@@ -5466,7 +5466,7 @@ await fetchAndDisplayAttendance(url);
             }
             
             console.log('Fetching fees from API...');
-            const feesResponse = await fetch('https://luckyjuniorschool.onrender.com/api/fees?populate=student', {
+            const feesResponse = await fetch('https://timiza-saas.onrender.com/api/fees?populate=student', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -5560,7 +5560,7 @@ await fetchAndDisplayAttendance(url);
             }
             
             console.log('Fetching clubs from API...');
-            const response = await fetch('https://luckyjuniorschool.onrender.com/api/clubs', {
+            const response = await fetch('https://timiza-saas.onrender.com/api/clubs', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -5647,7 +5647,7 @@ await fetchAndDisplayAttendance(url);
             }
             
             console.log('Fetching books from API...');
-            const response = await fetch('https://luckyjuniorschool.onrender.com/api/library', {
+            const response = await fetch('https://timiza-saas.onrender.com/api/library', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -5834,7 +5834,7 @@ await fetchAndDisplayAttendance(url);
             const token = localStorage.getItem('token');
             if (!token) return;
             
-            const response = await fetch('https://luckyjuniorschool.onrender.com/api/auth/me', {
+            const response = await fetch('https://timiza-saas.onrender.com/api/auth/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -5852,7 +5852,7 @@ await fetchAndDisplayAttendance(url);
     async function loadTotalFees() {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('https://luckyjuniorschool.onrender.com/api/fees', {
+            const response = await fetch('https://timiza-saas.onrender.com/api/fees', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await response.json();
@@ -5935,7 +5935,7 @@ await fetchAndDisplayAttendance(url);
             let response;
             try {
 
-                response = await fetch('https://luckyjuniorschool.onrender.com/api/teachers/count', {
+                response = await fetch('https://timiza-saas.onrender.com/api/teachers/count', {
                     method: 'GET',
                     headers: headers
                 });
@@ -5962,7 +5962,7 @@ await fetchAndDisplayAttendance(url);
             let teachersResponse;
             try {
 
-                teachersResponse = await fetch('https://luckyjuniorschool.onrender.com/api/teachers', {
+                teachersResponse = await fetch('https://timiza-saas.onrender.com/api/teachers', {
                     method: 'GET',
                     headers: headers
                 });
@@ -6065,7 +6065,7 @@ await fetchAndDisplayAttendance(url);
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             
             // Try to fetch students count from the server
-            const response = await fetch('https://luckyjuniorschool.onrender.com/api/students/count', {
+            const response = await fetch('https://timiza-saas.onrender.com/api/students/count', {
                 method: 'GET',
                 headers: {
                     ...headers,
@@ -6089,7 +6089,7 @@ await fetchAndDisplayAttendance(url);
             }
             
             // If count endpoint fails, try to fetch all students and count them
-            const studentsResponse = await fetch('https://luckyjuniorschool.onrender.com/api/students', {
+            const studentsResponse = await fetch('https://timiza-saas.onrender.com/api/students', {
                 method: 'GET',
                 headers: {
                     ...headers,
@@ -6143,7 +6143,7 @@ await fetchAndDisplayAttendance(url);
             
             // Try to fetch books from the server
 
-            const response = await fetch('https://luckyjuniorschool.onrender.com/api/books', {
+            const response = await fetch('https://timiza-saas.onrender.com/api/books', {
                 method: 'GET',
                 headers: headers
             });
@@ -6245,7 +6245,7 @@ await fetchAndDisplayAttendance(url);
             // Try to get today's attendance
             console.log(`Fetching attendance for date: ${todayFormatted}`);
 
-            const response = await fetch(`https://luckyjuniorschool.onrender.com/api/attendance?date=${todayFormatted}`, {
+            const response = await fetch(`https://timiza-saas.onrender.com/api/attendance?date=${todayFormatted}`, {
                 method: 'GET',
                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
@@ -6415,7 +6415,7 @@ await fetchAndDisplayAttendance(url);
             if (!token) return;
             
 
-            const response = await fetch('https://luckyjuniorschool.onrender.com/api/fees/summary', {
+            const response = await fetch('https://timiza-saas.onrender.com/api/fees/summary', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -6456,7 +6456,7 @@ await fetchAndDisplayAttendance(url);
             
             const today = new Date().toISOString().split('T')[0];
 
-            const response = await fetch(`https://luckyjuniorschool.onrender.com/api/attendance/summary?date=${today}`, {
+            const response = await fetch(`https://timiza-saas.onrender.com/api/attendance/summary?date=${today}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -6603,7 +6603,7 @@ await fetchAndDisplayAttendance(url);
                         throw new Error('No authentication token found');
                     }
                     
-                    const response = await fetch(`https://luckyjuniorschool.onrender.com/api/students/class/${encodeURIComponent(className)}`, {
+                    const response = await fetch(`https://timiza-saas.onrender.com/api/students/class/${encodeURIComponent(className)}`, {
                         method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -6960,7 +6960,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch('https://luckyjuniorschool.onrender.com/api/students');
+      const response = await fetch('https://timiza-saas.onrender.com/api/students');
       const data = await response.json();
 
       if (!data || !Array.isArray(data.students)) {
