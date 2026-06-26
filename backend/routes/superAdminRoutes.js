@@ -13,4 +13,10 @@ router.post(
     superAdminController.createSchool
 );
 
+// load all schools
+router.get(
+    "/schools",
+    superAdminController.getSchools
+);
+
 module.exports = router;
