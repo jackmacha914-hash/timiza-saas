@@ -52,7 +52,7 @@ const schoolSchema = new mongoose.Schema({
   active: {
     type: Boolean,
     default: true
-  }
+  },
   subscription: {
   plan: {
     type: String,
@@ -82,7 +82,8 @@ const schoolSchema = new mongoose.Schema({
 
   endDate: {
     type: Date
-  },
+  }
+  }
 
 }, {
   timestamps: true
