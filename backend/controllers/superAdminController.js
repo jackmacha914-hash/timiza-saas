@@ -13,14 +13,20 @@ function generateSchoolCode(name) {
     return `${letters}${numbers}`;
 }
 
+// ========================================
+// CREATE SCHOOL
+// ========================================
+
 exports.createSchool = async (req, res) => {
+
     try {
 
         const {
             schoolName,
             adminName,
             adminEmail,
-            adminPassword
+            adminPassword,
+            subscriptionType = "Trial"
         } = req.body;
 
         if (
@@ -30,18 +36,44 @@ exports.createSchool = async (req, res) => {
             !adminPassword
         ) {
             return res.status(400).json({
+                success: false,
                 message: "All fields are required."
             });
         }
 
-        // Generate unique school code
         let schoolCode;
 
         do {
-            schoolCode = generateSchoolCode(schoolName);
-        } while (await School.findOne({ code: schoolCode }));
 
-        // Create school
+            schoolCode = generateSchoolCode(schoolName);
+
+        } while (
+            await School.findOne({ code: schoolCode })
+        );
+
+        const startDate = new Date();
+        const endDate = new Date();
+
+        switch (subscriptionType) {
+
+            case "Basic":
+                endDate.setMonth(endDate.getMonth() + 12);
+                break;
+
+            case "Premium":
+                endDate.setMonth(endDate.getMonth() + 12);
+                break;
+
+            case "Enterprise":
+                endDate.setMonth(endDate.getMonth() + 12);
+                break;
+
+            default:
+                // Trial
+                endDate.setDate(endDate.getDate() + 30);
+
+        }
+
         const school = await School.create({
 
             name: schoolName,
@@ -52,15 +84,19 @@ exports.createSchool = async (req, res) => {
                 .toLowerCase()
                 .replace(/\s+/g, "-"),
 
+            subscriptionType,
+
+            subscriptionStart: startDate,
+
+            subscriptionEnd: endDate,
+
             active: true
 
         });
 
-        // Hash password
         const hashedPassword =
             await bcrypt.hash(adminPassword, 10);
 
-        // Create admin
         const admin = await User.create({
 
             school: school._id,
@@ -79,11 +115,11 @@ exports.createSchool = async (req, res) => {
 
             success: true,
 
+            loginCode: school.code,
+
             school,
 
-            admin,
-
-            loginCode: schoolCode
+            admin
 
         });
 
@@ -92,13 +128,23 @@ exports.createSchool = async (req, res) => {
         console.error(err);
 
         res.status(500).json({
+
+            success: false,
+
             message: err.message
+
         });
 
     }
-    };
-    // LOAD SCHOOLS
-    exports.getSchools = async (req, res) => {
+
+};
+
+
+// ========================================
+// LIST ALL SCHOOLS
+// ========================================
+
+exports.getSchools = async (req, res) => {
 
     try {
 
@@ -110,13 +156,19 @@ exports.createSchool = async (req, res) => {
     } catch (err) {
 
         res.status(500).json({
+
             message: err.message
+
         });
 
     }
+
 };
 
-//
+
+// ========================================
+// SUSPEND / ACTIVATE
+// ========================================
 
 exports.toggleSchoolStatus = async (req, res) => {
 
@@ -128,7 +180,9 @@ exports.toggleSchoolStatus = async (req, res) => {
         if (!school) {
 
             return res.status(404).json({
+
                 message: "School not found"
+
             });
 
         }
@@ -148,9 +202,37 @@ exports.toggleSchoolStatus = async (req, res) => {
     } catch (err) {
 
         res.status(500).json({
+
             message: err.message
+
         });
 
     }
+
+};
+
+
+// ========================================
+// AUTO EXPIRE SUBSCRIPTIONS
+// ========================================
+
+exports.checkExpiredSubscriptions = async () => {
+
+    const today = new Date();
+
+    await School.updateMany(
+
+        {
+            subscriptionEnd: { $lt: today },
+            active: true
+        },
+
+        {
+            $set: {
+                active: false
+            }
+        }
+
+    );
 
 };
