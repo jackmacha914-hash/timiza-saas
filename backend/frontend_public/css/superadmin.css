@@ -1,85 +1,294 @@
-body{
+/* -----------------------
+   GLOBAL
+------------------------*/
 
+*{
     margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
 
-    background:#f5f7fb;
-
-    font-family:Arial;
-
+body{
+    font-family:"Segoe UI",Tahoma,Geneva,Verdana,sans-serif;
+    background:#f4f7fc;
+    color:#333;
+    line-height:1.5;
 }
 
 .container{
-
-    width:90%;
-
+    width:95%;
+    max-width:1400px;
     margin:40px auto;
-
 }
+
+/* -----------------------
+   CARDS
+------------------------*/
 
 .card{
-
-    background:white;
-
-    padding:20px;
-
-    margin-bottom:25px;
-
-    border-radius:8px;
-
-    box-shadow:0 3px 10px rgba(0,0,0,.08);
-
+    background:#fff;
+    padding:25px;
+    margin-bottom:30px;
+    border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,.08);
+    transition:.25s;
 }
 
-input{
+.card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 12px 30px rgba(0,0,0,.12);
+}
 
+.card h2{
+    margin-bottom:20px;
+    color:#1e3a8a;
+    font-size:24px;
+}
+
+/* -----------------------
+   FORM
+------------------------*/
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+}
+
+label{
+    margin-bottom:8px;
+    font-weight:600;
+    color:#555;
+}
+
+input,
+select{
     width:100%;
-
-    padding:12px;
-
-    margin-bottom:15px;
-
-    border:1px solid #ddd;
-
-    border-radius:5px;
-
+    padding:13px 15px;
+    border:1px solid #dcdcdc;
+    border-radius:8px;
+    font-size:15px;
+    transition:.3s;
+    background:white;
 }
+
+input:focus,
+select:focus{
+    outline:none;
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.15);
+}
+
+/* -----------------------
+   BUTTONS
+------------------------*/
 
 button{
-
-    background:#2563eb;
-
-    color:white;
-
+    padding:12px 22px;
     border:none;
-
-    padding:12px 20px;
-
+    border-radius:8px;
     cursor:pointer;
-
-    border-radius:5px;
-
+    font-weight:600;
+    font-size:14px;
+    transition:.25s;
 }
 
 button:hover{
+    transform:translateY(-1px);
+}
 
+.primary-btn{
+    background:#2563eb;
+    color:white;
+}
+
+.primary-btn:hover{
     background:#1d4ed8;
+}
 
+.success-btn{
+    background:#16a34a;
+    color:white;
+}
+
+.success-btn:hover{
+    background:#15803d;
+}
+
+.danger-btn{
+    background:#dc2626;
+    color:white;
+}
+
+.danger-btn:hover{
+    background:#b91c1c;
+}
+
+.warning-btn{
+    background:#f59e0b;
+    color:white;
+}
+
+.warning-btn:hover{
+    background:#d97706;
+}
+
+/* -----------------------
+   TABLE
+------------------------*/
+
+.table-responsive{
+    overflow-x:auto;
 }
 
 table{
-
     width:100%;
-
     border-collapse:collapse;
+    min-width:900px;
+}
+
+thead{
+    background:#2563eb;
+    color:white;
+}
+
+th{
+    padding:15px;
+    font-size:14px;
+    font-weight:600;
+}
+
+td{
+    padding:14px;
+    border-bottom:1px solid #eee;
+}
+
+tbody tr:nth-child(even){
+    background:#fafafa;
+}
+
+tbody tr:hover{
+    background:#eef4ff;
+}
+
+/* -----------------------
+   STATUS BADGES
+------------------------*/
+
+.badge{
+    display:inline-block;
+    padding:6px 12px;
+    border-radius:30px;
+    font-size:13px;
+    font-weight:600;
+}
+
+.badge-active{
+    background:#dcfce7;
+    color:#15803d;
+}
+
+.badge-suspended{
+    background:#fee2e2;
+    color:#b91c1c;
+}
+
+.badge-trial{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.badge-basic{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.badge-premium{
+    background:#ede9fe;
+    color:#6d28d9;
+}
+
+.badge-enterprise{
+    background:#cffafe;
+    color:#0f766e;
+}
+
+/* -----------------------
+   ACTION BUTTONS
+------------------------*/
+
+.action-buttons{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+/* -----------------------
+   HEADER
+------------------------*/
+
+.page-title{
+    font-size:32px;
+    color:#1e3a8a;
+    margin-bottom:25px;
+}
+
+.subtitle{
+    color:#666;
+    margin-bottom:30px;
+}
+
+/* -----------------------
+   RESPONSIVE
+------------------------*/
+
+@media(max-width:992px){
+
+    .form-grid{
+        grid-template-columns:1fr;
+    }
 
 }
 
-th,td{
+@media(max-width:768px){
 
-    border-bottom:1px solid #eee;
+    .container{
+        width:95%;
+        margin:20px auto;
+    }
 
-    padding:12px;
+    .card{
+        padding:20px;
+    }
 
-    text-align:left;
+    .page-title{
+        font-size:26px;
+    }
+
+    button{
+        width:100%;
+    }
+
+    .action-buttons{
+        flex-direction:column;
+    }
+
+}
+
+@media(max-width:480px){
+
+    .card h2{
+        font-size:20px;
+    }
+
+    input,
+    select{
+        font-size:14px;
+    }
 
 }
