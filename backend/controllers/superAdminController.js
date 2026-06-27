@@ -76,24 +76,29 @@ exports.createSchool = async (req, res) => {
 
         const school = await School.create({
 
-            name: schoolName,
+    name: schoolName,
 
-            code: schoolCode,
+    code: schoolCode,
 
-            slug: schoolName
-                .toLowerCase()
-                .replace(/\s+/g, "-"),
+    slug: schoolName
+        .toLowerCase()
+        .replace(/\s+/g, "-"),
 
-            subscriptionType,
+    active: true,
 
-            subscriptionStart: startDate,
+    subscription: {
 
-            subscriptionEnd: endDate,
+        plan: subscriptionType,
 
-            active: true
+        status: "Active",
 
-        });
+        startDate,
 
+        endDate
+
+    }
+
+});
         const hashedPassword =
             await bcrypt.hash(adminPassword, 10);
 
@@ -220,19 +225,20 @@ exports.checkExpiredSubscriptions = async () => {
 
     const today = new Date();
 
-    await School.updateMany(
+   await School.updateMany(
 
-        {
-            subscriptionEnd: { $lt: today },
-            active: true
-        },
+    {
+        "subscription.endDate": { $lt: today },
+        active: true
+    },
 
-        {
-            $set: {
-                active: false
-            }
+    {
+        $set: {
+            active: false,
+            "subscription.status": "Expired"
         }
+    }
 
-    );
+);
 
 };
