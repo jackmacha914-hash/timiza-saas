@@ -53,6 +53,36 @@ const schoolSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   }
+  subscription: {
+  plan: {
+    type: String,
+    enum: [
+      "Trial",
+      "Starter",
+      "Professional",
+      "Enterprise"
+    ],
+    default: "Trial"
+  },
+
+  status: {
+    type: String,
+    enum: [
+      "Active",
+      "Expired",
+      "Suspended"
+    ],
+    default: "Active"
+  },
+
+  startDate: {
+    type: Date,
+    default: Date.now
+  },
+
+  endDate: {
+    type: Date
+  },
 
 }, {
   timestamps: true
