@@ -81,6 +81,18 @@ async function loadSchools() {
             <td>${school.code}</td>
 
             <td>
+            <td>${school.subscription.plan}</td>
+
+<td>${school.subscription.status}</td>
+
+<td>${new Date(
+    school.subscription.endDate
+).toLocaleDateString()}</td>
+
+<td>${new Date(
+    school.createdAt
+).toLocaleDateString()}</td>
+
                 ${
                     school.active
                         ? "🟢 Active"
