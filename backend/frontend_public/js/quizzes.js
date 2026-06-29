@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize variables at the top of the function
 // API base URL - update this to your actual API URL
 if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://luckyjuniorschool.onrender.com';
+    window.API_BASE_URL = 'https://timiza-saas.onrender.com';
 }
         const token = localStorage.getItem('token');
         let userData = JSON.parse(localStorage.getItem('userData') || '{}');
