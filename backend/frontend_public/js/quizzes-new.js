@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function updateUserData() {
 // API base URL - update this to your actual API URL
 if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://luckyjuniorschool.onrender.com';
+    window.API_BASE_URL = 'https://timiza-saas.onrender.com';
 }
         const token = localStorage.getItem('token');
         
@@ -125,7 +125,7 @@ if (typeof API_BASE_URL === 'undefined') {
     // Function to load quizzes for teachers
     async function loadTeacherQuizzes() {
 <<<<<<< HEAD
-        const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://luckyjuniorschool.onrender.com';
+        const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://timiza-saas.onrender.com';
 =======
         const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://school-management-system-av07.onrender.com';
 >>>>>>> 5ab2b09edcd458a602a095bcc9b9d483718a7b98
@@ -149,7 +149,7 @@ if (typeof API_BASE_URL === 'undefined') {
     // Function to load quizzes for students
     async function loadStudentQuizzes(userClass) {
 <<<<<<< HEAD
-        const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://luckyjuniorschool.onrender.com';
+        const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://timiza-saas.onrender.com';
 =======
         const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://school-management-system-av07.onrender.com';
 >>>>>>> 5ab2b09edcd458a602a095bcc9b9d483718a7b98
