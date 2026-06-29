@@ -55,7 +55,7 @@ class StudentManagement {
             
             // If no data in localStorage, try to load from API if available
             try {
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/students');
+                const response = await fetch('https://timiza-saas.onrender.com/api/students');
                 if (response.ok) {
                     const data = await response.json();
                     if (Array.isArray(data) && data.length > 0) {
