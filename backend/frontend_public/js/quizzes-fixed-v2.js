@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const quizzesList = document.getElementById('quizzesList');
 // API base URL - update this to your actual API URL
 if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://luckyjuniorschool.onrender.com';
+    window.API_BASE_URL = 'https://timiza-saas.onrender.com';
 }
     // Load quizzes when the page loads
     loadQuizzes();
