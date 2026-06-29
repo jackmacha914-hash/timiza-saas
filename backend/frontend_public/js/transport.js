@@ -7,7 +7,7 @@ async function loadBusesDropdown(selectId) {
     if (!select) return;
 
     try {
-        const res = await fetch('https://luckyjuniorschool.onrender.com/api/transport/buses');
+        const res = await fetch('https://timiza-saas.onrender.com/api/transport/buses');
         const buses = await res.json();
 
         select.innerHTML = ''; // clear old options
@@ -27,7 +27,7 @@ async function loadRoutesDropdown(selectId) {
     if (!select) return;
 
     try {
-        const res = await fetch('https://luckyjuniorschool.onrender.com/api/transport/routes');
+        const res = await fetch('https://timiza-saas.onrender.com/api/transport/routes');
         const routes = await res.json();
 
         select.innerHTML = ''; // clear old options
@@ -46,7 +46,7 @@ async function loadStudentsDropdown(selectId) {
     if (!select) return;
 
     try {
-        const res = await fetch('https://luckyjuniorschool.onrender.com/api/students'); // adjust route if needed
+        const res = await fetch('https://timiza-saas.onrender.com/api/students'); // adjust route if needed
         const students = await res.json();
 
         select.innerHTML = ''; // clear old options
@@ -65,7 +65,7 @@ async function loadStudentsDropdown(selectId) {
 
 // transport.js
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE = "https://luckyjuniorschool.onrender.com/api/transport";
+    const API_BASE = "https://timiza-saas.onrender.com/api/transport";
 
     // ---------------------------
 // MODAL HANDLING
@@ -704,14 +704,14 @@ document.getElementById('clear-filters')?.addEventListener('click', () => {
     try {
         // 1️⃣ Get assignments for selected route
         const res = await fetch(
-            `https://luckyjuniorschool.onrender.com/api/transport/assignments?routeId=${routeId}`
+            `https://timiza-saas.onrender.com/api/transport/assignments?routeId=${routeId}`
         );
         const assignments = await res.json();
         if (!assignments.length) return;
 
         // 2️⃣ Fetch students
         const studentRes = await fetch(
-            `https://luckyjuniorschool.onrender.com/api/students`
+            `https://timiza-saas.onrender.com/api/students`
         );
         const students = await studentRes.json();
 
@@ -768,7 +768,7 @@ document.getElementById('clear-filters')?.addEventListener('click', () => {
     }));
 
     try {
-        await fetch('https://luckyjuniorschool.onrender.com/api/transport/attendance', {
+        await fetch('https://timiza-saas.onrender.com/api/transport/attendance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(attendanceData)
@@ -810,7 +810,7 @@ document.getElementById('clear-filters')?.addEventListener('click', () => {
 
     try {
         await fetch(
-            'https://luckyjuniorschool.onrender.com/api/transport/attendance',
+            'https://timiza-saas.onrender.com/api/transport/attendance',
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
