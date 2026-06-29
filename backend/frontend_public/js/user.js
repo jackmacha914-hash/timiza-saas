@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const password = document.getElementById("teacher-password").value;
 
         try {
-            const res = await fetch("https://luckyjuniorschool.onrender.com/api/auth/signup", {
+            const res = await fetch("https://timiza-saas.onrender.com/api/auth/signup", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const password = document.getElementById("student-password").value;
 
         try {
-            const res = await fetch("https://luckyjuniorschool.onrender.com/api/auth/signup", {
+            const res = await fetch("https://timiza-saas.onrender.com/api/auth/signup", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Fetch & render user lists (corrected)
     async function fetchAndRenderUsers() {
         try {
-            const res = await fetch("https://luckyjuniorschool.onrender.com/api/users", {
+            const res = await fetch("https://timiza-saas.onrender.com/api/users", {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
