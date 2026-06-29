@@ -91,7 +91,7 @@ class StudentReportCards {
             // Fetch student marks from the API with term and academic year
 // API base URL - update this to your actual API URL
 if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://luckyjuniorschool.onrender.com';
+    window.API_BASE_URL = 'https://timiza-saas.onrender.com';
 }
             console.log('Fetching student marks from:', apiUrl);
             
