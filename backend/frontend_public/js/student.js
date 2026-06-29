@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const response = await fetch("https://luckyjuniorschool.onrender.com/api/profile", {
+            const response = await fetch("https://timiza-saas.onrender.com/api/profile", {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -574,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             
             try {
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/students/profile', {
+                const response = await fetch('https://timiza-saas.onrender.com/api/students/profile', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -630,7 +630,7 @@ document.addEventListener('DOMContentLoaded', function () {
             formData.append('photo', file);
             
             try {
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/students/profile/photo', {
+                const response = await fetch('https://timiza-saas.onrender.com/api/students/profile/photo', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -690,7 +690,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
-            const response = await fetch("https://luckyjuniorschool.onrender.com/api/assignments", {
+            const response = await fetch("https://timiza-saas.onrender.com/api/assignments", {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -742,7 +742,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       try {
         // Make GET request to fetch announcements
-        const response = await fetch("https://luckyjuniorschool.onrender.com/api/announcements", {
+        const response = await fetch("https://timiza-saas.onrender.com/api/announcements", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -801,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       try {
-        const response = await fetch("https://luckyjuniorschool.onrender.com/api/resources", {
+        const response = await fetch("https://timiza-saas.onrender.com/api/resources", {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`
@@ -829,7 +829,7 @@ document.addEventListener('DOMContentLoaded', function () {
           const li = document.createElement("li");
           const link = document.createElement("a");
 
-          link.href = `${window.API_CONFIG?.UPLOADS_PATH || 'https://luckyjuniorschool.onrender.com/uploads'}/resources//uploads/resources/${resource.path}`;
+          link.href = `${window.API_CONFIG?.UPLOADS_PATH || 'https://timiza-saas.onrender.com/uploads'}/resources//uploads/resources/${resource.path}`;
           link.textContent = resource.name;
           link.setAttribute('download', resource.name);
 
@@ -865,7 +865,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             
             // Fetch all fees with payments included
-            const response = await fetch(`https://luckyjuniorschool.onrender.com/api/fees?populate=payments`, {
+            const response = await fetch(`https://timiza-saas.onrender.com/api/fees?populate=payments`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -1447,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
                 
-                const response = await fetch(`https://luckyjuniorschool.onrender.com/api/fees?populate=payments`, {
+                const response = await fetch(`https://timiza-saas.onrender.com/api/fees?populate=payments`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -1713,7 +1713,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const token = localStorage.getItem("token");
             if (!token) throw new Error("No authentication token found");
 
-            const response = await fetch("https://luckyjuniorschool.onrender.com/api/homeworks", {
+            const response = await fetch("https://timiza-saas.onrender.com/api/homeworks", {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     'Accept': 'application/json'
@@ -1798,7 +1798,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         ${homework.file ? `
                             <div class="homework-file">
                                 <i class="bi bi-paperclip"></i>
-                                <a href="${window.API_CONFIG?.BASE_URL || 'https://luckyjuniorschool.onrender.com'}${homework.file}" target="_blank" class="file-link">
+                                <a href="${window.API_CONFIG?.BASE_URL || 'https://timiza-saas.onrender.com'}${homework.file}" target="_blank" class="file-link">
                                     ${homework.file.split('/').pop()}
                                 </a>
                             </div>
@@ -1840,7 +1840,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         `}
                         
                         ${homework.file ? `
-                            <a href="${window.API_CONFIG?.BASE_URL || 'https://luckyjuniorschool.onrender.com'}${homework.file}" class="btn btn-outline-primary" target="_blank">
+                            <a href="${window.API_CONFIG?.BASE_URL || 'https://timiza-saas.onrender.com'}${homework.file}" class="btn btn-outline-primary" target="_blank">
                                 <i class="bi bi-download"></i> Download
                             </a>
                         ` : ''}
@@ -1960,7 +1960,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 type: file.type
             });
             
-            const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/submit/${homeworkId}`, {
+            const response = await fetch(`https://timiza-saas.onrender.com/api/homeworks/submit/${homeworkId}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
