@@ -103,7 +103,7 @@ async function fetchFreshProfile(token) {
     
 // API base URL - update this to your actual API URL
 if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://luckyjuniorschool.onrender.com';
+    window.API_BASE_URL = 'https://timiza-saas.onrender.com';
 }
 
       method: "GET",
@@ -181,7 +181,7 @@ function populateProfileForm(profile) {
       // Clean up any existing localhost URLs
       if (photoUrl && photoUrl.includes('localhost')) {
 <<<<<<< HEAD
-        photoUrl = photoUrl.replace(/^http:\/\/localhost(:\d+)?/, window.API_CONFIG?.BASE_URL || 'https://luckyjuniorschool.onrender.com');
+        photoUrl = photoUrl.replace(/^http:\/\/localhost(:\d+)?/, window.API_CONFIG?.BASE_URL || 'https://timiza-saas.onrender.com');
 =======
         photoUrl = photoUrl.replace(/^http:\/\/localhost(:\d+)?/, window.API_CONFIG?.BASE_URL || 'https://school-management-system-av07.onrender.com');
 >>>>>>> 5ab2b09edcd458a602a095bcc9b9d483718a7b98
@@ -319,7 +319,7 @@ async function updateProfile() {
 
   try {
 <<<<<<< HEAD
-    const response = await fetch("https://luckyjuniorschool.onrender.com/api/profile", {
+    const response = await fetch("https://timiza-saas.onrender.com/api/profile", {
 =======
     const response = await fetch("https://school-management-system-av07.onrender.com/api/profile", {
 >>>>>>> 5ab2b09edcd458a602a095bcc9b9d483718a7b98
@@ -393,7 +393,7 @@ async function handlePhotoUpload(event) {
 
   try {
 <<<<<<< HEAD
-    const response = await fetch('https://luckyjuniorschool.onrender.com/api/students/profile/photo', {
+    const response = await fetch('https://timiza-saas.onrender.com/api/students/profile/photo', {
 =======
     const response = await fetch('https://school-management-system-av07.onrender.com/api/students/profile/photo', {
 >>>>>>> 5ab2b09edcd458a602a095bcc9b9d483718a7b98
@@ -436,9 +436,9 @@ async function handlePhotoUpload(event) {
           // If it's a relative path, prepend the base URL
           if (data.profile.photo.startsWith('/')) {
 <<<<<<< HEAD
-            photoUrl = `${window.API_CONFIG?.BASE_URL || 'https://luckyjuniorschool.onrender.com'}${data.profile.photo}`;
+            photoUrl = `${window.API_CONFIG?.BASE_URL || 'https://timiza-saas.onrender.com'}${data.profile.photo}`;
           } else if (!data.profile.photo.startsWith('http')) {
-            photoUrl = `${window.API_CONFIG?.BASE_URL || 'https://luckyjuniorschool.onrender.com'}/uploads/${data.profile.photo}`;
+            photoUrl = `${window.API_CONFIG?.BASE_URL || 'https://timiza-saas.onrender.com'}/uploads/${data.profile.photo}`;
 =======
             photoUrl = `${window.API_CONFIG?.BASE_URL || 'https://school-management-system-av07.onrender.com'}${data.profile.photo}`;
           } else if (!data.profile.photo.startsWith('http')) {
@@ -520,7 +520,7 @@ async function changePassword() {
 
   try {
 <<<<<<< HEAD
-    const response = await fetch("https://luckyjuniorschool.onrender.com/api/profile/change-password", {
+    const response = await fetch("https://timiza-saas.onrender.com/api/profile/change-password", {
 =======
     const response = await fetch("https://school-management-system-av07.onrender.com/api/profile/change-password", {
 >>>>>>> 5ab2b09edcd458a602a095bcc9b9d483718a7b98
