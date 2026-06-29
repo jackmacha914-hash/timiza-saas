@@ -1232,7 +1232,7 @@ async function handleQuizSubmission(publish) {
             
             // Get API URL and token
 <<<<<<< HEAD
-            const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://luckyjuniorschool.onrender.com';
+            const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://timiza-saas.onrender.com';
 =======
             const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://school-management-system-av07.onrender.com';
 >>>>>>> 5ab2b09edcd458a602a095bcc9b9d483718a7b98
