@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
         console.log('Sending quiz data:', quizData);
         // Use the API_BASE_URL constant if available, otherwise default to port 5000
-        const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://luckyjuniorschool.onrender.com';
+        const API_BASE_URL = window.API_CONFIG?.API_BASE_URL || 'https://timiza-saas.onrender.com';
         const response = await fetch(`${API_BASE_URL}/api/quizzes/create`, {
             method: 'POST',
             mode: 'cors',
