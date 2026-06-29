@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
   // API base URL - update this to your actual API URL
 if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://luckyjuniorschool.onrender.com';
+    window.API_BASE_URL = 'https://timiza-saas.onrender.com';
 }
     
     // Show notification function
@@ -1124,7 +1124,7 @@ if (typeof API_BASE_URL === 'undefined') {
 
            // API base URL - update this to your actual API URL
 if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://luckyjuniorschool.onrender.com';
+    window.API_BASE_URL = 'https://timiza-saas.onrender.com';
 }
             console.log('Using API base URL:', API_BASE_URL);
             
