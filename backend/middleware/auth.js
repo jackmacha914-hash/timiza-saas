@@ -17,13 +17,13 @@ let token = req.header('x-auth-token');
 if (!token && req.header('Authorization')) {
 const authHeader = req.header('Authorization');
 
-```
+
 if (authHeader.startsWith('Bearer ')) {
   token = authHeader.split(' ')[1];
 } else {
   token = authHeader;
 }
-```
+
 
 }
 
@@ -39,7 +39,7 @@ const jwtSecret =
 process.env.JWT_SECRET ||
 config.get('jwtSecret');
 
-```
+
 if (!jwtSecret) {
   return res.status(500).json({
     success: false,
@@ -72,7 +72,7 @@ if (decoded.user) {
     id: decoded.id,
     role: decoded.role,
     school: decoded.school,
-    ...decoded
+    decoded
   };
 } else if (decoded.userId) {
   req.user = {
@@ -93,7 +93,7 @@ console.log(
 );
 
 next();
-```
+
 
 } catch (err) {
 console.error(
@@ -101,7 +101,7 @@ console.error(
 err
 );
 
-```
+
 if (err.name === 'TokenExpiredError') {
   return res.status(401).json({
     success: false,
@@ -122,7 +122,7 @@ return res.status(401).json({
   success: false,
   message: 'Authentication failed'
 });
-```
+
 
 }
 };
