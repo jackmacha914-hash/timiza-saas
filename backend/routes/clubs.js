@@ -190,7 +190,11 @@ router.post('/', protect, async (req, res) => {
     const newClub = new Club({ name, description, school: req.user.school });
     await newClub.save();
     res.status(201).json({ msg: 'Club created!', club: newClub });
-  } catch (err) {
+  } 
+  catch (err) {
+      console.error("========== CREATE CLUB ERROR ==========");
+        console.error(err)
+      
     res.status(500).json({ error: err.message });
   }
 });
