@@ -33,23 +33,20 @@ async (req, res) => {
         email,
         password,
         role = 'student',
-        profile = {},
-        schoolCode
+        profile = {}
     } = req.body;
 
     try {
         // Validate school
-        const school = await School.findOne({
-            code: schoolCode,
-            active: true
-        });
+           // Logged in admin's school
+         const school = await School.findById(req.user.school);
 
-        if (!school) {
-            return res.status(404).json({
-                success: false,
-                message: 'Invalid school code'
-            });
-        }
+          if (!school || !school.active) {
+          return res.status(404).json({
+          success: false,
+          message: "School not found or inactive"
+          });
+          }
 
         // Check if user already exists within this school
         let user = await User.findOne({
