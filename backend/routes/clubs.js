@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
+const { protect } = require('../middleware/auth');
 console.log('Clubs router initialized');
 
 // Log all incoming requests
@@ -168,9 +169,11 @@ router.delete('/:clubId/members/:memberId', async (req, res) => {
 });
 
 // Get all clubs
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
-    const clubs = await Club.find();
+    const clubs = await Club.find({
+    school: req.user.school
+});
     res.json(clubs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -178,13 +181,13 @@ router.get('/', async (req, res) => {
 });
 
 // Create a new club
-router.post('/', async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const { name, description } = req.body;
     if (!name || !description) {
       return res.status(400).json({ error: 'Name and description are required.' });
     }
-    const newClub = new Club({ name, description });
+    const newClub = new Club({ name, description, school: req.user.school });
     await newClub.save();
     res.status(201).json({ msg: 'Club created!', club: newClub });
   } catch (err) {
