@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dashboard Stats
    async function loadDashboardStats() {
     try {
-        const res = await authFetch('https://luckyjuniorschool.onrender.com/api/stats');
+        const res = await authFetch('https://timiza-saas.onrender.com/api/stats');
         const stats = await res.json();
         console.log('Stats:', stats);
 
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
        async function loadAttendanceStats() {
     try {
-        const res = await authFetch('https://luckyjuniorschool.onrender.com/api/attendance');
+        const res = await authFetch('https://timiza-saas.onrender.com/api/attendance');
         const stats = await res.json();
         console.log('Attendance Stats:', stats.attendance);
 
@@ -162,7 +162,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
     // Function to fetch users (teachers, students, etc.) and display them
     async function fetchUsers() {
         try {
-            const res = await fetch('https://luckyjuniorschool.onrender.com/api/auth/signup', {
+            const res = await fetch('https://timiza-saas.onrender.com/api/auth/signup', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -196,7 +196,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
 //fees
    async function loadFeesStats() {
     try {
-        const response = await fetch("https://luckyjuniorschool.onrender.com/api/fees");
+        const response = await fetch("https://timiza-saas.onrender.com/api/fees");
         const feesData = await response.json();
 
         console.log("Fees API Response:", feesData);
@@ -263,7 +263,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
         userAddMsg.style.display = 'none';
 
         try {
-            const res = await fetch('https://luckyjuniorschool.onrender.com/api/auth/signup', {
+            const res = await fetch('https://timiza-saas.onrender.com/api/auth/signup', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -293,7 +293,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
     // Function to fetch accounts
     async function fetchAccounts() {
         try {
-            const res = await authFetch('https://luckyjuniorschool.onrender.com/api/accounts');
+            const res = await authFetch('https://timiza-saas.onrender.com/api/accounts');
             const accounts = await res.json();
 
             const accountList = document.getElementById('account-list');
@@ -333,7 +333,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
                 }
 
                 try {
-                    const res = await authFetch('https://luckyjuniorschool.onrender.com/api/clubs', {
+                    const res = await authFetch('https://timiza-saas.onrender.com/api/clubs', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name, advisor })
@@ -361,7 +361,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
     // Fetch library books
     async function fetchBooks() {
         try {
-            const res = await authFetch('https://luckyjuniorschool.onrender.com/api/books');
+            const res = await authFetch('https://timiza-saas.onrender.com/api/books');
             const books = await res.json();
 
             const bookList = document.getElementById('book-list');
@@ -393,7 +393,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
             }
 
             try {
-                const res = await authFetch('https://luckyjuniorschool.onrender.com/api/events', {
+                const res = await authFetch('https://timiza-saas.onrender.com/api/events', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -421,7 +421,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
 
     async function fetchEvents() {
         try {
-            const res = await authFetch('https://luckyjuniorschool.onrender.com/api/events');
+            const res = await authFetch('https://timiza-saas.onrender.com/api/events');
             const events = await res.json();
             console.log('Events fetched:', events);
 
@@ -441,7 +441,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
     // Function to fetch clubs and update the list
     async function fetchClubs() {
         try {
-            const res = await authFetch('https://luckyjuniorschool.onrender.com/api/clubs');
+            const res = await authFetch('https://timiza-saas.onrender.com/api/clubs');
             const clubs = await res.json();
             console.log('Clubs fetched:', clubs);
 
@@ -471,7 +471,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
         }
 
         try {
-            const res = await fetch('https://luckyjuniorschool.onrender.com/api/clubs', {
+            const res = await fetch('https://timiza-saas.onrender.com/api/clubs', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -508,7 +508,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
         const role = document.getElementById('teacher-role').value;
 
         try {
-            const res = await authFetch('https://luckyjuniorschool.onrender.com/api/users/teachers', {
+            const res = await authFetch('https://timiza-saas.onrender.com/api/users/teachers', {
                 method: 'POST',
                 body: JSON.stringify({ name, subject, role }),
             });
@@ -531,7 +531,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
         const role = document.getElementById('student-role').value;
 
         try {
-            const res = await authFetch('https://luckyjuniorschool.onrender.com/api/users/students', {
+            const res = await authFetch('https://timiza-saas.onrender.com/api/users/students', {
                 method: 'POST',
                 body: JSON.stringify({ name, studentClass, role }),
             });
@@ -554,7 +554,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
         const message = document.getElementById('broadcast-message').value;
 
         try {
-            const res = await authFetch('https://luckyjuniorschool.onrender.com/api/broadcast', {
+            const res = await authFetch('https://timiza-saas.onrender.com/api/broadcast', {
                 method: 'POST',
                 body: JSON.stringify({ target, title, message })
             });
@@ -579,7 +579,7 @@ if (feeBalanceEl) feeBalanceEl.innerText = `Balance: Ksh ${stats.fees.balance.to
 
     // Simulated backup
     document.getElementById('backup-btn')?.addEventListener('click', () => {
-        window.location.href = 'https://luckyjuniorschool.onrender.com/api/backup/download';
+        window.location.href = 'https://timiza-saas.onrender.com/api/backup/download';
     });
 
     // Initialize
