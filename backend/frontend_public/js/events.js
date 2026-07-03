@@ -101,7 +101,7 @@ async function loadEventsWithFilters() {
     try {
         const filters = getEventsFilters();
         const queryString = buildEventsQueryString(filters);
-        const url = 'https://luckyjuniorschool.onrender.com/api/events' + queryString;
+        const url = 'https://timiza-saas.onrender.com/api/events' + queryString;
         
         const response = await fetch(url, { 
             headers: { 
@@ -182,7 +182,7 @@ async function loadEventsWithFilters() {
         
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('https://luckyjuniorschool.onrender.com/api/events', {
+            const response = await fetch('https://timiza-saas.onrender.com/api/events', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -239,7 +239,7 @@ async function loadEventsWithFilters() {
                 const date = formData.get('date');
                 const description = formData.get('description');
                 try {
-                    const res = await fetch(`https://luckyjuniorschool.onrender.com/api/events/${eventId}`, {
+                    const res = await fetch(`https://timiza-saas.onrender.com/api/events/${eventId}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -275,7 +275,7 @@ async function loadEventsWithFilters() {
             universalConfirmYes.onclick = async () => {
                 closeUniversalModal(universalConfirmModal);
                 try {
-                    const res = await fetch(`https://luckyjuniorschool.onrender.com/api/events/${eventId}`, {
+                    const res = await fetch(`https://timiza-saas.onrender.com/api/events/${eventId}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -309,7 +309,7 @@ async function loadEventsWithFilters() {
             
             for (const eventId of selectedEventIds) {
                 deletePromises.push(
-                    fetch(`https://luckyjuniorschool.onrender.com/api/events/${eventId}`, {
+                    fetch(`https://timiza-saas.onrender.com/api/events/${eventId}`, {
                         method: 'DELETE',
                         headers: {
                             'Authorization': `Bearer ${token}`
@@ -336,7 +336,7 @@ async function loadEventsWithFilters() {
             
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/events/export', {
+                const response = await fetch('https://timiza-saas.onrender.com/api/events/export', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
