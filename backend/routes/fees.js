@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const Fee = mongoose.models.Fee || require('../models/Fee');
 const router = express.Router();
 
+const { protect } = require('../middleware/auth');
+
 // GET /api/fees - list all fees with optional filtering
 router.get('/', async (req, res) => {
   try {
