@@ -12,7 +12,9 @@ router.get('/', async (req, res) => {
     const User = mongoose.models.User || require('../models/User');
     
     // Build the base query
-    const query = {};
+    const query = {
+    school: req.user.school
+     };
     
     // Add status filter if provided
     if (req.query.status) {
@@ -36,6 +38,7 @@ router.get('/', async (req, res) => {
       // Find students in the specified class first
       const studentsInClass = await User.find(
         { 
+          school: req.user.school,
           'profile.class': { $regex: new RegExp(req.query.class, 'i') } 
         },
         '_id'
@@ -66,10 +69,12 @@ router.get('/', async (req, res) => {
       const searchRegex = new RegExp(req.query.search, 'i');
       
       // Find students matching the search term
-      const matchingStudents = await User.find(
-        { name: searchRegex },
-        '_id'
-      ).lean();
+      const matchingStudents = await User.find({
+       school: req.user.school,
+        name: searchRegex
+       })
+      .select('_id')
+      .lean();
       
       const studentIds = matchingStudents.map(s => s._id);
       
@@ -273,7 +278,10 @@ router.post('/', async (req, res) => {
 // GET /api/fees/:id - get a single fee by ID
 router.get('/:id', async (req, res) => {
   try {
-    const fee = await Fee.findById(req.params.id)
+    const fee = await Fee.findOne({
+    _id: req.params.id,
+    school: req.user.school
+     })
       .populate({
         path: 'student',
         select: 'name email role class profile',
@@ -340,7 +348,10 @@ router.post('/:id/payments', async (req, res) => {
     console.log('Looking up fee with ID:', req.params.id);
     
     // Find the fee and ensure it has the required fields
-    let fee = await Fee.findById(req.params.id);
+    let fee = await Fee.findOne({
+    _id: req.params.id,
+    school: req.user.school
+   });
     if (!fee) {
       console.log('Fee not found for ID:', req.params.id);
       return res.status(404).json({ 
@@ -405,7 +416,10 @@ router.post('/:id/payments', async (req, res) => {
       console.log('Payment recorded successfully');
       
       // Refresh the fee to get updated data
-      const updatedFee = await Fee.findById(req.params.id)
+      const updatedFee = await Fee.findOne({
+    _id: req.params.id,
+    school: req.user.school
+    })
         .populate({
           path: 'student',
           select: 'name email role class profile',
@@ -457,7 +471,10 @@ router.post('/:id/payments', async (req, res) => {
 // DELETE /api/fees/:id - delete a fee
 router.delete('/:id', async (req, res) => {
   try {
-    const fee = await Fee.findByIdAndDelete(req.params.id);
+    const fee = await Fee.findOneAndDelete({
+    _id: req.params.id,
+    school: req.user.school
+    });
     if (!fee) {
       return res.status(404).json({ error: 'Fee not found' });
     }
@@ -502,9 +519,10 @@ router.post('/bulk-create', async (req, res) => {
     // STEP 1: FETCH ALL UNPAID BALANCES (OPTIMIZED)
     // -------------------------------
     const unpaidFees = await Fee.find({
-      student: { $in: students },
-      balance: { $gt: 0 }
-    }).lean();
+    school: req.user.school,
+    student: { $in: students },
+    balance: { $gt: 0 }
+     }).lean();
 
     // -------------------------------
     // STEP 2: BUILD BALANCE MAP
