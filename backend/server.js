@@ -19,7 +19,7 @@ connectDB();
 // Global CORS – allow frontend domain
 // -------------------------
 app.use(cors({
-  origin: "https://luckyjuniorschool.onrender.com",
+  origin: "",
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
