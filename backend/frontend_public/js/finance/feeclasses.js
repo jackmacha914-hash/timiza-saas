@@ -22,7 +22,7 @@ function loadClasses() {
         classSelect.innerHTML =
             '<option value="">Loading classes...</option>';
 
-        fetch('https://luckyjuniorschool.onrender.com/api/students')
+        fetch('https://timiza-saas.onrender.com/api/students')
             .then(res => res.json())
             .then(data => {
 
@@ -100,7 +100,7 @@ async function handleBulkClassChange(event) {
 
         // IMPORTANT FIX: use backend filter if available, otherwise fallback
         const response = await fetch(
-            `https://luckyjuniorschool.onrender.com/api/students`
+            `https://timiza-saas.onrender.com/api/students`
         );
 
         if (!response.ok) {
