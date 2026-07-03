@@ -40,25 +40,36 @@ window.apiFetch = apiFetch;
 
 // 🟢 Intercept *all* fetch calls (hardcoded included)
 if (!window._fetchOverridden) {
-  const originalFetch = window.fetch;
 
-  window.fetch = function(input, options = {}) {
-    if (typeof input === "string") {
-      // Replace old domain with new one
-      if (input.startsWith("https://school-management-system-av07.onrender.com")) {
-        console.warn("⚠️ Rewriting old API URL →", input);
-        input = input.replace(
-          "https://school-management-system-av07.onrender.com",
-          API_CONFIG.API_BASE_URL
-        );
-      }
-      // If it's a relative path, prepend base
-      else if (!input.startsWith("http")) {
-        input = `${API_CONFIG.API_BASE_URL}${input}`;
-      }
-    }
-    return originalFetch(input, options);
-  };
+    const originalFetch = window.fetch;
 
-  window._fetchOverridden = true;
+    window.fetch = function(input, options = {}) {
+
+        const token = localStorage.getItem("token");
+
+        if (typeof input === "string") {
+
+            if (input.startsWith("https://school-management-system-av07.onrender.com")) {
+                input = input.replace(
+                    "https://school-management-system-av07.onrender.com",
+                    API_CONFIG.API_BASE_URL
+                );
+            }
+            else if (!input.startsWith("http")) {
+                input = `${API_CONFIG.API_BASE_URL}${input}`;
+            }
+        }
+
+        options.headers = {
+            ...(options.headers || {}),
+            ...(token ? {
+                Authorization: `Bearer ${token}`
+            } : {})
+        };
+
+        return originalFetch(input, options);
+
+    };
+
+    window._fetchOverridden = true;
 }
