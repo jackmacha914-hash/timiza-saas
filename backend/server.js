@@ -7,10 +7,6 @@ const connectDB = require('./config/db');
 const cors = require('cors');
 
 const app = express();
-const { authenticateUser } = require('./middleware/auth');
-const requireSchool = require('./middleware/requireSchool');
-
-
 
 // -------------------------
 // Connect to MongoDB
@@ -77,6 +73,7 @@ app.get('/superadmin', (req, res) => {
 
 // -------------------------
 // API routes
+const { authenticateUser } = require('./middleware/auth');
 const requireSchool = require('./middleware/requireSchool');
 
 app.use('/api/auth', require('./routes/authRoutes'));
