@@ -488,7 +488,7 @@ router.delete('/:id', async (req, res) => {
 // BULK CREATE FEES
 // POST /api/fees/bulk-create
 // ===============================
-router.post('/bulk-create', async (req, res) => {
+router.post('/bulk-create', protect, async (req, res) => {
 
   try {
 
@@ -545,6 +545,7 @@ router.post('/bulk-create', async (req, res) => {
       const totalPayable = previousBalance + currentFee;
 
       return {
+        school: req.user.school, 
         student: studentId,
         className: feeData.className,
 
