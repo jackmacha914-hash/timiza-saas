@@ -1,13 +1,34 @@
-const express = require('express');
-const { registerUser, loginUser } = require('../controllers/authController');
+const express = require("express");
+
+const {
+    registerUser,
+    loginUser
+} = require("../controllers/authController");
+
+const {
+    authenticateUser,
+    authorizeRoles
+} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Signup/Register Routes (both /signup and /register point to the same handler)
-router.post('/signup', registerUser);
-router.post('/register', registerUser);
+// Only Admins and Superadmins can create users
+router.post(
+    "/register",
+    authenticateUser,
+    authorizeRoles("admin", "superadmin"),
+    registerUser
+);
 
-// Login Route
-router.post('/login', loginUser);
+// Optional: keep signup disabled
+router.post(
+    "/signup",
+    authenticateUser,
+    authorizeRoles("admin", "superadmin"),
+    registerUser
+);
+
+// Login remains public
+router.post("/login", loginUser);
 
 module.exports = router;
