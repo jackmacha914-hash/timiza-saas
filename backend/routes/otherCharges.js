@@ -69,7 +69,7 @@ router.post('/', auth, async (req, res) => {
     try {
 
         const charge = new OtherCharge({
-            req.body,
+             ...req.body,
             school: req.user.school
         });
 
