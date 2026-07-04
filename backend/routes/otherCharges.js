@@ -2,15 +2,16 @@ const express = require('express');
 const router = express.Router();
 
 const OtherCharge = require('../models/OtherCharge');
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
-// ------------------ GET ALL CHARGES (FILTERED) ------------------
-router.get('/', auth, async (req, res) => {
+// ===============================
+// GET ALL CHARGES (FILTERED)
+// ===============================
+router.get('/', protect, async (req, res) => {
     try {
 
         const { className, chargeType, date, search, term } = req.query;
 
-        // Always filter by logged in school
         let filter = {
             school: req.user.school
         };
@@ -46,7 +47,7 @@ router.get('/', auth, async (req, res) => {
         if (search) {
             filter.studentName = {
                 $regex: search,
-                $options: "i"
+                $options: 'i'
             };
         }
 
@@ -56,35 +57,48 @@ router.get('/', auth, async (req, res) => {
         res.json(charges);
 
     } catch (err) {
-        console.error("Other Charges GET error:", err);
+        console.error('Other Charges GET error:', err);
+
         res.status(500).json({
+            success: false,
             message: err.message
         });
     }
 });
 
 
-// ------------------ CREATE CHARGE ------------------
-router.post('/', auth, async (req, res) => {
+// ===============================
+// CREATE CHARGE
+// ===============================
+router.post('/', protect, async (req, res) => {
     try {
 
+        console.log('Incoming charge:', req.body);
+        console.log('Authenticated user:', req.user);
+
         const charge = new OtherCharge({
-             ...req.body,
+            ...req.body,
             school: req.user.school
         });
 
         await charge.save();
 
-        res.status(201).json(charge);
+        res.status(201).json({
+            success: true,
+            charge
+        });
 
     } catch (err) {
-        console.error("Other Charges POST error:", err);
+
+        console.error('===== OTHER CHARGE POST ERROR =====');
+        console.error(err);
 
         res.status(500).json({
-            message: err.message
+            success: false,
+            message: err.message,
+            errors: err.errors
         });
     }
 });
 
 module.exports = router;
-
