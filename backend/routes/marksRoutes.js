@@ -1,31 +1,90 @@
 const express = require('express');
-const { 
-    saveMarks, 
+
+const {
+    saveMarks,
     saveStudentMarks,
-    getStudentMarks, 
-    getClassMarks, 
-    getSubjectMarks, 
-    finalizeMarks, 
+    getStudentMarks,
+    getClassMarks,
+    getSubjectMarks,
+    finalizeMarks,
     getStudentReportCard,
-    deleteStudentMarks 
+    deleteStudentMarks
 } = require('../controllers/marksController');
-const { protect, authorize } = require('../middleware/auth');
+
+const {
+    protect,
+    authorize
+} = require('../middleware/auth');
 
 const router = express.Router();
 
-// All routes are protected and require authentication
+// ======================================
+// ALL ROUTES REQUIRE AUTHENTICATION
+// ======================================
 router.use(protect);
 
-// Teacher routes
-router.post('/', authorize('Teacher'), saveMarks);
-router.post('/students/:studentId/marks', authorize('Teacher'), saveStudentMarks);
-router.get('/class/:className', authorize('Teacher'), getClassMarks);
-router.get('/subject/:subject', authorize('Teacher'), getSubjectMarks);
-router.put('/finalize/:id', authorize('Teacher'), finalizeMarks);
+// ======================================
+// TEACHER ROUTES
+// ======================================
 
-// Student and Teacher routes
-router.get('/student/:studentId', authorize('Student', 'Teacher'), getStudentMarks);
-router.get('/report-card/:studentId', authorize('Student', 'Teacher'), getStudentReportCard);
-router.delete('/:studentId/term/:term', authorize('Teacher'), deleteStudentMarks);
+// Save marks
+router.post(
+    '/',
+    authorize('teacher'),
+    saveMarks
+);
+
+// Save marks for one student
+router.post(
+    '/students/:studentId/marks',
+    authorize('teacher'),
+    saveStudentMarks
+);
+
+// View class marks
+router.get(
+    '/class/:className',
+    authorize('teacher'),
+    getClassMarks
+);
+
+// View subject marks
+router.get(
+    '/subject/:subject',
+    authorize('teacher'),
+    getSubjectMarks
+);
+
+// Finalize marks
+router.put(
+    '/finalize/:id',
+    authorize('teacher'),
+    finalizeMarks
+);
+
+// Delete student marks
+router.delete(
+    '/:studentId/term/:term',
+    authorize('teacher'),
+    deleteStudentMarks
+);
+
+// ======================================
+// STUDENT & TEACHER ROUTES
+// ======================================
+
+// Get student marks
+router.get(
+    '/student/:studentId',
+    authorize('student', 'teacher'),
+    getStudentMarks
+);
+
+// Get report card
+router.get(
+    '/report-card/:studentId',
+    authorize('student', 'teacher'),
+    getStudentReportCard
+);
 
 module.exports = router;
