@@ -1,43 +1,95 @@
+```javascript
 const express = require('express');
 const router = express.Router();
-const TransportFee = require('../models/TransportFee');
 
-// CREATE / UPDATE FEE
-router.post('/', async (req, res) => {
+const TransportFee = require('../models/TransportFee');
+const { protect } = require('../middleware/auth');
+
+
+// ======================================
+// CREATE / UPDATE TRANSPORT FEE
+// ======================================
+router.post('/', protect, async (req, res) => {
     try {
+
         const { routeId, amount } = req.body;
 
         const fee = await TransportFee.findOneAndUpdate(
-            { routeId },
-            { amount },
-            { new: true, upsert: true }
+            {
+                school: req.user.school,
+                routeId
+            },
+            {
+                school: req.user.school,
+                routeId,
+                amount
+            },
+            {
+                new: true,
+                upsert: true
+            }
         );
 
         res.json(fee);
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Transport Fee POST error:', err);
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
-// GET ALL FEES
-router.get('/', async (req, res) => {
+
+// ======================================
+// GET ALL TRANSPORT FEES
+// ======================================
+router.get('/', protect, async (req, res) => {
     try {
-        const fees = await TransportFee.find()
-            .populate('routeId', 'name');
+
+        const fees = await TransportFee.find({
+            school: req.user.school
+        }).populate('routeId', 'name');
+
         res.json(fees);
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Transport Fee GET error:', err);
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
-// DELETE FEE
-router.delete('/:id', async (req, res) => {
+
+// ======================================
+// DELETE TRANSPORT FEE
+// ======================================
+router.delete('/:id', protect, async (req, res) => {
     try {
-        await TransportFee.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Fee deleted' });
+
+        const fee = await TransportFee.findOneAndDelete({
+            _id: req.params.id,
+            school: req.user.school
+        });
+
+        if (!fee) {
+            return res.status(404).json({
+                message: 'Transport fee not found'
+            });
+        }
+
+        res.json({
+            message: 'Fee deleted successfully'
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Transport Fee DELETE error:', err);
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 module.exports = router;
+```
