@@ -835,9 +835,9 @@ console.log("paidAmount =", fee.paidAmount);
 console.log("balance =", fee.balance);
         if (!fee) throw new Error('Fee record not found');
 
-        const totalFees = parseFloat(fee.totalFees || fee.amount || 0);
-        const paidAmount = parseFloat(fee.paidAmount || fee.amountPaid || 0);
-        const balance = totalFees - paidAmount;
+        const totalFees = Number(fee.totalPayable || 0);
+const paidAmount = Number(fee.paidAmount || 0);
+const balance = Number(fee.balance);
 
         if (balance <= 0) {
             this.showNotification('This fee is already fully paid', 'info');
