@@ -1,98 +1,191 @@
+```javascript
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
+
 const TransportPayment = require("../models/TransportPayment");
-const Route = require("../models/Route"); // Route has transportfee field
+const Route = require("../models/Route");
+const { protect } = require("../middleware/auth");
 
-// ---------------------------
+// =====================================
 // CREATE PAYMENT
-// ---------------------------
-router.post("/", async (req, res) => {
-  try {
-    const { studentId, routeId, amount, term, year, method } = req.body;
+// =====================================
+router.post("/", protect, async (req, res) => {
+    try {
 
-    // Validate required fields
-    if (!studentId || !routeId || !amount || !term || !year || !method) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-    if (!mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(routeId)) {
-      return res.status(400).json({ error: "Invalid student or route ID" });
-    }
+        const {
+            studentId,
+            routeId,
+            amount,
+            term,
+            year,
+            method
+        } = req.body;
 
-    // Get route fee
-    const route = await Route.findById(routeId);
-    if (!route) return res.status(400).json({ error: "Route not found" });
-    const transportFee = route.transportfee || 0;
-
-    // Sum previous payments for this student, route, term, year
-    const previousPayments = await TransportPayment.aggregate([
-      {
-        $match: {
-          studentId: mongoose.Types.ObjectId(studentId),
-          routeId: mongoose.Types.ObjectId(routeId),
-          term,
-          year
+        if (!studentId || !routeId || !amount || !term || !year || !method) {
+            return res.status(400).json({
+                error: "Missing required fields"
+            });
         }
-      },
-      { $group: { _id: null, totalPaid: { $sum: "$amount" } } }
-    ]);
 
-    const totalPaidBefore = previousPayments[0]?.totalPaid || 0;
-    const newBalance = transportFee - (totalPaidBefore + Number(amount));
-    let status = "Unpaid";
-    if (newBalance <= 0) status = "Paid";
-    else if (totalPaidBefore > 0 || Number(amount) > 0) status = "Partial";
+        if (
+            !mongoose.Types.ObjectId.isValid(studentId) ||
+            !mongoose.Types.ObjectId.isValid(routeId)
+        ) {
+            return res.status(400).json({
+                error: "Invalid student or route ID"
+            });
+        }
 
-    // Create payment
-    const payment = await TransportPayment.create({
-      studentId,
-      routeId,
-      amount: Number(amount),
-      term,
-      year: Number(year),
-      method,
-      balance: newBalance,
-      status
-    });
+        // Get route for THIS SCHOOL ONLY
+        const route = await Route.findOne({
+            _id: routeId,
+            school: req.user.school
+        });
 
-    res.status(201).json(payment);
-  } catch (err) {
-    console.error("PAYMENT ERROR:", err);
-    res.status(400).json({ error: err.message });
-  }
+        if (!route) {
+            return res.status(404).json({
+                error: "Route not found"
+            });
+        }
+
+        const transportFee = route.transportfee || 0;
+
+        // Previous payments for same school
+        const previousPayments = await TransportPayment.aggregate([
+            {
+                $match: {
+                    school: req.user.school,
+                    studentId: new mongoose.Types.ObjectId(studentId),
+                    routeId: new mongoose.Types.ObjectId(routeId),
+                    term,
+                    year: Number(year)
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalPaid: {
+                        $sum: "$amount"
+                    }
+                }
+            }
+        ]);
+
+        const totalPaidBefore = previousPayments[0]?.totalPaid || 0;
+
+        const newBalance =
+            transportFee - (totalPaidBefore + Number(amount));
+
+        let status = "Unpaid";
+
+        if (newBalance <= 0) {
+            status = "Paid";
+        } else if (totalPaidBefore > 0 || Number(amount) > 0) {
+            status = "Partial";
+        }
+
+        const payment = await TransportPayment.create({
+            school: req.user.school,
+            studentId,
+            routeId,
+            amount: Number(amount),
+            term,
+            year: Number(year),
+            method,
+            balance: newBalance,
+            status
+        });
+
+        res.status(201).json(payment);
+
+    } catch (err) {
+        console.error("Transport Payment POST error:", err);
+
+        res.status(500).json({
+            error: err.message
+        });
+    }
 });
 
-// ---------------------------
-// GET PAYMENTS (with filters)
-// ---------------------------
-router.get("/", async (req, res) => {
-  try {
-    const { studentId, routeId, term, year } = req.query;
 
-    const filter = {};
-    if (studentId) filter.studentId = studentId;
-    if (routeId) filter.routeId = routeId;
-    if (term) filter.term = term;
-    if (year) filter.year = Number(year);
+// =====================================
+// GET PAYMENTS
+// =====================================
+router.get("/", protect, async (req, res) => {
 
-    const payments = await TransportPayment.find(filter).sort({ createdAt: -1 });
-    res.json(payments);
-  } catch (err) {
-    console.error("GET PAYMENTS ERROR:", err);
-    res.status(500).json({ error: err.message });
-  }
+    try {
+
+        const {
+            studentId,
+            routeId,
+            term,
+            year
+        } = req.query;
+
+        const filter = {
+            school: req.user.school
+        };
+
+        if (studentId) filter.studentId = studentId;
+        if (routeId) filter.routeId = routeId;
+        if (term) filter.term = term;
+        if (year) filter.year = Number(year);
+
+        const payments = await TransportPayment.find(filter)
+            .sort({
+                createdAt: -1
+            });
+
+        res.json(payments);
+
+    } catch (err) {
+
+        console.error("Transport Payment GET error:", err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-// ---------------------------
+
+// =====================================
 // DELETE PAYMENT
-// ---------------------------
-router.delete("/:id", async (req, res) => {
-  try {
-    await TransportPayment.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// =====================================
+router.delete("/:id", protect, async (req, res) => {
+
+    try {
+
+        const payment = await TransportPayment.findOneAndDelete({
+            _id: req.params.id,
+            school: req.user.school
+        });
+
+        if (!payment) {
+            return res.status(404).json({
+                error: "Payment not found"
+            });
+        }
+
+        res.json({
+            success: true,
+            message: "Payment deleted successfully"
+        });
+
+    } catch (err) {
+
+        console.error("Transport Payment DELETE error:", err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
 module.exports = router;
+```
