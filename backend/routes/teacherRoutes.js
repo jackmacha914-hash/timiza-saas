@@ -1,13 +1,30 @@
 const express = require('express');
-const { authenticateUser, authorizeRoles } = require('../middleware/authMiddleware');
-const { getTeacherProfile, updateTeacherProfile } = require('../controllers/teacherController');
+const { protect, authorize } = require('../middleware/auth');
+const {
+    getTeacherProfile,
+    updateTeacherProfile
+} = require('../controllers/teacherController');
 
 const router = express.Router();
 
+// ==============================
+// TEACHER PROFILE
+// ==============================
+
 // Get Teacher Profile
-router.get('/profile', authenticateUser, authorizeRoles('Teacher'), getTeacherProfile);
+router.get(
+    '/profile',
+    protect,
+    authorize('Teacher'),
+    getTeacherProfile
+);
 
 // Update Teacher Profile
-router.put('/profile', authenticateUser, authorizeRoles('Teacher'), updateTeacherProfile);
+router.put(
+    '/profile',
+    protect,
+    authorize('Teacher'),
+    updateTeacherProfile
+);
 
 module.exports = router;
