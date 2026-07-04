@@ -131,7 +131,8 @@ router.post('/create', protect, async (req, res) => {
             timeLimit,
             passingScore,
             class: classId,
-            teacherId: req.user.id
+            teacherId: req.user.id,
+            school: req.user.school
         });
 
         console.log('Saving quiz to database with data:', {
@@ -270,10 +271,13 @@ router.post('/create', protect, async (req, res) => {
 // Get all quizzes (for admin) or quizzes created by teacher
 router.get('/all', protect, async (req, res) => {
     try {
-        let query = {};
-        if (req.user.role === 'teacher') {
-            query.teacherId = req.user.id;
-        }
+       let query = {
+       school: req.user.school
+       };
+
+if (req.user.role.toLowerCase() === 'teacher') {
+    query.teacherId = req.user.id;
+}
         const quizzes = await Quiz.find(query).sort({ createdAt: -1 });
         res.status(200).json({ success: true, data: quizzes });
     } catch (error) {
@@ -289,7 +293,10 @@ router.get('/all', protect, async (req, res) => {
 // Get quiz by ID
 router.get('/quiz/:id', protect, async (req, res) => {
     try {
-        const quiz = await Quiz.findById(req.params.id);
+        const quiz = await Quiz.findOne({
+    _id: req.params.id,
+    school: req.user.school
+});
         if (!quiz) {
             return res.status(404).json({ 
                 success: false, 
@@ -451,6 +458,7 @@ router.post('/submit', protect, async (req, res) => {
                                (quiz.className || quiz.class || 'Unnamed Class');
         
         const submissionData = {
+            school: req.user.school,
             quiz: quizId,
             user: userId,
             studentName: req.body.studentName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Anonymous',
@@ -545,7 +553,11 @@ router.get('/submissions/quiz/:quizId', protect, async (req, res) => {
             });
         }
 
-        const submissions = await Submission.find({ quiz: req.params.quizId })
+        const submissions = await 
+            Submission.find({
+    quiz: req.params.quizId,
+    school: req.user.school
+})
             .populate('user', 'firstName lastName email')
             .sort({ submittedAt: -1 });
 
@@ -563,7 +575,11 @@ router.get('/submissions/quiz/:quizId', protect, async (req, res) => {
 // Get submission details
 router.get('/submissions/detail/:submissionId', protect, async (req, res) => {
     try {
-        const submission = await Submission.findById(req.params.submissionId)
+        const submission = await 
+            Submission.findOne({
+    _id: req.params.submissionId,
+    school: req.user.school
+})
             .populate('studentId', 'firstName lastName email')
             .populate('quizId', 'title questions');
 
@@ -605,11 +621,18 @@ router.patch('/publish/:id', protect, async (req, res) => {
             });
         }
 
-        const quiz = await Quiz.findByIdAndUpdate(
-            req.params.id,
-            { isPublished },
-            { new: true, runValidators: true }
-        );
+        const quiz = await 
+           Quiz.findOneAndUpdate(
+    {
+        _id: req.params.id,
+        school: req.user.school
+    },
+    { isPublished },
+    {
+        new: true,
+        runValidators: true
+    }
+);
 
         if (!quiz) {
             return res.status(404).json({ 
@@ -636,7 +659,10 @@ router.patch('/publish/:id', protect, async (req, res) => {
 // Delete a quiz
 router.delete('/delete/:id', protect, async (req, res) => {
     try {
-        const quiz = await Quiz.findById(req.params.id);
+        const quiz = await Quiz.findOne({
+    _id: req.params.id,
+    school: req.user.school
+});
         
         if (!quiz) {
             return res.status(404).json({ 
@@ -653,10 +679,13 @@ router.delete('/delete/:id', protect, async (req, res) => {
             });
         }
 
-        await Quiz.findByIdAndDelete(req.params.id);
+        await Quiz.findOneAndDelete({
+    _id: req.params.id,
+    school: req.user.school
+});
         
         // Also delete all submissions for this quiz
-        await Submission.deleteMany({ quizId: req.params.id });
+        await Submission.deleteMany({ quizId: req.params.id, school: req.user.school });
 
         res.status(200).json({ 
             success: true, 
@@ -678,6 +707,7 @@ router.get('/class/:classId', protect, async (req, res) => {
         const { classId } = req.params;
         const quizzes = await Quiz.find({ 
             classId,
+            school: req.user.school,
             isPublished: true 
         }).sort({ createdAt: -1 });
 
