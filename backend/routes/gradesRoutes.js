@@ -1,19 +1,60 @@
 const express = require('express');
-const { authenticateUser, authorizeRoles } = require('../middleware/authMiddleware');
-const { addGrade, getStudentGrades, updateGrade, deleteGrade } = require('../controllers/gradesController');
+const router = express.Router();
 
-const gradesRouter = express.Router();
+const {
+    addGrade,
+    getStudentGrades,
+    updateGrade,
+    deleteGrade
+} = require('../controllers/gradesController');
 
-// Add Grade (Only for Teachers)
-gradesRouter.post('/', authenticateUser, authorizeRoles('Teacher'), addGrade);
+const {
+    protect,
+    authorize
+} = require('../middleware/auth');
 
-// Get Student Grades (For Students & Teachers)
-gradesRouter.get('/', authenticateUser, authorizeRoles('Student', 'Teacher'), getStudentGrades);
+// ======================================
+// ADD GRADE
+// Teacher Only
+// ======================================
+router.post(
+    '/',
+    protect,
+    authorize('teacher'),
+    addGrade
+);
 
-// Update Grade (Only for Teachers)
-gradesRouter.put('/:id', authenticateUser, authorizeRoles('Teacher'), updateGrade);
+// ======================================
+// GET STUDENT GRADES
+// Student & Teacher
+// ======================================
+router.get(
+    '/',
+    protect,
+    authorize('student', 'teacher'),
+    getStudentGrades
+);
 
-// Delete Grade (Only for Teachers)
-gradesRouter.delete('/:id', authenticateUser, authorizeRoles('Teacher'), deleteGrade);
+// ======================================
+// UPDATE GRADE
+// Teacher Only
+// ======================================
+router.put(
+    '/:id',
+    protect,
+    authorize('teacher'),
+    updateGrade
+);
 
-module.exports = gradesRouter;
+// ======================================
+// DELETE GRADE
+// Teacher Only
+// ======================================
+router.delete(
+    '/:id',
+    protect,
+    authorize('teacher'),
+    deleteGrade
+);
+
+module.exports = router;
