@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const { authenticateUser } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/auth');
 
 const {
     getStudents,
@@ -96,50 +96,50 @@ router.post('/register/student', registerStudent);
 //
 
 // Get all students
-router.get('/', authenticateUser, getStudents);
+router.get('/', protect, getStudents);
 
 // Get all teachers
-router.get('/teachers', authenticateUser, getStudents);
+router.get('/teachers', protect, getStudents);
 
 // Get students by class
 router.get(
     '/class/:className',
-    authenticateUser,
+    protect,
     getStudentsByClass
 );
 
 // Current user's profile
 router.get(
     '/profile',
-    authenticateUser,
+    protect,
     getStudentProfile
 );
 
 // Any user's profile
 router.get(
     '/profile/:id',
-    authenticateUser,
+    protect,
     getStudentProfile
 );
 
 // Update profile
 router.put(
     '/profile',
-    authenticateUser,
+    protect,
     updateStudentProfile
 );
 
 // Change password
 router.put(
     '/change-password',
-    authenticateUser,
+    protect,
     changePassword
 );
 
 // Upload profile photo
 router.post(
     '/profile/photo',
-    authenticateUser,
+    protect,
     upload.single('photo'),
     uploadProfilePhoto,
     (err, req, res, next) => {
