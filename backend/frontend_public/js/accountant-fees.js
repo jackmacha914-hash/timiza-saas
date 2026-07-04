@@ -826,6 +826,7 @@ async recordPayment(feeId) {
         console.log('=== Starting recordPayment ===', feeId);
 
         const fee = await this.getFeeById(feeId);
+        console.log("Fee from backend:", fee);
         if (!fee) throw new Error('Fee record not found');
 
         const totalFees = parseFloat(fee.totalFees || fee.amount || 0);
