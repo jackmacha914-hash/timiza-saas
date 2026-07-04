@@ -1,16 +1,47 @@
 const express = require('express');
-const { authenticateUser, authorizeRoles } = require('../middleware/authMiddleware');
-const { createAnnouncement, getAnnouncements, deleteAnnouncement } = require('../controllers/announcementController');
-
 const router = express.Router();
 
-// 📝 Create a new announcement (teacher only)
-router.post('/', authenticateUser, authorizeRoles('teacher'), createAnnouncement);
+const {
+    createAnnouncement,
+    getAnnouncements,
+    deleteAnnouncement
+} = require('../controllers/announcementController');
 
-// 📄 Get all announcements (any logged-in user)
-router.get('/', authenticateUser, getAnnouncements);
+const {
+    protect,
+    authorize
+} = require('../middleware/auth');
 
-// 🗑️ Delete an announcement (teacher only)
-router.delete('/:id', authenticateUser, authorizeRoles('teacher'), deleteAnnouncement);
+// ===============================
+// CREATE ANNOUNCEMENT
+// Teacher only
+// ===============================
+router.post(
+    '/',
+    protect,
+    authorize('teacher'),
+    createAnnouncement
+);
+
+// ===============================
+// GET ANNOUNCEMENTS
+// Any authenticated user
+// ===============================
+router.get(
+    '/',
+    protect,
+    getAnnouncements
+);
+
+// ===============================
+// DELETE ANNOUNCEMENT
+// Teacher only
+// ===============================
+router.delete(
+    '/:id',
+    protect,
+    authorize('teacher'),
+    deleteAnnouncement
+);
 
 module.exports = router;
