@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { authenticateUser, authorizeRoles } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/auth');
 const Resource = require('../models/Resource'); // Ensure Resource model is imported
 
 const router = express.Router();
@@ -38,7 +38,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage, fileFilter: fileFilter }).single('resource');
 
 // POST route for uploading a file
-router.post('/upload', authenticateUser, authorizeRoles('teacher'), function (req, res, next) {
+router.post('/upload', protect, authorize('Teacher'), function (req, res, next) {
   upload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(400).json({ success: false, message: err.message });
@@ -54,6 +54,7 @@ router.post('/upload', authenticateUser, authorizeRoles('teacher'), function (re
 
     // Save resource to the database
     const newResource = new Resource({
+      school: req.user.school,
       name: req.file.originalname,
       path: req.file.filename,
       classAssigned: classAssigned,
@@ -79,7 +80,7 @@ router.post('/upload', authenticateUser, authorizeRoles('teacher'), function (re
 });
 
 // GET route for fetching uploaded resources (now from the database)
-router.get('/', authenticateUser, async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const { class: classFilter } = req.query;
     const userRole = req.user.role;
@@ -97,7 +98,9 @@ router.get('/', authenticateUser, async (req, res) => {
     console.log('===============================');
     
     // Build query
-    const query = {};
+    const query = {
+    school: req.user.school
+};
     
     console.log('Resource query - userRole:', userRole, 'userClass:', userClass, 'classFilter:', classFilter, 'req.query:', req.query);
     console.log('Full user object:', JSON.stringify(req.user, null, 2));
@@ -122,7 +125,7 @@ router.get('/', authenticateUser, async (req, res) => {
     // For teachers, show all their resources by default, with optional class filter
     else if (userRole === 'teacher') {
       console.log('Processing teacher request');
-      query.uploadedBy = req.user._id;
+      query.uploadedBy = req.user.id;
       
       // Only apply class filter if specifically requested (not 'all' or undefined)
       if (classFilter && classFilter !== 'all') {
@@ -147,7 +150,10 @@ router.get('/', authenticateUser, async (req, res) => {
     console.log('Database query:', query);
     
     // Log all resources before filtering for debugging
-    const allResources = await Resource.find({}).populate('uploadedBy', 'name').lean();
+    const allResources = await Resource.find({
+    school: req.user.school
+})
+    .populate('uploadedBy', 'name').lean();
     console.log('All resources in database:', allResources.map(r => ({
       name: r.name,
       classAssigned: r.classAssigned,
@@ -173,10 +179,15 @@ router.get('/', authenticateUser, async (req, res) => {
     let classes = [];
     if (userRole === 'teacher') {
       // For teachers, only show classes they have resources for
-      classes = await Resource.distinct('classAssigned', { uploadedBy: req.user._id });
+      classes = await Resource.distinct('classAssigned', {
+    school: req.user.school,
+    uploadedBy: req.user.id
+});
     } else {
       // For admins, show all classes
-      classes = await Resource.distinct('classAssigned');
+     classes = await Resource.distinct('classAssigned', {
+    school: req.user.school
+});
     }
     
     console.log('Sending response with', resourcesWithDelete.length, 'resources');
@@ -192,12 +203,15 @@ router.get('/', authenticateUser, async (req, res) => {
 });
 
 // DELETE resource endpoint
-router.delete('/:resourceId', authenticateUser, authorizeRoles('teacher'), async (req, res) => {
+router.delete('/:resourceId', protect, authorize('Teacher'), async (req, res) => {
   const { resourceId } = req.params;
   
   try {
     // First find the resource to get the filename
-    const resource = await Resource.findById(resourceId);
+    const resource = await Resource.findOne({
+    _id: resourceId,
+    school: req.user.school
+});
     
     if (!resource) {
       return res.status(404).json({ success: false, msg: 'Resource not found in the database' });
