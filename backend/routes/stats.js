@@ -17,6 +17,19 @@ router.get('/', protect, async (req, res) => {
 
         const school = req.user.school;
 
+         console.log("================================");
+        console.log("Logged in school:", school);
+
+        console.log("Students:", await User.countDocuments({ school, role: "student" }));
+        console.log("Teachers:", await User.countDocuments({ school, role: "teacher" }));
+        console.log("Events:", await Event.countDocuments({ school }));
+        console.log("Clubs:", await Club.countDocuments({ school }));
+        console.log("Attendance:", await Attendance.countDocuments({ school }));
+        console.log("Books:", await Book.countDocuments({ school }));
+        console.log("Fees:", await Fee.countDocuments({ school }));
+
+        console.log("================================");
+
         // Always isolate by school
         const schoolFilter = { school };
 
