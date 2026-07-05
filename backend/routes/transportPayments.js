@@ -1,4 +1,4 @@
-```javascript
+
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
@@ -188,4 +188,4 @@ router.delete("/:id", protect, async (req, res) => {
 });
 
 module.exports = router;
-```
+
