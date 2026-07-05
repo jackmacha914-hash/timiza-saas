@@ -1,95 +1,104 @@
 const express = require('express');
 const router = express.Router();
-const DashboardStats = require('../models/DashboardStats');
+
+const User = require('../models/User');
+const Event = require('../models/Event');
+const Club = require('../models/Club');
+const Attendance = require('../models/Attendance');
+const Book = require('../models/Book');
+const Fee = require('../models/Fee');
+
 const { protect } = require('../middleware/auth');
 
-// @route   GET /api/dashboard/stats
-// @desc    Get dashboard statistics
-// @access  Private
-router.get('/stats', protect, async (req, res) => {
+router.get('/', protect, async (req, res) => {
     try {
-        const stats = await DashboardStats.getStats();
-        
-        // Get recent activities with populated data if needed
-        const activities = await Promise.all(
-            stats.recentActivities.map(async (activity) => {
-                // You can populate user data here if needed
-                return {
-                    type: activity.type,
-                    description: activity.description,
-                    timestamp: activity.timestamp,
-                    // Add any additional populated fields
-                };
-            })
-        );
-        
+
+        const school = req.user.school;
+
+        if (!school) {
+            return res.status(400).json({
+                message: 'School not found in user token'
+            });
+        }
+
+        const students = await User.countDocuments({
+            school,
+            role: 'student'
+        });
+
+        const teachers = await User.countDocuments({
+            school,
+            role: 'teacher'
+        });
+
+        const events = await Event.countDocuments({
+            school
+        });
+
+        const clubs = await Club.countDocuments({
+            school
+        });
+
+        const present = await Attendance.countDocuments({
+            school,
+            status: 'present'
+        });
+
+        const absent = await Attendance.countDocuments({
+            school,
+            status: 'absent'
+        });
+
+        const issued = await Book.countDocuments({
+            school,
+            status: 'issued'
+        });
+
+        const feesAgg = await Fee.aggregate([
+            {
+                $match: {
+                    school
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    paid: {
+                        $sum: '$paidAmount'
+                    },
+                    balance: {
+                        $sum: '$balance'
+                    }
+                }
+            }
+        ]);
+
+        const paid = feesAgg[0]?.paid || 0;
+        const balance = feesAgg[0]?.balance || 0;
+
         res.json({
-            success: true,
-            data: {
-                totalStudents: stats.totalStudents,
-                totalTeachers: stats.totalTeachers,
-                totalClasses: stats.totalClasses,
-                attendanceRate: stats.attendanceRate,
-                recentActivities: activities,
-                lastUpdated: stats.lastUpdated
+            students,
+            teachers,
+            events,
+            clubs,
+            attendance: {
+                present,
+                absent
+            },
+            library: {
+                issued
+            },
+            fees: {
+                paid,
+                balance
             }
         });
-    } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error',
-            error: error.message
-        });
-    }
-});
 
-// @route   GET /api/dashboard/quick-stats
-// @desc    Get quick stats for the dashboard
-// @access  Private
-router.get('/quick-stats', protect, async (req, res) => {
-    try {
-        // In a real app, you might want to calculate these from your actual data
-        const stats = await DashboardStats.getStats();
-        
-        res.json({
-            success: true,
-            data: {
-                totalStudents: stats.totalStudents,
-                totalTeachers: stats.totalTeachers,
-                totalClasses: stats.totalClasses,
-                attendanceRate: stats.attendanceRate
-            }
-        });
     } catch (error) {
-        console.error('Error fetching quick stats:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error',
-            error: error.message
-        });
-    }
-});
+        console.error('Dashboard Stats Error:', error);
 
-// @route   GET /api/dashboard/recent-activities
-// @desc    Get recent activities for the dashboard
-// @access  Private
-router.get('/recent-activities', protect, async (req, res) => {
-    try {
-        const stats = await DashboardStats.getStats();
-        
-        res.json({
-            success: true,
-            data: stats.recentActivities
-                .sort((a, b) => b.timestamp - a.timestamp)
-                .slice(0, 10) // Get only the 10 most recent
-        });
-    } catch (error) {
-        console.error('Error fetching recent activities:', error);
         res.status(500).json({
-            success: false,
-            message: 'Server error',
-            error: error.message
+            message: 'Failed to load dashboard statistics'
         });
     }
 });
