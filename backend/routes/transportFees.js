@@ -1,4 +1,3 @@
-```javascript
 const express = require('express');
 const router = express.Router();
 
@@ -92,4 +91,4 @@ router.delete('/:id', protect, async (req, res) => {
 });
 
 module.exports = router;
-```
+
