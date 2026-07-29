@@ -1,571 +1,303 @@
-/* Student Management Styles */
+/* =====================================
+   ACADEMIC MANAGEMENT
+===================================== */
 
-/* Form Styles */
-.form-row {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 15px;
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
 }
 
-.form-row .form-group {
-    flex: 1;
-    min-width: 0;
+body{
+    font-family:Arial, Helvetica, sans-serif;
+    background:#f4f7fb;
+    color:#1f2937;
 }
 
-.form-group {
-    margin-bottom: 15px;
+.academic-page{
+    max-width:1600px;
+    margin:auto;
+    padding:30px;
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-    color: #2c3e50;
-}
-
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="tel"],
-.form-group input[type="date"],
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    transition: border-color 0.3s;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    border-color: #3498db;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-}
-
-.form-group textarea {
-    min-height: 80px;
-    resize: vertical;
-}
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-}
-
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background-color: #3498db;
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: #2980b9;
-}
-
-.btn-secondary {
-    background-color: #95a5a6;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background-color: #7f8c8d;
-}
-
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    overflow-y: auto;
-}
-
-.modal-content {
-    background-color: #fff;
-    margin: 5% auto;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    position: relative;
-    max-width: 600px;
-    width: 90%;
-}
-
-.modal h2 {
-    margin-top: 0;
-    color: #2c3e50;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
-
-.close {
-    position: absolute;
-    right: 20px;
-    top: 15px;
-    font-size: 28px;
-    font-weight: bold;
-    color: #7f8c8d;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.close:hover {
-    color: #2c3e50;
-}
-
-/* Student Details Grid */
-.student-details-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.detail-group {
-    background-color: #f9f9f9;
-    border-radius: 6px;
-    padding: 15px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.detail-group h3 {
-    margin-top: 0;
-    color: #2c3e50;
-    font-size: 16px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-}
-
-.detail-group p {
-    margin: 8px 0;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.detail-group p strong {
-    color: #555;
-    min-width: 120px;
-    display: inline-block;
-}
-
-/* Modal Actions */
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
-}
-
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
-}
-
-.btn-print {
-    background-color: #3498db;
-    color: white;
-}
+/* ===========================
+   HEADER
+=========================== */
 
-.btn-print:hover {
-    background-color: #2980b9;
+.page-header{
+    background:#fff;
+    border-radius:16px;
+    padding:25px;
+    margin-bottom:25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
 }
 
-.btn-close {
-    background-color: #95a5a6;
-    color: white;
+.page-header h1{
+    font-size:30px;
+    color:#2563eb;
+    margin-bottom:10px;
 }
 
-.btn-close:hover {
-    background-color: #7f8c8d;
+.page-header p{
+    color:#6b7280;
 }
 
-/* Section Header */
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+.page-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
 }
 
-.section-header h2 {
-    margin: 0;
-    color: #2c3e50;
+.primary-btn,
+.secondary-btn{
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    padding:12px 20px;
+    font-weight:600;
+    transition:.3s;
 }
 
-.action-buttons {
-    display: flex;
-    gap: 10px;
+.primary-btn{
+    background:#2563eb;
+    color:#fff;
 }
 
-/* Filters */
-.filters {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+.primary-btn:hover{
+    background:#1d4ed8;
 }
 
-.search-box {
-    position: relative;
-    flex: 1;
-    max-width: 300px;
+.secondary-btn{
+    background:#eef2ff;
+    color:#2563eb;
 }
 
-.search-box i {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #7f8c8d;
+.secondary-btn:hover{
+    background:#dbeafe;
 }
 
-.search-box input {
-    width: 100%;
-    padding: 8px 10px 8px 35px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-/* Data Table */
-.table-responsive {
-    overflow-x: auto;
-    margin-bottom: 20px;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
+/* ===========================
+   DASHBOARD CARDS
+=========================== */
 
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
+.academic-cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:20px;
+    margin-bottom:30px;
 }
 
-.data-table th, 
-.data-table td {
-    padding: 12px 15px;
-    text-align: left;
-    vertical-align: middle;
+.academic-card{
+    background:#fff;
+    border-radius:15px;
+    padding:25px;
+    text-align:center;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+    transition:.3s;
 }
 
-/* Checkbox in table */
-.data-table td:first-child {
-    width: 40px;
-    text-align: center;
-    padding: 12px 5px;
+.academic-card:hover{
+    transform:translateY(-5px);
 }
 
-.data-table input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    cursor: pointer;
+.academic-card i{
+    font-size:35px;
+    margin-bottom:15px;
 }
 
-/* Select all checkbox */
-#select-all {
-    margin: 0;
-    cursor: pointer;
+.academic-card h4{
+    color:#6b7280;
+    margin-bottom:10px;
 }
 
-/* Status Badges */
-.status-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-    text-transform: capitalize;
-    text-align: center;
-    min-width: 70px;
+.academic-card h2{
+    color:#2563eb;
+    font-size:32px;
 }
 
-.status-active {
-    background-color: #d4edda;
-    color: #155724;
-}
+/* ===========================
+   TABS
+=========================== */
 
-.status-inactive {
-    background-color: #f8d7da;
-    color: #721c24;
+.academic-tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:25px;
 }
 
-.status-pending {
-    background-color: #fff3cd;
-    color: #856404;
+.academic-tab{
+    background:#fff;
+    border:none;
+    padding:12px 18px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+    transition:.3s;
 }
 
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    gap: 8px;
-    flex-wrap: nowrap;
+.academic-tab:hover{
+    background:#2563eb;
+    color:#fff;
 }
 
-.btn-action {
-    padding: 5px 10px;
-    border: none;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
+.academic-tab.active{
+    background:#2563eb;
+    color:#fff;
 }
 
-.btn-view {
-    background-color: #17a2b8;
-    color: white;
-}
+/* ===========================
+   SECTIONS
+=========================== */
 
-.btn-edit {
-    background-color: #ffc107;
-    color: #212529;
+.academic-section{
+    display:none;
+    background:#fff;
+    border-radius:16px;
+    padding:25px;
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
+    margin-bottom:25px;
 }
 
-.btn-delete {
-    background-color: #dc3545;
-    color: white;
+.academic-section.active{
+    display:block;
 }
 
-.btn-view:hover {
-    background-color: #138496;
-    transform: translateY(-1px);
-}
+/* ===========================
+   SECTION HEADER
+=========================== */
 
-.btn-edit:hover {
-    background-color: #e0a800;
-    transform: translateY(-1px);
+.section-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+    flex-wrap:wrap;
 }
 
-.btn-delete:hover {
-    background-color: #c82333;
-    transform: translateY(-1px);
+.section-header h2{
+    color:#2563eb;
 }
 
-/* Responsive table */
-@media (max-width: 768px) {
-    .table-responsive {
-        border: none;
-    }
-    
-    .data-table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-    
-    .action-buttons {
-        flex-direction: column;
-        gap: 5px;
-    }
-    
-    .btn-action {
-        width: 100%;
-        padding: 6px 8px;
-    }
-}
+/* ===========================
+   FILTERS
+=========================== */
 
-.data-table tbody tr:hover {
-    background-color: #f8f9fa;
+.filters{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
 }
 
-/* Action Buttons */
-.actions {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+.filters select,
+.filters input{
+    padding:10px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    min-width:180px;
 }
 
-.btn-action {
-    padding: 4px 8px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-size: 12px;
-    cursor: pointer;
-    background: white;
-    color: #333;
-    transition: all 0.2s;
+.filters input{
+    flex:1;
 }
 
-.btn-view {
-    border-color: #3498db;
-    color: #3498db;
-}
+/* ===========================
+   TABLE
+=========================== */
 
-.btn-edit {
-    border-color: #f39c12;
-    color: #f39c12;
+.academic-table{
+    width:100%;
+    border-collapse:collapse;
 }
 
-.btn-delete {
-    border-color: #e74c3c;
-    color: #e74c3c;
+.academic-table thead{
+    background:#2563eb;
+    color:#fff;
 }
 
-.btn-view:hover {
-    background-color: #3498db;
-    color: white;
+.academic-table th{
+    padding:14px;
+    text-align:left;
 }
 
-.btn-edit:hover {
-    background-color: #f39c12;
-    color: white;
+.academic-table td{
+    padding:14px;
+    border-bottom:1px solid #e5e7eb;
 }
 
-.btn-delete:hover {
-    background-color: #e74c3c;
-    color: white;
+.academic-table tbody tr:hover{
+    background:#f9fafb;
 }
 
-/* Status */
-.status {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 12px;
-    text-transform: capitalize;
-}
+/* ===========================
+   ANALYTICS
+=========================== */
 
-.status-active {
-    color: #27ae60;
-    background-color: #e8f5e9;
+.analytics-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(350px,1fr));
+    gap:20px;
 }
 
-.status-inactive {
-    color: #e74c3c;
-    background-color: #ffebee;
+.analytics-panel{
+    background:#fff;
+    border-radius:15px;
+    padding:20px;
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
 }
 
-.status-pending {
-    color: #f39c12;
-    background-color: #fff8e1;
+.analytics-panel h3{
+    margin-bottom:20px;
+    color:#2563eb;
 }
 
-/* Pagination */
-.pagination {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-    margin-top: 20px;
-}
+/* ===========================
+   CHARTS
+=========================== */
 
-.pagination button {
-    padding: 5px 10px;
-    border: 1px solid #ddd;
-    background: white;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s;
+canvas{
+    width:100%!important;
+    max-height:350px;
 }
 
-.pagination button:hover:not(:disabled) {
-    background: #f5f7fa;
-    border-color: #bdc3c7;
-}
+/* ===========================
+   MOBILE
+=========================== */
 
-.pagination button.active {
-    background: #3498db;
-    color: white;
-    border-color: #2980b9;
-}
+@media(max-width:768px){
 
-.pagination button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.page-header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:20px;
 }
 
-/* Student Details Modal */
-.student-details-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin: 20px 0;
+.page-actions{
+    width:100%;
 }
 
-.detail-group {
-    background: #f9f9f9;
-    padding: 15px;
-    border-radius: 4px;
-    border-left: 3px solid #3498db;
+.primary-btn,
+.secondary-btn{
+    width:100%;
 }
 
-.detail-group h3 {
-    margin-top: 0;
-    color: #2c3e50;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+.filters{
+    flex-direction:column;
 }
 
-.detail-group p {
-    margin: 8px 0;
-    color: #34495e;
+.filters select,
+.filters input{
+    width:100%;
 }
 
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eee;
+.academic-page{
+    padding:15px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .filters {
-        flex-direction: column;
-    }
-    
-    .search-box {
-        max-width: 100%;
-    }
-    
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    
-    .action-buttons {
-        width: 100%;
-        justify-content: flex-start;
-    }
 }
