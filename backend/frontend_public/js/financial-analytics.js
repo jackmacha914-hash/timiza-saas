@@ -69,55 +69,6 @@ loadCollectionTermChart(fees);
 
 }
 
-// ======================================
-// REVENUE TREND
-// ======================================
-
-function loadRevenueTrendChart(records) {
-
-    const monthly = {};
-
-    records.forEach(record => {
-
-        (record.payments || []).forEach(payment => {
-
-            const date = new Date(payment.paymentDate);
-
-            const key = date.toLocaleString("default", {
-                month: "short",
-                year: "2-digit"
-            });
-
-            monthly[key] = (monthly[key] || 0) + Number(payment.amount || 0);
-
-        });
-
-    });
-
-    if (revenueTrendChart) revenueTrendChart.destroy();
-
-    revenueTrendChart = new Chart(
-        document.getElementById("revenueTrendChart"),
-        {
-            type: "line",
-            data: {
-                labels: Object.keys(monthly),
-                datasets: [{
-                    label: "Revenue",
-                    data: Object.values(monthly),
-                    borderWidth: 3,
-                    fill: true,
-                    tension: .35
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        }
-    );
-
-}
 
 // ======================================
 // COLLECTION BY CLASS
@@ -556,6 +507,9 @@ function loadClassPerformance(records) {
     });
 
 }
+// ======================================
+// REVENUE TREND
+// ======================================
 
 function loadRevenueTrendChart(records) {
 
@@ -716,70 +670,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-// ======================================
-// REPORT BUTTON ACTIONS
-// ======================================
+function setupReportButtons() {
 
-document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("dailyCollectionReport")
+        ?.addEventListener("click", () => showReportPeriodSelector("daily"));
 
-    setupReportButtons();
+    document.getElementById("monthlyCollectionReport")
+        ?.addEventListener("click", () => showReportPeriodSelector("monthly"));
 
-});
+    document.getElementById("termCollectionReport")
+        ?.addEventListener("click", () => generateReport("term"));
 
+    document.getElementById("incomeReport")
+        ?.addEventListener("click", () => showReportPeriodSelector("income"));
 
+    document.getElementById("defaultersReport")
+        ?.addEventListener("click", () => generateReport("defaulters"));
 
-// ======================================
-// REPORT BUILDERS
-// ======================================
+    document.getElementById("auditReport")
+        ?.addEventListener("click", () => showReportPeriodSelector("audit"));
 
-function buildDailyReport(records, period) {
-
-    let total = 0;
-    let rows = "";
-
-    const today = new Date().toLocaleDateString();
-
-    records.forEach(record => {
-
-        (record.payments || []).forEach(payment => {
-
-            if (new Date(payment.paymentDate).toLocaleDateString() === today) {
-
-                total += Number(payment.amount || 0);
-
-                rows += `
-                    <tr>
-                        <td>${record.student?.name || "Unknown"}</td>
-                        <td>${money(payment.amount)}</td>
-                        <td>${payment.paymentMethod}</td>
-                    </tr>
-                `;
-            }
-
-        });
-
-    });
-
-    return `
-        <h3>Total Collected: ${money(total)}</h3>
-
-        <table class="report-table">
-            <tr>
-                <th>Student</th>
-                <th>Amount</th>
-                <th>Method</th>
-            </tr>
-
-            ${rows || "<tr><td colspan='3'>No collections</td></tr>"}
-
-        </table>
-
-        <div class="report-actions">
-            <button onclick="downloadPDF()">Download PDF</button>
-            <button onclick="downloadExcel()">Download Excel</button>
-        </div>
-    `;
 }
+
 
 
 // ======================================
