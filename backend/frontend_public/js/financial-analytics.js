@@ -637,7 +637,6 @@ function loadRevenueTrendChart(records) {
 // ======================================
 // REPORT BUTTONS
 // ======================================
-
 // ======================================
 // REPORT BUTTON ACTIONS
 // ======================================
@@ -651,109 +650,371 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function setupReportButtons(){
 
+
     document
     .getElementById("dailyCollectionReport")
-    ?.addEventListener("click", ()=>{
+    ?.addEventListener("click", createDailyCollectionReport);
 
-        createDailyCollectionReport();
-
-    });
 
 
     document
     .getElementById("monthlyCollectionReport")
-    ?.addEventListener("click", ()=>{
+    ?.addEventListener("click", createMonthlyCollectionReport);
 
-        createMonthlyCollectionReport();
-
-    });
 
 
     document
     .getElementById("termCollectionReport")
-    ?.addEventListener("click", ()=>{
+    ?.addEventListener("click", createTermReport);
 
-        createTermReport();
-
-    });
 
 
     document
     .getElementById("defaultersReport")
-    ?.addEventListener("click", ()=>{
+    ?.addEventListener("click", createDefaultersReport);
 
-        createDefaultersReport();
-
-    });
 
 
     document
     .getElementById("incomeReport")
-    ?.addEventListener("click", ()=>{
+    ?.addEventListener("click", createIncomeReport);
 
-        createIncomeReport();
-
-    });
 
 
     document
     .getElementById("auditReport")
-    ?.addEventListener("click", ()=>{
+    ?.addEventListener("click", createAuditReport);
 
-        createAuditReport();
+
+
+    console.log("Report buttons connected");
+
+}
+
+
+// ======================================
+// DAILY COLLECTION
+// ======================================
+
+async function createDailyCollectionReport(){
+
+    const records = await getFinanceRecords();
+
+    let total = 0;
+    let rows = "";
+
+
+    records.forEach(record=>{
+
+        (record.payments || []).forEach(payment=>{
+
+
+            const date =
+            new Date(payment.paymentDate)
+            .toLocaleDateString();
+
+
+            const today =
+            new Date()
+            .toLocaleDateString();
+
+
+            if(date === today){
+
+                total += Number(payment.amount || 0);
+
+
+                rows += `
+                ${record.student?.name || "Unknown"}
+                - ${money(payment.amount)}
+                - ${payment.paymentMethod}
+                \n`;
+
+            }
+
+
+        });
+
 
     });
 
 
-    console.log("Report buttons ready");
+    alert(
+`
+DAILY COLLECTION REPORT
+
+Total:
+${money(total)}
+
+${rows || "No collections today"}
+`
+    );
 
 }
 
 
 
 // ======================================
-// REPORT PLACEHOLDERS
+// MONTHLY COLLECTION
 // ======================================
 
+async function createMonthlyCollectionReport(){
 
-function createDailyCollectionReport(){
+    const records = await getFinanceRecords();
 
-    alert("Daily Collection Report");
+
+    let total = 0;
+
+
+    const now = new Date();
+
+
+    records.forEach(record=>{
+
+
+        (record.payments || []).forEach(payment=>{
+
+
+            const date =
+            new Date(payment.paymentDate);
+
+
+            if(
+                date.getMonth() === now.getMonth()
+                &&
+                date.getFullYear() === now.getFullYear()
+            ){
+
+                total += Number(payment.amount || 0);
+
+            }
+
+
+        });
+
+
+    });
+
+
+    alert(
+`
+MONTHLY COLLECTION REPORT
+
+Month:
+${now.toLocaleString("default",{month:"long"})}
+
+Collected:
+${money(total)}
+`
+    );
 
 }
 
 
-function createMonthlyCollectionReport(){
 
-    alert("Monthly Collection Report");
+// ======================================
+// TERM REPORT
+// ======================================
+
+async function createTermReport(){
+
+    const records = await getFinanceRecords();
+
+
+    let expected = 0;
+    let paid = 0;
+    let balance = 0;
+
+
+    records.forEach(record=>{
+
+        expected += Number(record.totalPayable || 0);
+
+        paid += Number(record.paidAmount || 0);
+
+        balance += Number(record.balance || 0);
+
+    });
+
+
+
+    alert(
+`
+TERM FINANCIAL REPORT
+
+Expected:
+${money(expected)}
+
+Collected:
+${money(paid)}
+
+Outstanding:
+${money(balance)}
+`
+    );
 
 }
 
 
-function createTermReport(){
 
-    alert("Term Financial Report");
+// ======================================
+// DEFAULTERS REPORT
+// ======================================
+
+async function createDefaultersReport(){
+
+    const records = await getFinanceRecords();
+
+
+    let output="";
+
+
+    records
+    .filter(r=>Number(r.balance)>0)
+    .forEach(record=>{
+
+
+        output +=
+`
+${record.student?.name || "Unknown"}
+
+Class:
+${record.className}
+
+Balance:
+${money(record.balance)}
+
+----------------
+`;
+
+    });
+
+
+
+    alert(
+`
+DEFAULTERS REPORT
+
+${output || "No defaulters"}
+`
+    );
 
 }
 
 
-function createDefaultersReport(){
 
-    alert("Defaulters Report");
+// ======================================
+// INCOME REPORT
+// ======================================
+
+async function createIncomeReport(){
+
+    const records = await getFinanceRecords();
+
+
+    let total=0;
+
+    let methods={};
+
+
+
+    records.forEach(record=>{
+
+
+        (record.payments || [])
+        .forEach(payment=>{
+
+
+            const amount =
+            Number(payment.amount || 0);
+
+
+            total += amount;
+
+
+            const method =
+            payment.paymentMethod || "Unknown";
+
+
+            methods[method] =
+            (methods[method] || 0) + amount;
+
+
+        });
+
+
+    });
+
+
+
+    let breakdown="";
+
+
+    Object.keys(methods)
+    .forEach(method=>{
+
+
+        breakdown +=
+`
+${method}:
+${money(methods[method])}
+`;
+
+    });
+
+
+
+    alert(
+`
+INCOME REPORT
+
+Total Income:
+
+${money(total)}
+
+
+PAYMENT BREAKDOWN
+
+${breakdown}
+`
+    );
 
 }
 
 
-function createIncomeReport(){
 
-    alert("Income Report");
+// ======================================
+// AUDIT REPORT
+// ======================================
 
-}
+async function createAuditReport(){
+
+    const records = await getFinanceRecords();
 
 
-function createAuditReport(){
+    let count=0;
 
-    alert("Audit Report");
+
+    records.forEach(record=>{
+
+        count += (record.payments || []).length;
+
+    });
+
+
+
+    alert(
+`
+AUDIT REPORT
+
+Total Payment Transactions:
+
+${count}
+
+Generated:
+${new Date().toLocaleString()}
+`
+    );
 
 }
 // ======================================
