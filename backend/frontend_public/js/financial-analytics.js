@@ -799,17 +799,11 @@ async function createMonthlyCollectionReport(){
     });
 
 
-    openReportModal(
-    "Daily Collection Report",
+   openReportModal(
+    "Monthly Collection Report",
     `
+    <h3>Month: ${now.toLocaleString("default",{month:"long"})}</h3>
     <h3>Total Collected: ${money(total)}</h3>
-
-    <pre>${rows || "No collections today."}</pre>
-
-    <div class="report-actions">
-        <button onclick="downloadPDF()">Download PDF</button>
-        <button onclick="downloadExcel()">Download Excel</button>
-    </div>
     `
 );
 
@@ -843,17 +837,12 @@ async function createTermReport(){
 
 
 
-   openReportModal(
-    "Daily Collection Report",
+  openReportModal(
+    "Term Financial Report",
     `
-    <h3>Total Collected: ${money(total)}</h3>
-
-    <pre>${rows || "No collections today."}</pre>
-
-    <div class="report-actions">
-        <button onclick="downloadPDF()">Download PDF</button>
-        <button onclick="downloadExcel()">Download Excel</button>
-    </div>
+    <h3>Expected Revenue: ${money(expected)}</h3>
+    <h3>Collected Revenue: ${money(paid)}</h3>
+    <h3>Outstanding Balance: ${money(balance)}</h3>
     `
 );
 
@@ -896,16 +885,9 @@ ${money(record.balance)}
 
 
    openReportModal(
-    "Daily Collection Report",
+    "Defaulters Report",
     `
-    <h3>Total Collected: ${money(total)}</h3>
-
-    <pre>${rows || "No collections today."}</pre>
-
-    <div class="report-actions">
-        <button onclick="downloadPDF()">Download PDF</button>
-        <button onclick="downloadExcel()">Download Excel</button>
-    </div>
+    <pre>${output || "No defaulters."}</pre>
     `
 );
 
@@ -974,17 +956,11 @@ ${money(methods[method])}
 
 
 
-    openReportModal(
-    "Daily Collection Report",
+   openReportModal(
+    "Income Report",
     `
-    <h3>Total Collected: ${money(total)}</h3>
-
-    <pre>${rows || "No collections today."}</pre>
-
-    <div class="report-actions">
-        <button onclick="downloadPDF()">Download PDF</button>
-        <button onclick="downloadExcel()">Download Excel</button>
-    </div>
+    <h3>Total Income: ${money(total)}</h3>
+    <pre>${breakdown}</pre>
     `
 );
 
