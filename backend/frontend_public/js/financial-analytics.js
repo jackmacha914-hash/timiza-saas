@@ -851,11 +851,14 @@ function buildDailyReport(records, period) {
             </thead>
 
             <tbody>
-                ${rows || `
+                ${
+                    rows ||
+                    `
                     <tr>
                         <td colspan="3">No collections today.</td>
                     </tr>
-                `}
+                `
+                }
             </tbody>
         </table>
 
@@ -864,8 +867,8 @@ function buildDailyReport(records, period) {
             <button onclick="downloadExcel()">Download Excel</button>
         </div>
     `;
-}
 
+}
 
 // ======================================
 // MONTHLY REPORT BUILDER
@@ -909,10 +912,8 @@ function buildMonthlyReport(records, period){
 
 }
 
-
-
 // ======================================
-// TERM REPORT
+// TERM REPORT BUILDER
 // ======================================
 
 function buildTermReport(records){
@@ -942,10 +943,8 @@ function buildTermReport(records){
 
 }
 
-
-
 // ======================================
-// DEFAULTERS REPORT
+// DEFAULTERS REPORT BUILDER
 // ======================================
 
 function buildDefaultersReport(records){
@@ -953,18 +952,18 @@ function buildDefaultersReport(records){
     let output = "";
 
     records
-    .filter(r => Number(r.balance) > 0)
-    .forEach(record => {
+        .filter(r => Number(r.balance) > 0)
+        .forEach(record => {
 
-        output += `
+            output += `
 ${record.student?.name || "Unknown"}
 Class: ${record.className}
 Balance: ${money(record.balance)}
 
-----------------------
+------------------------
 `;
 
-    });
+        });
 
     return `
         <pre>${output || "No defaulters."}</pre>
@@ -977,20 +976,8 @@ Balance: ${money(record.balance)}
 
 }
 
-
-   openReportModal(
-    "Defaulters Report",
-    `
-    <pre>${output || "No defaulters."}</pre>
-    `
-);
-
-}
-
-
-
 // ======================================
-// INCOME REPORT
+// INCOME REPORT BUILDER
 // ======================================
 
 function buildIncomeReport(records){
@@ -1037,20 +1024,8 @@ ${method}: ${money(methods[method])}
 
 }
 
-   openReportModal(
-    "Income Report",
-    `
-    <h3>Total Income: ${money(total)}</h3>
-    <pre>${breakdown}</pre>
-    `
-);
-
-}
-
-
-
 // ======================================
-// AUDIT REPORT
+// AUDIT REPORT BUILDER
 // ======================================
 
 function buildAuditReport(records){
@@ -1073,25 +1048,6 @@ function buildAuditReport(records){
             <button onclick="downloadExcel()">Download Excel</button>
         </div>
     `;
-
-}
-
-openReportModal("Audit Report", html);
-}
-//modal//
-function openReportModal(title, content){
-
-    document.getElementById("reportModalTitle").textContent = title;
-
-    document.getElementById("reportModalBody").innerHTML = content;
-
-    document.getElementById("reportModal").style.display = "flex";
-
-}
-
-function closeReportModal(){
-
-    document.getElementById("reportModal").style.display = "none";
 
 }
 
