@@ -1022,196 +1022,149 @@ ${new Date().toLocaleString()}
 // REPORT HISTORY
 // ======================================
 
-document.addEventListener("DOMContentLoaded", () => {
 
-    document
-    .getElementById("reportHistoryBtn")
-    ?.addEventListener(
-        "click",
-        loadReportHistory
-    );
+function saveReportHistory(type,data){
 
+    let reports =
+        JSON.parse(localStorage.getItem("timizaReports"))
+        || [];
 
-    document
-    .getElementById("refreshReportHistory")
-    ?.addEventListener(
-        "click",
-        loadReportHistory
-    );
 
-});
+    reports.unshift({
 
+        id:Date.now(),
 
+        type:type,
 
-async function loadReportHistory(){
+        date:new Date().toLocaleString(),
 
-    try{
-
-        const token = localStorage.getItem("token");
-
-
-        const response = await fetch(
-
-            "https://timiza-saas.onrender.com/api/reports",
-
-            {
-
-                method:"GET",
-
-                headers:{
-
-                    Authorization:`Bearer ${token}`,
-
-                    Accept:"application/json"
-
-                }
-
-            }
-
-        );
-
-
-        if(!response.ok){
-
-            throw new Error(
-                "Failed loading reports"
-            );
-
-        }
-
-
-        const data = await response.json();
-
-
-        const reports =
-            Array.isArray(data)
-            ? data
-            : data.reports || [];
-
-
-        displayReportHistory(reports);
-
-
-
-    }
-    catch(error){
-
-        console.error(
-            "Report history error:",
-            error
-        );
-
-
-    }
-
-}
-
-
-
-
-function displayReportHistory(reports){
-
-
-    const body =
-    document.getElementById(
-        "reportHistoryBody"
-    );
-
-
-    if(!body)return;
-
-
-    body.innerHTML="";
-
-
-    if(!reports.length){
-
-
-        body.innerHTML=`
-
-        <tr>
-
-            <td colspan="5" class="empty-row">
-
-                No previous reports available
-
-            </td>
-
-        </tr>
-
-        `;
-
-
-        return;
-
-    }
-
-
-
-    reports.forEach(report=>{
-
-
-        body.innerHTML+=`
-
-        <tr>
-
-
-            <td>
-                ${report.reportType || "-"}
-            </td>
-
-
-            <td>
-                ${report.period || "-"}
-            </td>
-
-
-            <td>
-                ${new Date(
-                    report.createdAt
-                ).toLocaleDateString()}
-            </td>
-
-
-            <td>
-                ${report.generatedBy?.name || "Admin"}
-            </td>
-
-
-            <td>
-
-                <button 
-                class="panel-btn"
-                onclick="openReport('${report.fileUrl}')">
-
-                    View
-
-                </button>
-
-
-            </td>
-
-
-        </tr>
-
-        `;
-
+        data:data
 
     });
 
 
+    localStorage.setItem(
+        "timizaReports",
+        JSON.stringify(reports)
+    );
+
 }
 
 
 
-function openReport(url){
+// OPEN HISTORY
 
-    if(!url)return;
+function openPreviousReports(){
+
+    const modal =
+        document.getElementById("reportsModal");
+
+    const list =
+        document.getElementById("reportsHistoryList");
 
 
-    window.open(
-        url,
-        "_blank"
+    let reports =
+        JSON.parse(localStorage.getItem("timizaReports"))
+        || [];
+
+
+    if(reports.length===0){
+
+        list.innerHTML=
+        `
+        <p class="empty-row">
+        No reports generated yet
+        </p>
+        `;
+
+    }
+    else{
+
+
+        list.innerHTML="";
+
+
+        reports.forEach(report=>{
+
+
+            list.innerHTML +=
+
+            `
+
+            <div class="report-history-item">
+
+                <div>
+
+                    <strong>
+                    ${report.type}
+                    </strong>
+
+                    <br>
+
+                    <small>
+                    ${report.date}
+                    </small>
+
+                </div>
+
+
+                <button onclick="viewSavedReport(${report.id})">
+
+                    Open
+
+                </button>
+
+
+            </div>
+
+            `;
+
+
+        });
+
+
+    }
+
+
+    modal.style.display="block";
+
+
+}
+
+
+
+
+function closeReportsModal(){
+
+    document.getElementById("reportsModal")
+    .style.display="none";
+
+}
+
+
+
+
+function viewSavedReport(id){
+
+    let reports =
+    JSON.parse(localStorage.getItem("timizaReports"))
+    || [];
+
+
+    const report =
+    reports.find(r=>r.id===id);
+
+
+    if(!report)return;
+
+
+    console.log("Opening report:",report);
+
+
+    alert(
+        report.type+
+        "\nGenerated: "+
+        report.date
     );
 
 }
