@@ -1,0 +1,241 @@
+<div class="financial-analytics-page">
+
+    <!-- ===========================
+         PAGE HEADER
+    ============================ -->
+    <div class="page-header">
+
+        <div class="page-title">
+
+            <h1>
+                <i class="fas fa-chart-line"></i>
+                Financial Analytics
+            </h1>
+
+            <p>
+                Monitor school revenue, fee collection, balances, trends and financial performance.
+            </p>
+
+        </div>
+
+        <div class="page-actions">
+
+            <button id="refreshAnalyticsBtn" class="primary-btn">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+
+            <button id="exportPdfBtn" class="secondary-btn">
+                <i class="fas fa-file-pdf"></i>
+                Export PDF
+            </button>
+
+            <button id="exportExcelBtn" class="secondary-btn">
+                <i class="fas fa-file-excel"></i>
+                Export Excel
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- ===========================
+         FILTER BAR
+    ============================ -->
+
+    <div class="analytics-filter-bar">
+
+        <select id="analyticsAcademicYear">
+            <option value="">Academic Year</option>
+        </select>
+
+        <select id="analyticsTerm">
+            <option value="">Term</option>
+            <option>Term 1</option>
+            <option>Term 2</option>
+            <option>Term 3</option>
+        </select>
+
+        <select id="analyticsClass">
+            <option value="">All Classes</option>
+        </select>
+
+        <button id="applyAnalyticsFilters" class="primary-btn">
+            Apply Filters
+        </button>
+
+    </div>
+
+    <!-- ===========================
+         KPI CARDS
+    ============================ -->
+
+    <div class="analytics-cards">
+
+        <div class="analytics-card">
+            <span class="card-icon blue">
+                <i class="fas fa-wallet"></i>
+            </span>
+
+            <div>
+                <h4>Expected Revenue</h4>
+                <h2 id="expectedRevenue">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon green">
+                <i class="fas fa-money-bill-wave"></i>
+            </span>
+
+            <div>
+                <h4>Collected Revenue</h4>
+                <h2 id="collectedRevenue">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon red">
+                <i class="fas fa-exclamation-circle"></i>
+            </span>
+
+            <div>
+                <h4>Outstanding Balance</h4>
+                <h2 id="outstandingRevenue">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon orange">
+                <i class="fas fa-percentage"></i>
+            </span>
+
+            <div>
+                <h4>Collection Rate</h4>
+                <h2 id="collectionRate">
+                    0%
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon purple">
+                <i class="fas fa-calendar-day"></i>
+            </span>
+
+            <div>
+                <h4>Today's Collection</h4>
+                <h2 id="todayCollection">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon teal">
+                <i class="fas fa-calendar-alt"></i>
+            </span>
+
+            <div>
+                <h4>This Month</h4>
+                <h2 id="monthCollection">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon yellow">
+                <i class="fas fa-user-clock"></i>
+            </span>
+
+            <div>
+                <h4>Fee Defaulters</h4>
+                <h2 id="defaultersCount">
+                    0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon dark">
+                <i class="fas fa-receipt"></i>
+            </span>
+
+            <div>
+                <h4>Total Transactions</h4>
+                <h2 id="transactionsCount">
+                    0
+                </h2>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===========================
+         CHARTS
+    ============================ -->
+
+    <div class="analytics-grid">
+
+        <div class="analytics-panel">
+
+            <div class="panel-header">
+                <h3>
+                    Revenue Trend
+                </h3>
+            </div>
+
+            <canvas id="revenueTrendChart"></canvas>
+
+        </div>
+
+        <div class="analytics-panel">
+
+            <div class="panel-header">
+                <h3>
+                    Collection by Class
+                </h3>
+            </div>
+
+            <canvas id="collectionByClassChart"></canvas>
+
+        </div>
+
+    </div>
+
+    <div class="analytics-grid">
+
+        <div class="analytics-panel">
+
+            <div class="panel-header">
+                <h3>
+                    Payment Methods
+                </h3>
+            </div>
+
+            <canvas id="paymentMethodChart"></canvas>
+
+        </div>
+
+        <div class="analytics-panel">
+
+            <div class="panel-header">
+                <h3>
+                    Fee Collection by Term
+                </h3>
+            </div>
+
+            <canvas id="collectionTermChart"></canvas>
+
+        </div>
+
+    </div>
+
+</div>
