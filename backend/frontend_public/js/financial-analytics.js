@@ -676,6 +676,113 @@ async function generateReport(reportType, period = "today") {
     openReportModal(getReportTitle(reportType, period), html);
 
 }
+
+// ======================================
+// REPORT GENERATOR
+// ======================================
+async function generateReport(reportType, period = "today") {
+
+    const records = await getFinanceRecords();
+
+    let html = "";
+
+    switch(reportType){
+
+        case "daily":
+            html = buildDailyReport(records, period);
+            break;
+
+        case "monthly":
+            html = buildMonthlyReport(records, period);
+            break;
+
+        case "term":
+            html = buildTermReport(records);
+            break;
+
+        case "income":
+            html = buildIncomeReport(records, period);
+            break;
+
+        case "defaulters":
+            html = buildDefaultersReport(records);
+            break;
+
+        case "audit":
+            html = buildAuditReport(records, period);
+            break;
+
+    }
+
+    openReportModal(getReportTitle(reportType), html);
+
+}
+
+// ======================================
+// REPORT TITLES
+// ======================================
+
+function getReportTitle(type){
+
+    switch(type){
+
+        case "daily":
+            return "Daily Collection Report";
+
+        case "monthly":
+            return "Monthly Collection Report";
+
+        case "term":
+            return "Term Financial Report";
+
+        case "income":
+            return "Income Report";
+
+        case "defaulters":
+            return "Defaulters Report";
+
+        case "audit":
+            return "Audit Report";
+
+        default:
+            return "Financial Report";
+    }
+
+}
+
+// ======================================
+// REPORT BUTTON ACTIONS
+// ======================================
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    setupReportButtons();
+
+});
+
+//setup button//
+
+function setupReportButtons() {
+
+    document.getElementById("dailyCollectionReport")
+        ?.addEventListener("click", () => showReportPeriodSelector("daily"));
+
+    document.getElementById("monthlyCollectionReport")
+        ?.addEventListener("click", () => showReportPeriodSelector("monthly"));
+
+    document.getElementById("termCollectionReport")
+        ?.addEventListener("click", () => generateReport("term"));
+
+    document.getElementById("incomeReport")
+        ?.addEventListener("click", () => showReportPeriodSelector("income"));
+
+    document.getElementById("defaultersReport")
+        ?.addEventListener("click", () => generateReport("defaulters"));
+
+    document.getElementById("auditReport")
+        ?.addEventListener("click", () => showReportPeriodSelector("audit"));
+
+}
 // ======================================
 // REPORT BUTTON ACTIONS
 // ======================================
@@ -991,6 +1098,24 @@ function buildAuditReport(records){
             <button onclick="downloadExcel()">Download Excel</button>
         </div>
     `;
+
+}
+
+//open report modal//
+
+function openReportModal(title, content){
+
+    document.getElementById("reportModalTitle").textContent = title;
+
+    document.getElementById("reportModalBody").innerHTML = content;
+
+    document.getElementById("reportModal").style.display = "flex";
+
+}
+
+function closeReportModal(){
+
+    document.getElementById("reportModal").style.display = "none";
 
 }
 
