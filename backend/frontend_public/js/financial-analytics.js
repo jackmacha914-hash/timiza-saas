@@ -635,13 +635,11 @@ function loadRevenueTrendChart(records) {
 }
 
 // ======================================
-// REPORT generator
+// REPORT GENERATOR
 // ======================================
 async function generateReport(reportType, period = "today") {
 
     const records = await getFinanceRecords();
-
-    const today = new Date();
 
     let html = "";
 
@@ -673,7 +671,50 @@ async function generateReport(reportType, period = "today") {
 
     }
 
-    openReportModal(getReportTitle(reportType, period), html);
+   openReportModal(getReportTitle(reportType), html);
+}
+
+// ======================================
+// REPORT TITLES
+// ======================================
+
+function getReportTitle(type){
+
+    switch(type){
+
+        case "daily":
+            return "Daily Collection Report";
+
+        case "monthly":
+            return "Monthly Collection Report";
+
+        case "term":
+            return "Term Financial Report";
+
+        case "income":
+            return "Income Report";
+
+        case "defaulters":
+            return "Defaulters Report";
+
+        case "audit":
+            return "Audit Report";
+
+        default:
+            return "Financial Report";
+    }
+
+}
+
+// ======================================
+// REPORT BUTTON ACTIONS
+// ======================================
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    setupReportButtons();
+
+});
 
 }
 // ======================================
