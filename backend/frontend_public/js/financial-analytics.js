@@ -803,116 +803,109 @@ function buildDailyReport(records, period) {
 // DAILY COLLECTION
 // ======================================
 
-async function createDailyCollectionReport(){
+// ======================================
+// DAILY REPORT BUILDER
+// ======================================
 
-    const records = await getFinanceRecords();
+function buildDailyReport(records, period) {
 
     let total = 0;
     let rows = "";
 
+    const today = new Date().toLocaleDateString();
 
-    records.forEach(record=>{
+    records.forEach(record => {
 
-        (record.payments || []).forEach(payment=>{
+        (record.payments || []).forEach(payment => {
 
+            const paymentDate = new Date(payment.paymentDate).toLocaleDateString();
 
-            const date =
-            new Date(payment.paymentDate)
-            .toLocaleDateString();
-
-
-            const today =
-            new Date()
-            .toLocaleDateString();
-
-
-            if(date === today){
+            if (paymentDate === today) {
 
                 total += Number(payment.amount || 0);
 
-
                 rows += `
-                ${record.student?.name || "Unknown"}
-                - ${money(payment.amount)}
-                - ${payment.paymentMethod}
-                \n`;
+                    <tr>
+                        <td>${record.student?.name || "Unknown"}</td>
+                        <td>${money(payment.amount)}</td>
+                        <td>${payment.paymentMethod || "-"}</td>
+                    </tr>
+                `;
 
             }
 
-
         });
-
 
     });
 
+    return `
+        <h3>Total Collected: ${money(total)}</h3>
 
- openReportModal(
-    "Daily Collection Report",
-    `
-    <h3>Total Collected: ${money(total)}</h3>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Amount</th>
+                    <th>Payment Method</th>
+                </tr>
+            </thead>
 
-    <pre>${rows || "No collections today."}</pre>
+            <tbody>
+                ${rows || `
+                    <tr>
+                        <td colspan="3">No collections today.</td>
+                    </tr>
+                `}
+            </tbody>
+        </table>
 
-    <div class="report-actions">
-        <button onclick="downloadPDF()">Download PDF</button>
-        <button onclick="downloadExcel()">Download Excel</button>
-    </div>
-    `
-);
-
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
 }
 
 
-
 // ======================================
-// MONTHLY COLLECTION
+// MONTHLY REPORT BUILDER
 // ======================================
 
-async function createMonthlyCollectionReport(){
-
-    const records = await getFinanceRecords();
-
+function buildMonthlyReport(records, period){
 
     let total = 0;
 
-
     const now = new Date();
 
+    records.forEach(record => {
 
-    records.forEach(record=>{
+        (record.payments || []).forEach(payment => {
 
+            const date = new Date(payment.paymentDate);
 
-        (record.payments || []).forEach(payment=>{
-
-
-            const date =
-            new Date(payment.paymentDate);
-
-
-            if(
-                date.getMonth() === now.getMonth()
-                &&
+            if (
+                date.getMonth() === now.getMonth() &&
                 date.getFullYear() === now.getFullYear()
-            ){
+            ) {
 
                 total += Number(payment.amount || 0);
 
             }
 
-
         });
-
 
     });
 
+    return `
+        <h3>Month: ${now.toLocaleString("default",{month:"long"})}</h3>
 
-   openReportModal(
-    "Monthly Collection Report",
-    `
-    <h3>Month: ${now.toLocaleString("default",{month:"long"})}</h3>
-    <h3>Total Collected: ${money(total)}</h3>
-    `
-);
+        <h3>Total Collected: ${money(total)}</h3>
+
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
 
 }
 
@@ -922,25 +915,32 @@ async function createMonthlyCollectionReport(){
 // TERM REPORT
 // ======================================
 
-async function createTermReport(){
-
-    const records = await getFinanceRecords();
-
+function buildTermReport(records){
 
     let expected = 0;
     let paid = 0;
     let balance = 0;
 
-
-    records.forEach(record=>{
+    records.forEach(record => {
 
         expected += Number(record.totalPayable || 0);
-
         paid += Number(record.paidAmount || 0);
-
         balance += Number(record.balance || 0);
 
     });
+
+    return `
+        <h3>Expected Revenue: ${money(expected)}</h3>
+        <h3>Collected Revenue: ${money(paid)}</h3>
+        <h3>Outstanding Balance: ${money(balance)}</h3>
+
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
+
+}
 
 
 
@@ -961,34 +961,34 @@ async function createTermReport(){
 // DEFAULTERS REPORT
 // ======================================
 
-async function createDefaultersReport(){
+function buildDefaultersReport(records){
 
-    const records = await getFinanceRecords();
-
-
-    let output="";
-
+    let output = "";
 
     records
-    .filter(r=>Number(r.balance)>0)
-    .forEach(record=>{
+    .filter(r => Number(r.balance) > 0)
+    .forEach(record => {
 
-
-        output +=
-`
+        output += `
 ${record.student?.name || "Unknown"}
+Class: ${record.className}
+Balance: ${money(record.balance)}
 
-Class:
-${record.className}
-
-Balance:
-${money(record.balance)}
-
-----------------
+----------------------
 `;
 
     });
 
+    return `
+        <pre>${output || "No defaulters."}</pre>
+
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
+
+}
 
 
    openReportModal(
@@ -1006,62 +1006,49 @@ ${money(record.balance)}
 // INCOME REPORT
 // ======================================
 
-async function createIncomeReport(){
+function buildIncomeReport(records){
 
-    const records = await getFinanceRecords();
+    let total = 0;
+    const methods = {};
 
+    records.forEach(record => {
 
-    let total=0;
+        (record.payments || []).forEach(payment => {
 
-    let methods={};
-
-
-
-    records.forEach(record=>{
-
-
-        (record.payments || [])
-        .forEach(payment=>{
-
-
-            const amount =
-            Number(payment.amount || 0);
-
+            const amount = Number(payment.amount || 0);
 
             total += amount;
 
+            const method = payment.paymentMethod || "Unknown";
 
-            const method =
-            payment.paymentMethod || "Unknown";
-
-
-            methods[method] =
-            (methods[method] || 0) + amount;
-
+            methods[method] = (methods[method] || 0) + amount;
 
         });
 
-
     });
 
+    let breakdown = "";
 
+    Object.keys(methods).forEach(method => {
 
-    let breakdown="";
-
-
-    Object.keys(methods)
-    .forEach(method=>{
-
-
-        breakdown +=
-`
-${method}:
-${money(methods[method])}
+        breakdown += `
+${method}: ${money(methods[method])}
 `;
 
     });
 
+    return `
+        <h3>Total Income: ${money(total)}</h3>
 
+        <pre>${breakdown}</pre>
+
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
+
+}
 
    openReportModal(
     "Income Report",
@@ -1079,32 +1066,28 @@ ${money(methods[method])}
 // AUDIT REPORT
 // ======================================
 
-async function createAuditReport(){
+function buildAuditReport(records){
 
-    const records = await getFinanceRecords();
+    let count = 0;
 
-
-    let count=0;
-
-
-    records.forEach(record=>{
+    records.forEach(record => {
 
         count += (record.payments || []).length;
 
     });
 
+    return `
+        <h3>Total Payment Transactions: ${count}</h3>
 
+        <p>Generated: ${new Date().toLocaleString()}</p>
 
-   let html = `
-<h3>Total Payment Transactions: ${count}</h3>
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
 
-<p>Generated: ${new Date().toLocaleString()}</p>
-
-<div class="report-actions">
-    <button onclick="downloadPDF()">Download PDF</button>
-    <button onclick="downloadExcel()">Download Excel</button>
-</div>
-`;
+}
 
 openReportModal("Audit Report", html);
 }
