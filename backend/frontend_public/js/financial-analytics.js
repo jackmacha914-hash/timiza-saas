@@ -635,8 +635,47 @@ function loadRevenueTrendChart(records) {
 }
 
 // ======================================
-// REPORT BUTTONS
+// REPORT generator
 // ======================================
+async function generateReport(reportType, period = "today") {
+
+    const records = await getFinanceRecords();
+
+    const today = new Date();
+
+    let html = "";
+
+    switch(reportType){
+
+        case "daily":
+            html = buildDailyReport(records, period);
+            break;
+
+        case "monthly":
+            html = buildMonthlyReport(records, period);
+            break;
+
+        case "term":
+            html = buildTermReport(records);
+            break;
+
+        case "income":
+            html = buildIncomeReport(records, period);
+            break;
+
+        case "defaulters":
+            html = buildDefaultersReport(records);
+            break;
+
+        case "audit":
+            html = buildAuditReport(records, period);
+            break;
+
+    }
+
+    openReportModal(getReportTitle(reportType, period), html);
+
+}
 // ======================================
 // REPORT BUTTON ACTIONS
 // ======================================
@@ -652,8 +691,23 @@ function setupReportButtons(){
 
 
     document
-    .getElementById("dailyCollectionReport")
-    ?.addEventListener("click", createDailyCollectionReport);
+   document.getElementById("dailyCollectionReport")
+?.addEventListener("click", () => showReportPeriodSelector("daily"));
+
+document.getElementById("monthlyCollectionReport")
+?.addEventListener("click", () => showReportPeriodSelector("monthly"));
+
+document.getElementById("termCollectionReport")
+?.addEventListener("click", () => generateReport("term"));
+
+document.getElementById("incomeReport")
+?.addEventListener("click", () => showReportPeriodSelector("income"));
+
+document.getElementById("defaultersReport")
+?.addEventListener("click", () => generateReport("defaulters"));
+
+document.getElementById("auditReport")
+?.addEventListener("click", () => showReportPeriodSelector("audit"));
 
 
 
@@ -1055,6 +1109,48 @@ function setText(id,value){
 function showLoading(){
 
     console.log("Loading financial analytics...");
+
+}
+//helper for moth midal//
+function showReportPeriodSelector(type){
+
+    const html = `
+
+        <h3>Select Report Period</h3>
+
+        <select id="reportPeriod">
+
+            <option value="today">Today</option>
+
+            <option value="yesterday">Yesterday</option>
+
+            <option value="last7">Last 7 Days</option>
+
+            <option value="month">This Month</option>
+
+            <option value="custom">Custom Range</option>
+
+        </select>
+
+        <br><br>
+
+        <button onclick="startSelectedReport('${type}')">
+
+            Generate Report
+
+        </button>
+
+    `;
+
+    openReportModal("Generate Report", html);
+
+}
+
+function startSelectedReport(type){
+
+    const period = document.getElementById("reportPeriod").value;
+
+    generateReport(type, period);
 
 }
 
