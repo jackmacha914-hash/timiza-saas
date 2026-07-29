@@ -1152,81 +1152,137 @@ window.fetch = async (input, init = {}) => {
 </head>
 
 <body>
-    <!-- Notification Container -->
-    <div id="notification-container" class="notification-container"></div>
-    
-    <button class="sidebar-toggle" aria-label="Toggle sidebar">
-        <i class="fas fa-bars"></i>
-    </button>
-    
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <div class="logo-icon">
-                <i class="fas fa-graduation-cap"></i>
-            </div>
-            <h2>SchoolSync</h2>
+<!-- Notification Container -->
+<div id="notification-container" class="notification-container"></div>
+
+<button class="sidebar-toggle" aria-label="Toggle sidebar">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon">
+            <i class="fas fa-graduation-cap"></i>
         </div>
-        <div class="sidebar-profile">
-            <div class="profile-avatar">
-                <i class="fas fa-user-circle"></i>
-            </div>
-            <div class="profile-info">
-                <div class="profile-name">Admin User</div>
-            </div>
+        <h2>SchoolSync</h2>
+    </div>
+
+    <div class="sidebar-profile">
+        <div class="profile-avatar">
+            <i class="fas fa-user-circle"></i>
         </div>
-        <div class="divider"></div>
-        <ul class="sidebar-menu">
-            <li class="tab-link active" data-tab="dashboard-section">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </li>
-            <li class="tab-link" data-tab="registration-section">
-                <i class="fas fa-user-plus"></i>
-                <span>Registration</span>
-            </li>
-            <li class="tab-link" data-tab="user-management-section">
-                <i class="fas fa-users-cog"></i>
-                <span>User Management</span>
-            </li>
-            <li class="tab-link" data-tab="student-management-section">
-                <i class="fas fa-user-graduate"></i>
-                <span>Students</span>
-            </li>
-            <li class="tab-link" data-tab="clubs-section">
-                <i class="fas fa-flag"></i>
-                <span>Clubs</span>
-            </li>
-            <li class="tab-link" data-tab="library-section">
-                <i class="fas fa-book"></i>
-                <span>Library</span>
-            </li>
-            <li class="tab-link" data-tab="accountant-section">
-                <i class="fas fa-calculator"></i>
-                <span>Finance</span>
-            </li>
-            <li class="tab-link" data-tab="meals-collections-section">
-                <i class="fas fa-money-bill-wave"></i>
-                <span>Meals & Collections</span>
-            </li>
-            <li class="tab-link" data-tab="events-section">
-                <i class="fas fa-clipboard-check"></i>
-                <span>Attendance</span>
-            </li>
-            <li class="tab-link" data-tab="transport-section">
+        <div class="profile-info">
+            <div class="profile-name">Admin User</div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <ul class="sidebar-menu">
+
+        <li class="tab-link active" data-tab="dashboard-section">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </li>
+
+        <li class="tab-link" data-tab="registration-section">
+            <i class="fas fa-user-plus"></i>
+            <span>Registration</span>
+        </li>
+
+        <li class="tab-link" data-tab="student-management-section">
+            <i class="fas fa-user-graduate"></i>
+            <span>Students</span>
+        </li>
+
+        <li class="tab-link" data-tab="staff-section">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>Staff</span>
+        </li>
+
+        <li class="tab-link" data-tab="academics-section">
+            <i class="fas fa-book-open"></i>
+            <span>Academics</span>
+        </li>
+
+        <li class="tab-link" data-tab="attendance-section">
+            <i class="fas fa-calendar-check"></i>
+            <span>Attendance</span>
+        </li>
+
+        <li class="tab-link" data-tab="finance-section">
+            <i class="fas fa-wallet"></i>
+            <span>Finance</span>
+        </li>
+
+        <li class="tab-link" data-tab="analytics-section">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics</span>
+        </li>
+
+        <li class="tab-link" data-tab="library-section">
+            <i class="fas fa-book"></i>
+            <span>Library</span>
+        </li>
+
+        <li class="tab-link" data-tab="meals-collections-section">
+            <i class="fas fa-utensils"></i>
+            <span>Meals & Collections</span>
+        </li>
+
+        <li class="tab-link" data-tab="transport-section">
             <i class="fas fa-bus"></i>
             <span>Transport</span>
-            </li>
+        </li>
 
-            <li class="tab-link" data-tab="backup-section">
-                <i class="fas fa-database"></i>
-                <span>Backup</span>
-            </li>
-            <li class="tab-link" data-tab="role-management-section">Role Management</li>
-            <li class="tab-link" data-tab="quizzes-section" onclick="window.location.href='quizzes.html'">Quizzes</li>
-            <li class="tab-link" data-tab="logout-section" onclick="window.location.href='/pages/login.html'">Logout</li>
-        </ul>
-    </aside>
+        <li class="tab-link" data-tab="clubs-section">
+            <i class="fas fa-trophy"></i>
+            <span>Clubs</span>
+        </li>
+
+        <li class="tab-link" data-tab="communication-section">
+            <i class="fas fa-bullhorn"></i>
+            <span>Communication</span>
+        </li>
+
+        <li class="tab-link" data-tab="reports-section">
+            <i class="fas fa-file-alt"></i>
+            <span>Reports</span>
+        </li>
+
+        <li class="tab-link" data-tab="user-management-section">
+            <i class="fas fa-users-cog"></i>
+            <span>User Management</span>
+        </li>
+
+        <li class="tab-link" data-tab="role-management-section">
+            <i class="fas fa-user-shield"></i>
+            <span>Role Management</span>
+        </li>
+
+        <li class="tab-link" data-tab="school-settings-section">
+            <i class="fas fa-cogs"></i>
+            <span>School Settings</span>
+        </li>
+
+        <li class="tab-link" data-tab="backup-section">
+            <i class="fas fa-database"></i>
+            <span>Backup</span>
+        </li>
+
+        <li class="tab-link" data-tab="quizzes-section" onclick="window.location.href='quizzes.html'">
+            <i class="fas fa-question-circle"></i>
+            <span>Quizzes</span>
+        </li>
+
+        <li class="tab-link" onclick="window.location.href='/pages/login.html'">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </li>
+
+    </ul>
+</aside>
 
     <!-- Main Content -->
     <main class="main-content">
