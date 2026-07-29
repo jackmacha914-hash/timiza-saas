@@ -739,16 +739,19 @@ async function createDailyCollectionReport(){
     });
 
 
-    alert(
-`
-DAILY COLLECTION REPORT
+ openReportModal(
+    "Daily Collection Report",
+    `
+    <h3>Total Collected: ${money(total)}</h3>
 
-Total:
-${money(total)}
+    <pre>${rows || "No collections today."}</pre>
 
-${rows || "No collections today"}
-`
-    );
+    <div class="report-actions">
+        <button onclick="downloadPDF()">Download PDF</button>
+        <button onclick="downloadExcel()">Download Excel</button>
+    </div>
+    `
+);
 
 }
 
@@ -796,17 +799,19 @@ async function createMonthlyCollectionReport(){
     });
 
 
-    alert(
-`
-MONTHLY COLLECTION REPORT
+    openReportModal(
+    "Daily Collection Report",
+    `
+    <h3>Total Collected: ${money(total)}</h3>
 
-Month:
-${now.toLocaleString("default",{month:"long"})}
+    <pre>${rows || "No collections today."}</pre>
 
-Collected:
-${money(total)}
-`
-    );
+    <div class="report-actions">
+        <button onclick="downloadPDF()">Download PDF</button>
+        <button onclick="downloadExcel()">Download Excel</button>
+    </div>
+    `
+);
 
 }
 
@@ -838,20 +843,19 @@ async function createTermReport(){
 
 
 
-    alert(
-`
-TERM FINANCIAL REPORT
+   openReportModal(
+    "Daily Collection Report",
+    `
+    <h3>Total Collected: ${money(total)}</h3>
 
-Expected:
-${money(expected)}
+    <pre>${rows || "No collections today."}</pre>
 
-Collected:
-${money(paid)}
-
-Outstanding:
-${money(balance)}
-`
-    );
+    <div class="report-actions">
+        <button onclick="downloadPDF()">Download PDF</button>
+        <button onclick="downloadExcel()">Download Excel</button>
+    </div>
+    `
+);
 
 }
 
@@ -891,13 +895,19 @@ ${money(record.balance)}
 
 
 
-    alert(
-`
-DEFAULTERS REPORT
+   openReportModal(
+    "Daily Collection Report",
+    `
+    <h3>Total Collected: ${money(total)}</h3>
 
-${output || "No defaulters"}
-`
-    );
+    <pre>${rows || "No collections today."}</pre>
+
+    <div class="report-actions">
+        <button onclick="downloadPDF()">Download PDF</button>
+        <button onclick="downloadExcel()">Download Excel</button>
+    </div>
+    `
+);
 
 }
 
@@ -964,20 +974,19 @@ ${money(methods[method])}
 
 
 
-    alert(
-`
-INCOME REPORT
+    openReportModal(
+    "Daily Collection Report",
+    `
+    <h3>Total Collected: ${money(total)}</h3>
 
-Total Income:
+    <pre>${rows || "No collections today."}</pre>
 
-${money(total)}
-
-
-PAYMENT BREAKDOWN
-
-${breakdown}
-`
-    );
+    <div class="report-actions">
+        <button onclick="downloadPDF()">Download PDF</button>
+        <button onclick="downloadExcel()">Download Excel</button>
+    </div>
+    `
+);
 
 }
 
@@ -1003,171 +1012,38 @@ async function createAuditReport(){
 
 
 
-    alert(
-`
-AUDIT REPORT
+   openReportModal(
+    "Daily Collection Report",
+    `
+    <h3>Total Collected: ${money(total)}</h3>
 
-Total Payment Transactions:
+    <pre>${rows || "No collections today."}</pre>
 
-${count}
+    <div class="report-actions">
+        <button onclick="downloadPDF()">Download PDF</button>
+        <button onclick="downloadExcel()">Download Excel</button>
+    </div>
+    `
+);
 
-Generated:
-${new Date().toLocaleString()}
-`
-    );
+}
+//modal//
+function openReportModal(title, content){
+
+    document.getElementById("reportModalTitle").textContent = title;
+
+    document.getElementById("reportModalBody").innerHTML = content;
+
+    document.getElementById("reportModal").style.display = "flex";
 
 }
 
-// ======================================
-// REPORT HISTORY
-// ======================================
+function closeReportModal(){
 
-
-function saveReportHistory(type,data){
-
-    let reports =
-        JSON.parse(localStorage.getItem("timizaReports"))
-        || [];
-
-
-    reports.unshift({
-
-        id:Date.now(),
-
-        type:type,
-
-        date:new Date().toLocaleString(),
-
-        data:data
-
-    });
-
-
-    localStorage.setItem(
-        "timizaReports",
-        JSON.stringify(reports)
-    );
+    document.getElementById("reportModal").style.display = "none";
 
 }
 
-
-
-// OPEN HISTORY
-
-function openPreviousReports(){
-
-    const modal =
-        document.getElementById("reportsModal");
-
-    const list =
-        document.getElementById("reportsHistoryList");
-
-
-    let reports =
-        JSON.parse(localStorage.getItem("timizaReports"))
-        || [];
-
-
-    if(reports.length===0){
-
-        list.innerHTML=
-        `
-        <p class="empty-row">
-        No reports generated yet
-        </p>
-        `;
-
-    }
-    else{
-
-
-        list.innerHTML="";
-
-
-        reports.forEach(report=>{
-
-
-            list.innerHTML +=
-
-            `
-
-            <div class="report-history-item">
-
-                <div>
-
-                    <strong>
-                    ${report.type}
-                    </strong>
-
-                    <br>
-
-                    <small>
-                    ${report.date}
-                    </small>
-
-                </div>
-
-
-                <button onclick="viewSavedReport(${report.id})">
-
-                    Open
-
-                </button>
-
-
-            </div>
-
-            `;
-
-
-        });
-
-
-    }
-
-
-    modal.style.display="block";
-
-
-}
-
-
-
-
-function closeReportsModal(){
-
-    document.getElementById("reportsModal")
-    .style.display="none";
-
-}
-
-
-
-
-function viewSavedReport(id){
-
-    let reports =
-    JSON.parse(localStorage.getItem("timizaReports"))
-    || [];
-
-
-    const report =
-    reports.find(r=>r.id===id);
-
-
-    if(!report)return;
-
-
-    console.log("Opening report:",report);
-
-
-    alert(
-        report.type+
-        "\nGenerated: "+
-        report.date
-    );
-
-}
 // ======================================
 // HELPERS
 // ======================================
