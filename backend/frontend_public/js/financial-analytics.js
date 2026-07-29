@@ -947,6 +947,25 @@ function buildAuditReport(records){
 }
 
 // ======================================
+// REPORT MODAL
+// ======================================
+
+function openReportModal(title, content) {
+
+    document.getElementById("reportModalTitle").textContent = title;
+
+    document.getElementById("reportModalBody").innerHTML = content;
+
+    document.getElementById("reportModal").style.display = "flex";
+
+}
+
+function closeReportModal() {
+
+    document.getElementById("reportModal").style.display = "none";
+
+}
+// ======================================
 // HELPERS
 // ======================================
 
