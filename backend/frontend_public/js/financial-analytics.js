@@ -81,7 +81,8 @@ function loadRevenueTrendChart(records) {
 
         (record.payments || []).forEach(payment => {
 
-    const date = new Date(payment.paymentDate);
+            const date = new Date(payment.paymentDate);
+
             const key = date.toLocaleString("default", {
                 month: "short",
                 year: "2-digit"
@@ -204,7 +205,7 @@ function loadPaymentMethodChart(records) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
+        (record.payments || []).forEach(payment => {
 
             const method = payment.paymentMethod || "Unknown";
 
@@ -387,7 +388,7 @@ function updateSummaryCards(records) {
         }
 
         // Calculate today's and this month's collections
-        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
+        (record.payments || []).forEach(payment => {
 
             const paymentDate = new Date(payment.paymentDate);
 
@@ -556,7 +557,80 @@ function loadClassPerformance(records) {
 
 }
 
+function loadRevenueTrendChart(records) {
 
+    const monthly = {};
+
+    records.forEach(record => {
+
+        (record.payments || []).forEach(payment => {
+
+            const date = new Date(payment.paymentDate);
+
+            const month =
+                date.toLocaleString("default", {
+                    month: "short",
+                    year: "numeric"
+                });
+
+            monthly[month] =
+                (monthly[month] || 0) +
+                Number(payment.amount || 0);
+
+        });
+
+    });
+
+    const labels = Object.keys(monthly);
+
+    const values = Object.values(monthly);
+
+    if (revenueTrendChart) revenueTrendChart.destroy();
+
+    revenueTrendChart = new Chart(
+
+        document.getElementById("revenueTrendChart"),
+
+        {
+            type: "line",
+
+            data: {
+
+                labels,
+
+                datasets: [{
+
+                    label: "Revenue",
+
+                    data: values,
+
+                    tension: .3,
+
+                    fill: true
+
+                }]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+
+                        display: false
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    );
 
 }
 
@@ -599,87 +673,18 @@ async function generateReport(reportType, period = "today") {
 
     }
 
-    openReportModal(getReportTitle(reportType), html);
+    openReportModal(getReportTitle(reportType, period), html);
 
 }
-
-// ======================================
-// REPORT GENERATOR
-// ======================================
-async function generateReport(reportType, period = "today") {
-
-    const records = await getFinanceRecords();
-
-    let html = "";
-
-    switch(reportType){
-
-        case "daily":
-            html = buildDailyReport(records, period);
-            break;
-
-        case "monthly":
-            html = buildMonthlyReport(records, period);
-            break;
-
-        case "term":
-            html = buildTermReport(records);
-            break;
-
-        case "income":
-            html = buildIncomeReport(records, period);
-            break;
-
-        case "defaulters":
-            html = buildDefaultersReport(records);
-            break;
-
-        case "audit":
-            html = buildAuditReport(records, period);
-            break;
-
-    }
-
-    openReportModal(getReportTitle(reportType), html);
-
-}
-
-// ======================================
-// REPORT TITLES
-// ======================================
-
-function getReportTitle(type){
-
-    switch(type){
-
-        case "daily":
-            return "Daily Collection Report";
-
-        case "monthly":
-            return "Monthly Collection Report";
-
-        case "term":
-            return "Term Financial Report";
-
-        case "income":
-            return "Income Report";
-
-        case "defaulters":
-            return "Defaulters Report";
-
-        case "audit":
-            return "Audit Report";
-
-        default:
-            return "Financial Report";
-    }
-
-}
-
 // ======================================
 // REPORT BUTTON ACTIONS
 // ======================================
 
+document.addEventListener("DOMContentLoaded", () => {
+
+    setupReportButtons();
+
+});
 
 
 
@@ -696,7 +701,7 @@ function buildDailyReport(records, period) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
+        (record.payments || []).forEach(payment => {
 
             if (new Date(payment.paymentDate).toLocaleDateString() === today) {
 
@@ -754,11 +759,11 @@ function buildDailyReport(records, period) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
+        (record.payments || []).forEach(payment => {
 
             const paymentDate = new Date(payment.paymentDate).toLocaleDateString();
 
-            if (isPaymentInPeriod(payment.paymentDate, period)) {
+            if (paymentDate === today) {
 
                 total += Number(payment.amount || 0);
 
@@ -788,7 +793,16 @@ function buildDailyReport(records, period) {
                 </tr>
             </thead>
 
-        
+            <tbody>
+                ${
+                    rows ||
+                    `
+                    <tr>
+                        <td colspan="3">No collections today.</td>
+                    </tr>
+                `
+                }
+            </tbody>
         </table>
 
         <div class="report-actions">
@@ -803,11 +817,49 @@ function buildDailyReport(records, period) {
 // MONTHLY REPORT BUILDER
 // ======================================
 
+function buildMonthlyReport(records, period){
+
+    let total = 0;
+
+    const now = new Date();
+
+    records.forEach(record => {
+
+        (record.payments || []).forEach(payment => {
+
+            const date = new Date(payment.paymentDate);
+
+            if (
+                date.getMonth() === now.getMonth() &&
+                date.getFullYear() === now.getFullYear()
+            ) {
+
+                total += Number(payment.amount || 0);
+
+            }
+
+        });
+
+    });
+
+    return `
+        <h3>Month: ${now.toLocaleString("default",{month:"long"})}</h3>
+
+        <h3>Total Collected: ${money(total)}</h3>
+
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
+
+}
+
 // ======================================
 // TERM REPORT BUILDER
 // ======================================
 
-function buildTermReport(records, period){
+function buildTermReport(records){
 
     let expected = 0;
     let paid = 0;
@@ -816,15 +868,7 @@ function buildTermReport(records, period){
     records.forEach(record => {
 
         expected += Number(record.totalPayable || 0);
-       (record.payments || []).forEach(payment => {
-
-    if(isPaymentInPeriod(payment.paymentDate, period)){
-
-        paid += Number(payment.amount || 0);
-
-    }
-
-});
+        paid += Number(record.paidAmount || 0);
         balance += Number(record.balance || 0);
 
     });
@@ -879,14 +923,14 @@ Balance: ${money(record.balance)}
 // INCOME REPORT BUILDER
 // ======================================
 
-function buildIncomeReport(records, period){
+function buildIncomeReport(records){
 
     let total = 0;
     const methods = {};
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
+        (record.payments || []).forEach(payment => {
 
             const amount = Number(payment.amount || 0);
 
@@ -927,13 +971,13 @@ ${method}: ${money(methods[method])}
 // AUDIT REPORT BUILDER
 // ======================================
 
-function buildAuditReport(records, period){
+function buildAuditReport(records){
 
     let count = 0;
 
     records.forEach(record => {
 
-        count += (record.payments || []) .filter(payment => isPaymentInPeriod(payment.paymentDate, period)) .length;
+        count += (record.payments || []).length;
 
     });
 
@@ -947,9 +991,6 @@ function buildAuditReport(records, period){
             <button onclick="downloadExcel()">Download Excel</button>
         </div>
     `;
-
-}
-
 
 }
 
