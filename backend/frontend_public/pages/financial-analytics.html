@@ -671,27 +671,22 @@
 
 </div>
 
-    <!-- REPORT HISTORY MODAL -->
-
-<div id="reportsModal" class="report-modal">
+<!-- REPORT MODAL -->
+<div id="reportModal" class="report-modal" style="display:none;">
 
     <div class="report-modal-content">
 
-        <div class="panel-header">
+        <div class="report-modal-header">
 
-            <h3>
-                Previous Reports
-            </h3>
+            <h2 id="reportModalTitle">Report</h2>
 
-            <button onclick="closeReportsModal()">
-                X
+            <button onclick="closeReportModal()">
+                &times;
             </button>
 
         </div>
 
-
-        <div id="reportsHistoryList"></div>
-
+        <div id="reportModalBody"></div>
 
     </div>
 
