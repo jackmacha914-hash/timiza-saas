@@ -687,63 +687,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-function setupReportButtons(){
-
-
-    document
-   document.getElementById("dailyCollectionReport")
-?.addEventListener("click", () => showReportPeriodSelector("daily"));
-
-document.getElementById("monthlyCollectionReport")
-?.addEventListener("click", () => showReportPeriodSelector("monthly"));
-
-document.getElementById("termCollectionReport")
-?.addEventListener("click", () => generateReport("term"));
-
-document.getElementById("incomeReport")
-?.addEventListener("click", () => showReportPeriodSelector("income"));
-
-document.getElementById("defaultersReport")
-?.addEventListener("click", () => generateReport("defaulters"));
-
-document.getElementById("auditReport")
-?.addEventListener("click", () => showReportPeriodSelector("audit"));
-
-
-
-    document
-    .getElementById("monthlyCollectionReport")
-    ?.addEventListener("click", createMonthlyCollectionReport);
-
-
-
-    document
-    .getElementById("termCollectionReport")
-    ?.addEventListener("click", createTermReport);
-
-
-
-    document
-    .getElementById("defaultersReport")
-    ?.addEventListener("click", createDefaultersReport);
-
-
-
-    document
-    .getElementById("incomeReport")
-    ?.addEventListener("click", createIncomeReport);
-
-
-
-    document
-    .getElementById("auditReport")
-    ?.addEventListener("click", createAuditReport);
-
-
-
-    console.log("Report buttons connected");
-
-}
 
 // ======================================
 // REPORT BUILDERS
