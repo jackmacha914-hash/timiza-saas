@@ -673,7 +673,7 @@ async function generateReport(reportType, period = "today") {
 
     }
 
-    openReportModal(getReportTitle(reportType, period), html);
+    openReportModal(getReportTitle(reportType), html);
 
 }
 
