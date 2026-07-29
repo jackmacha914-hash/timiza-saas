@@ -716,7 +716,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-}
 // ======================================
 // REPORT BUTTON ACTIONS
 // ======================================
