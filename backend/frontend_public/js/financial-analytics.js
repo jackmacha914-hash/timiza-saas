@@ -79,7 +79,7 @@ function loadRevenueTrendChart(records) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {
+        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
 
             const date = new Date(payment.paymentDate);
 
@@ -205,7 +205,7 @@ function loadPaymentMethodChart(records) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {
+        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
 
             const method = payment.paymentMethod || "Unknown";
 
@@ -388,7 +388,7 @@ function updateSummaryCards(records) {
         }
 
         // Calculate today's and this month's collections
-        (record.payments || []).forEach(payment => {
+        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
 
             const paymentDate = new Date(payment.paymentDate);
 
@@ -563,7 +563,7 @@ function loadRevenueTrendChart(records) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {
+        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
 
             const date = new Date(payment.paymentDate);
 
@@ -808,7 +808,7 @@ function buildDailyReport(records, period) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {
+        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
 
             if (new Date(payment.paymentDate).toLocaleDateString() === today) {
 
@@ -866,11 +866,11 @@ function buildDailyReport(records, period) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {
+        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
 
             const paymentDate = new Date(payment.paymentDate).toLocaleDateString();
 
-            if (paymentDate === today) {
+            if (isPaymentInPeriod(payment.paymentDate, period)) {
 
                 total += Number(payment.amount || 0);
 
@@ -928,18 +928,37 @@ function buildMonthlyReport(records, period){
 
     let total = 0;
 
-    const now = new Date();
+   function buildMonthlyReport(records, period){
+
+    let total = 0;
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {
+        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
 
-            const date = new Date(payment.paymentDate);
+            if(isPaymentInPeriod(payment.paymentDate, period)){
 
-            if (
-                date.getMonth() === now.getMonth() &&
-                date.getFullYear() === now.getFullYear()
-            ) {
+                total += Number(payment.amount || 0);
+
+            }
+
+        });
+
+    });
+
+    return `
+        <h3>${getPeriodLabel(period)}</h3>
+
+        <h3>Total Collected: ${money(total)}</h3>
+
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
+
+}
+            {
 
                 total += Number(payment.amount || 0);
 
@@ -966,7 +985,7 @@ function buildMonthlyReport(records, period){
 // TERM REPORT BUILDER
 // ======================================
 
-function buildTermReport(records){
+function buildTermReport(records, period){
 
     let expected = 0;
     let paid = 0;
@@ -975,7 +994,15 @@ function buildTermReport(records){
     records.forEach(record => {
 
         expected += Number(record.totalPayable || 0);
-        paid += Number(record.paidAmount || 0);
+       (record.payments || []).forEach(payment => {
+
+    if(isPaymentInPeriod(payment.paymentDate, period)){
+
+        paid += Number(payment.amount || 0);
+
+    }
+
+});
         balance += Number(record.balance || 0);
 
     });
@@ -1030,14 +1057,14 @@ Balance: ${money(record.balance)}
 // INCOME REPORT BUILDER
 // ======================================
 
-function buildIncomeReport(records){
+function buildIncomeReport(records, period){
 
     let total = 0;
     const methods = {};
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {
+        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
 
             const amount = Number(payment.amount || 0);
 
@@ -1078,13 +1105,13 @@ ${method}: ${money(methods[method])}
 // AUDIT REPORT BUILDER
 // ======================================
 
-function buildAuditReport(records){
+function buildAuditReport(records, period){
 
     let count = 0;
 
     records.forEach(record => {
 
-        count += (record.payments || []).length;
+        count += (record.payments || []) .filter(payment => isPaymentInPeriod(payment.paymentDate, period)) .length;
 
     });
 
@@ -1116,6 +1143,40 @@ function openReportModal(title, content){
 function closeReportModal(){
 
     document.getElementById("reportModal").style.display = "none";
+
+}
+
+//funcion periods//
+
+function isPaymentInPeriod(paymentDate, period) {
+
+    const date = new Date(paymentDate);
+    const today = new Date();
+
+    switch (period) {
+
+        case "today":
+            return date.toDateString() === today.toDateString();
+
+        case "yesterday":
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            return date.toDateString() === yesterday.toDateString();
+
+        case "last7":
+            const last7 = new Date(today);
+            last7.setDate(today.getDate() - 7);
+            return date >= last7 && date <= today;
+
+        case "month":
+            return (
+                date.getMonth() === today.getMonth() &&
+                date.getFullYear() === today.getFullYear()
+            );
+
+        default:
+            return true;
+    }
 
 }
 
