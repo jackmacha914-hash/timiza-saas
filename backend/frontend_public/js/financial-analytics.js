@@ -79,10 +79,9 @@ function loadRevenueTrendChart(records) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
+        (record.payments || []).forEach(payment => {
 
-            const date = new Date(payment.paymentDate);
-
+    const date = new Date(payment.paymentDate);
             const key = date.toLocaleString("default", {
                 month: "short",
                 year: "2-digit"
@@ -563,9 +562,9 @@ function loadRevenueTrendChart(records) {
 
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
+        (record.payments || []).forEach(payment => {
 
-            const date = new Date(payment.paymentDate);
+    const date = new Date(payment.paymentDate);
 
             const month =
                 date.toLocaleString("default", {
