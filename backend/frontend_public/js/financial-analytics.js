@@ -988,20 +988,18 @@ async function createAuditReport(){
 
 
 
-   openReportModal(
-    "Daily Collection Report",
-    `
-    <h3>Total Collected: ${money(total)}</h3>
+   let html = `
+<h3>Total Payment Transactions: ${count}</h3>
 
-    <pre>${rows || "No collections today."}</pre>
+<p>Generated: ${new Date().toLocaleString()}</p>
 
-    <div class="report-actions">
-        <button onclick="downloadPDF()">Download PDF</button>
-        <button onclick="downloadExcel()">Download Excel</button>
-    </div>
-    `
-);
+<div class="report-actions">
+    <button onclick="downloadPDF()">Download PDF</button>
+    <button onclick="downloadExcel()">Download Excel</button>
+</div>
+`;
 
+openReportModal("Audit Report", html);
 }
 //modal//
 function openReportModal(title, content){
