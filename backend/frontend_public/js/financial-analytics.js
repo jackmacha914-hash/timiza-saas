@@ -944,19 +944,6 @@ function buildTermReport(records){
 
 
 
-  openReportModal(
-    "Term Financial Report",
-    `
-    <h3>Expected Revenue: ${money(expected)}</h3>
-    <h3>Collected Revenue: ${money(paid)}</h3>
-    <h3>Outstanding Balance: ${money(balance)}</h3>
-    `
-);
-
-}
-
-
-
 // ======================================
 // DEFAULTERS REPORT
 // ======================================
