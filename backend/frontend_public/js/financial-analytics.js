@@ -59,7 +59,7 @@ async function getFinanceRecords() {
     }
 
     const response = await fetch(
-        "https://luckyjuniorschool.onrender.com/api/fees",
+        "https://timiza-saas.onrender.com/api/fees",
         {
             method: "GET",
             headers: {
