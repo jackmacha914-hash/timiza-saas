@@ -14,6 +14,15 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ======================================
+// CHART INSTANCES
+// ======================================
+
+let revenueTrendChart;
+let collectionByClassChart;
+let paymentMethodChart;
+let collectionTermChart;
+
+// ======================================
 // MAIN LOADER
 // ======================================
 
@@ -39,6 +48,14 @@ console.log(JSON.stringify(fees[0], null, 2));
         loadDefaulters(fees);
 
         loadClassPerformance(fees);
+        
+        loadRevenueTrendChart(fees);
+
+loadCollectionByClassChart(fees);
+
+loadPaymentMethodChart(fees);
+
+loadCollectionTermChart(fees);
 
         console.log("Financial analytics loaded.");
 
@@ -289,6 +306,83 @@ function loadClassPerformance(records) {
         `;
 
     });
+
+}
+
+function loadRevenueTrendChart(records) {
+
+    const monthly = {};
+
+    records.forEach(record => {
+
+        (record.payments || []).forEach(payment => {
+
+            const date = new Date(payment.paymentDate);
+
+            const month =
+                date.toLocaleString("default", {
+                    month: "short",
+                    year: "numeric"
+                });
+
+            monthly[month] =
+                (monthly[month] || 0) +
+                Number(payment.amount || 0);
+
+        });
+
+    });
+
+    const labels = Object.keys(monthly);
+
+    const values = Object.values(monthly);
+
+    if (revenueTrendChart) revenueTrendChart.destroy();
+
+    revenueTrendChart = new Chart(
+
+        document.getElementById("revenueTrendChart"),
+
+        {
+            type: "line",
+
+            data: {
+
+                labels,
+
+                datasets: [{
+
+                    label: "Revenue",
+
+                    data: values,
+
+                    tension: .3,
+
+                    fill: true
+
+                }]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+
+                        display: false
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    );
 
 }
 // ======================================
