@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Management</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/academic-management.css">
+
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+
+<div class="academic-page">
+
+    <!-- ========================= -->
+    <!-- PAGE HEADER -->
+    <!-- ========================= -->
+
+    <div class="page-header">
+
+        <div>
+            <h1>
+                <i class="fas fa-book-open"></i>
+                Academic Management
+            </h1>
+
+            <p>
+                Manage subjects, examinations, grading, report cards and academic performance.
+            </p>
+        </div>
+
+        <div class="page-actions">
+
+            <button onclick="window.location.href='index.html'" class="secondary-btn">
+                <i class="fas fa-arrow-left"></i>
+                Dashboard
+            </button>
+
+            <button id="refreshAcademicBtn" class="primary-btn">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- DASHBOARD CARDS -->
+    <!-- ========================= -->
+
+    <div class="academic-cards">
+
+        <div class="academic-card">
+            <i class="fas fa-book text-blue-600"></i>
+            <h4>Total Subjects</h4>
+            <h2 id="totalSubjects">0</h2>
+        </div>
+
+        <div class="academic-card">
+            <i class="fas fa-chalkboard-teacher text-green-600"></i>
+            <h4>Subject Allocations</h4>
+            <h2 id="subjectAllocations">0</h2>
+        </div>
+
+        <div class="academic-card">
+            <i class="fas fa-file-alt text-purple-600"></i>
+            <h4>Active Exams</h4>
+            <h2 id="activeExams">0</h2>
+        </div>
+
+        <div class="academic-card">
+            <i class="fas fa-chart-line text-orange-600"></i>
+            <h4>Average Score</h4>
+            <h2 id="schoolAverage">0%</h2>
+        </div>
+
+        <div class="academic-card">
+            <i class="fas fa-file-signature text-red-600"></i>
+            <h4>Report Cards</h4>
+            <h2 id="reportCardsCount">0</h2>
+        </div>
+
+        <div class="academic-card">
+            <i class="fas fa-user-graduate text-teal-600"></i>
+            <h4>Students Assessed</h4>
+            <h2 id="studentsAssessed">0</h2>
+        </div>
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- NAVIGATION -->
+    <!-- ========================= -->
+
+    <div class="academic-tabs">
+
+        <button class="academic-tab active" data-tab="subjects">
+            Subjects
+        </button>
+
+        <button class="academic-tab" data-tab="allocation">
+            Subject Allocation
+        </button>
+
+        <button class="academic-tab" data-tab="exams">
+            Exams
+        </button>
+
+        <button class="academic-tab" data-tab="grading">
+            Grading System
+        </button>
+
+        <button class="academic-tab" data-tab="calendar">
+            Academic Calendar
+        </button>
+
+        <button class="academic-tab" data-tab="reportcards">
+            Student Report Cards
+        </button>
+
+        <button class="academic-tab" data-tab="analytics">
+            Performance Analytics
+        </button>
+
+    </div>
+
+    <!-- ========================= -->
+    <!-- SUBJECTS -->
+    <!-- ========================= -->
+
+    <section id="subjects" class="academic-section active">
+
+        <div class="section-header">
+
+            <h2>Subjects</h2>
+
+            <button class="primary-btn">
+                <i class="fas fa-plus"></i>
+                Add Subject
+            </button>
+
+        </div>
+
+        <table class="academic-table">
+
+            <thead>
+
+            <tr>
+
+                <th>Subject</th>
+                <th>Code</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Actions</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody id="subjectsBody">
+
+            </tbody>
+
+        </table>
+
+    </section>
+
+    <!-- ========================= -->
+    <!-- SUBJECT ALLOCATION -->
+    <!-- ========================= -->
+
+    <section id="allocation" class="academic-section">
+
+        <h2>Teacher Subject Allocation</h2>
+
+        <div id="allocationTable"></div>
+
+    </section>
+
+    <!-- ========================= -->
+    <!-- EXAMS -->
+    <!-- ========================= -->
+
+    <section id="exams" class="academic-section">
+
+        <h2>Examinations</h2>
+
+        <div id="examTable"></div>
+
+    </section>
+
+    <!-- ========================= -->
+    <!-- GRADING -->
+    <!-- ========================= -->
+
+    <section id="grading" class="academic-section">
+
+        <h2>Grading System</h2>
+
+        <div id="gradingTable"></div>
+
+    </section>
+
+    <!-- ========================= -->
+    <!-- CALENDAR -->
+    <!-- ========================= -->
+
+    <section id="calendar" class="academic-section">
+
+        <h2>Academic Calendar</h2>
+
+        <div id="calendarTable"></div>
+
+    </section>
+
+    <!-- ========================= -->
+    <!-- REPORT CARDS -->
+    <!-- ========================= -->
+
+    <section id="reportcards" class="academic-section">
+
+        <div class="section-header">
+
+            <h2>Student Report Cards</h2>
+
+        </div>
+
+        <div class="filters">
+
+            <select id="filterYear">
+                <option>Academic Year</option>
+            </select>
+
+            <select id="filterTerm">
+                <option>Term</option>
+            </select>
+
+            <select id="filterClass">
+                <option>Class</option>
+            </select>
+
+            <input
+                type="text"
+                id="studentSearch"
+                placeholder="Search student">
+
+        </div>
+
+        <table class="academic-table">
+
+            <thead>
+
+            <tr>
+
+                <th>Student</th>
+                <th>Class</th>
+                <th>Term</th>
+                <th>Average</th>
+                <th>Grade</th>
+                <th>Position</th>
+                <th>Actions</th>
+
+            </tr>
+
+            </thead>
+
+            <tbody id="reportCardsBody">
+
+            </tbody>
+
+        </table>
+
+    </section>
+
+    <!-- ========================= -->
+    <!-- PERFORMANCE -->
+    <!-- ========================= -->
+
+    <section id="analytics" class="academic-section">
+
+        <div class="analytics-grid">
+
+            <div class="analytics-panel">
+
+                <h3>Subject Performance</h3>
+
+                <canvas id="subjectPerformanceChart"></canvas>
+
+            </div>
+
+            <div class="analytics-panel">
+
+                <h3>Class Performance</h3>
+
+                <canvas id="classPerformanceChart"></canvas>
+
+            </div>
+
+            <div class="analytics-panel">
+
+                <h3>Grade Distribution</h3>
+
+                <canvas id="gradeDistributionChart"></canvas>
+
+            </div>
+
+            <div class="analytics-panel">
+
+                <h3>Exam Trend</h3>
+
+                <canvas id="examTrendChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="../js/academic-management.js"></script>
+
+</body>
+</html>
