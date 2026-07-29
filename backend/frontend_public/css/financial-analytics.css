@@ -304,6 +304,13 @@ canvas{
     font-size:30px;
 }
 
+.analytics-panel canvas{
+
+    width:100% !important;
+
+    height:340px !important;
+
+}
 /* ==========================================
    RESPONSIVE
 ========================================== */
