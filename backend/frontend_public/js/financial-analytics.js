@@ -966,7 +966,6 @@ function buildMonthlyReport(records, period){
 
         });
 
-    });
 
     return `
         <h3>Month: ${now.toLocaleString("default",{month:"long"})}</h3>
