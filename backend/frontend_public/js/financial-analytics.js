@@ -1059,3 +1059,11 @@ function showLoading(){
     console.log("Loading financial analytics...");
 
 }
+
+function downloadPDF() {
+    alert("PDF download will be added next.");
+}
+
+function downloadExcel() {
+    alert("Excel download will be added next.");
+}
