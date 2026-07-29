@@ -95,77 +95,72 @@ async function getFinanceRecords() {
 // SUMMARY CARDS
 // ======================================
 
-function updateSummaryCards(records){
+function updateSummaryCards(records) {
 
     let expected = 0;
     let collected = 0;
     let outstanding = 0;
-
     let defaulters = 0;
 
-    records.forEach(record=>{
+    let todayCollection = 0;
+    let monthCollection = 0;
+
+    const today = new Date();
+
+    records.forEach(record => {
 
         expected += Number(record.totalPayable || 0);
 
-collected += Number(record.paidAmount || 0);
+        collected += Number(record.paidAmount || 0);
 
-outstanding += Number(
-    record.balance ??
-    (Number(record.totalPayable || 0) - Number(record.paidAmount || 0))
-);
+        outstanding += Number(
+            record.balance ??
+            (Number(record.totalPayable || 0) - Number(record.paidAmount || 0))
+        );
 
-        if(Number(record.balance)>0){
-
+        if (Number(record.balance || 0) > 0) {
             defaulters++;
-
         }
+
+        // Calculate today's and this month's collections
+        (record.payments || []).forEach(payment => {
+
+            const paymentDate = new Date(payment.paymentDate);
+
+            // Today's collection
+            if (
+                paymentDate.getFullYear() === today.getFullYear() &&
+                paymentDate.getMonth() === today.getMonth() &&
+                paymentDate.getDate() === today.getDate()
+            ) {
+                todayCollection += Number(payment.amount || 0);
+            }
+
+            // This month's collection
+            if (
+                paymentDate.getFullYear() === today.getFullYear() &&
+                paymentDate.getMonth() === today.getMonth()
+            ) {
+                monthCollection += Number(payment.amount || 0);
+            }
+
+        });
 
     });
 
     const collectionRate =
-        expected===0
-        ?0
-        :((collected/expected)*100);
+        expected === 0
+            ? 0
+            : (collected / expected) * 100;
 
-    setText(
-        "expectedRevenue",
-        money(expected)
-    );
-
-    setText(
-        "collectedRevenue",
-        money(collected)
-    );
-
-    setText(
-        "outstandingRevenue",
-        money(outstanding)
-    );
-
-    setText(
-        "collectionRate",
-        collectionRate.toFixed(1)+"%"
-    );
-
-    setText(
-        "todayCollection",
-        "KSh 0"
-    );
-
-    setText(
-        "monthCollection",
-        "KSh 0"
-    );
-
-    setText(
-        "defaultersCount",
-        defaulters
-    );
-
-    setText(
-        "transactionsCount",
-        records.length
-    );
+    setText("expectedRevenue", money(expected));
+    setText("collectedRevenue", money(collected));
+    setText("outstandingRevenue", money(outstanding));
+    setText("collectionRate", collectionRate.toFixed(1) + "%");
+    setText("todayCollection", money(todayCollection));
+    setText("monthCollection", money(monthCollection));
+    setText("defaultersCount", defaulters);
+    setText("transactionsCount", records.length);
 
 }
 
