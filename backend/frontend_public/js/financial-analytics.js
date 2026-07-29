@@ -1017,6 +1017,204 @@ ${new Date().toLocaleString()}
     );
 
 }
+
+// ======================================
+// REPORT HISTORY
+// ======================================
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    document
+    .getElementById("reportHistoryBtn")
+    ?.addEventListener(
+        "click",
+        loadReportHistory
+    );
+
+
+    document
+    .getElementById("refreshReportHistory")
+    ?.addEventListener(
+        "click",
+        loadReportHistory
+    );
+
+});
+
+
+
+async function loadReportHistory(){
+
+    try{
+
+        const token = localStorage.getItem("token");
+
+
+        const response = await fetch(
+
+            "https://timiza-saas.onrender.com/api/reports",
+
+            {
+
+                method:"GET",
+
+                headers:{
+
+                    Authorization:`Bearer ${token}`,
+
+                    Accept:"application/json"
+
+                }
+
+            }
+
+        );
+
+
+        if(!response.ok){
+
+            throw new Error(
+                "Failed loading reports"
+            );
+
+        }
+
+
+        const data = await response.json();
+
+
+        const reports =
+            Array.isArray(data)
+            ? data
+            : data.reports || [];
+
+
+        displayReportHistory(reports);
+
+
+
+    }
+    catch(error){
+
+        console.error(
+            "Report history error:",
+            error
+        );
+
+
+    }
+
+}
+
+
+
+
+function displayReportHistory(reports){
+
+
+    const body =
+    document.getElementById(
+        "reportHistoryBody"
+    );
+
+
+    if(!body)return;
+
+
+    body.innerHTML="";
+
+
+    if(!reports.length){
+
+
+        body.innerHTML=`
+
+        <tr>
+
+            <td colspan="5" class="empty-row">
+
+                No previous reports available
+
+            </td>
+
+        </tr>
+
+        `;
+
+
+        return;
+
+    }
+
+
+
+    reports.forEach(report=>{
+
+
+        body.innerHTML+=`
+
+        <tr>
+
+
+            <td>
+                ${report.reportType || "-"}
+            </td>
+
+
+            <td>
+                ${report.period || "-"}
+            </td>
+
+
+            <td>
+                ${new Date(
+                    report.createdAt
+                ).toLocaleDateString()}
+            </td>
+
+
+            <td>
+                ${report.generatedBy?.name || "Admin"}
+            </td>
+
+
+            <td>
+
+                <button 
+                class="panel-btn"
+                onclick="openReport('${report.fileUrl}')">
+
+                    View
+
+                </button>
+
+
+            </td>
+
+
+        </tr>
+
+        `;
+
+
+    });
+
+
+}
+
+
+
+function openReport(url){
+
+    if(!url)return;
+
+
+    window.open(
+        url,
+        "_blank"
+    );
+
+}
 // ======================================
 // HELPERS
 // ======================================
