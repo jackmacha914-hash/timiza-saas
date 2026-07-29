@@ -26,6 +26,9 @@ async function loadFinancialAnalytics() {
         // Replace with your existing function
         const fees = await getFinanceRecords();
 
+        console.log("Finance records:", fees);
+console.log("First record:", fees[0]);
+
         updateSummaryCards(fees);
 
         loadRecentPayments(fees);
