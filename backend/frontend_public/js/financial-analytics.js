@@ -928,18 +928,12 @@ function buildMonthlyReport(records, period){
 
     let total = 0;
 
-   function buildMonthlyReport(records, period){
-
-    let total = 0;
-
     records.forEach(record => {
 
-        (record.payments || []).forEach(payment => {      if(!isPaymentInPeriod(payment.paymentDate, period)){         return;     }
+        (record.payments || []).forEach(payment => {
 
-            if(isPaymentInPeriod(payment.paymentDate, period)){
-
+            if (isPaymentInPeriod(payment.paymentDate, period)) {
                 total += Number(payment.amount || 0);
-
             }
 
         });
@@ -947,6 +941,15 @@ function buildMonthlyReport(records, period){
     });
 
     return `
+        <h3>${getPeriodLabel(period)}</h3>
+        <h3>Total Collected: ${money(total)}</h3>
+
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
+}
         <h3>${getPeriodLabel(period)}</h3>
 
         <h3>Total Collected: ${money(total)}</h3>
