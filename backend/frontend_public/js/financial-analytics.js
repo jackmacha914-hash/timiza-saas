@@ -17,10 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
 // CHART INSTANCES
 // ======================================
 
-let revenueTrendChart;
-let collectionByClassChart;
-let paymentMethodChart;
-let collectionTermChart;
+let revenueTrendChart = null;
+let collectionByClassChart = null;
+let paymentMethodChart = null;
+let collectionTermChart = null;
 
 // ======================================
 // MAIN LOADER
@@ -66,6 +66,254 @@ loadCollectionTermChart(fees);
         console.error(error);
 
     }
+
+}
+
+// ======================================
+// REVENUE TREND
+// ======================================
+
+function loadRevenueTrendChart(records) {
+
+    const monthly = {};
+
+    records.forEach(record => {
+
+        (record.payments || []).forEach(payment => {
+
+            const date = new Date(payment.paymentDate);
+
+            const key = date.toLocaleString("default", {
+                month: "short",
+                year: "2-digit"
+            });
+
+            monthly[key] = (monthly[key] || 0) + Number(payment.amount || 0);
+
+        });
+
+    });
+
+    if (revenueTrendChart) revenueTrendChart.destroy();
+
+    revenueTrendChart = new Chart(
+        document.getElementById("revenueTrendChart"),
+        {
+            type: "line",
+            data: {
+                labels: Object.keys(monthly),
+                datasets: [{
+                    label: "Revenue",
+                    data: Object.values(monthly),
+                    borderWidth: 3,
+                    fill: true,
+                    tension: .35
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        }
+    );
+
+}
+
+// ======================================
+// COLLECTION BY CLASS
+// ======================================
+
+function loadCollectionByClassChart(records) {
+
+    const classes = {};
+
+    records.forEach(record => {
+
+        const cls = record.className || "Unknown";
+
+        if (!classes[cls]) {
+
+            classes[cls] = {
+                expected: 0,
+                collected: 0
+            };
+
+        }
+
+        classes[cls].expected += Number(record.totalPayable || 0);
+        classes[cls].collected += Number(record.paidAmount || 0);
+
+    });
+
+    if (collectionByClassChart) collectionByClassChart.destroy();
+
+    collectionByClassChart = new Chart(
+
+        document.getElementById("collectionByClassChart"),
+
+        {
+
+            type: "bar",
+
+            data: {
+
+                labels: Object.keys(classes),
+
+                datasets: [
+
+                    {
+
+                        label: "Expected",
+
+                        data: Object.values(classes).map(c => c.expected)
+
+                    },
+
+                    {
+
+                        label: "Collected",
+
+                        data: Object.values(classes).map(c => c.collected)
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false
+
+            }
+
+        }
+
+    );
+
+}
+
+// ======================================
+// PAYMENT METHODS
+// ======================================
+
+function loadPaymentMethodChart(records) {
+
+    const methods = {};
+
+    records.forEach(record => {
+
+        (record.payments || []).forEach(payment => {
+
+            const method = payment.paymentMethod || "Unknown";
+
+            methods[method] = (methods[method] || 0) + Number(payment.amount || 0);
+
+        });
+
+    });
+
+    if (paymentMethodChart) paymentMethodChart.destroy();
+
+    paymentMethodChart = new Chart(
+
+        document.getElementById("paymentMethodChart"),
+
+        {
+
+            type: "pie",
+
+            data: {
+
+                labels: Object.keys(methods),
+
+                datasets: [
+
+                    {
+
+                        data: Object.values(methods)
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false
+
+            }
+
+        }
+
+    );
+
+}
+
+// ======================================
+// COLLECTION BY TERM
+// ======================================
+
+function loadCollectionTermChart(records) {
+
+    const terms = {};
+
+    records.forEach(record => {
+
+        const term = record.academicTerm || "Unknown";
+
+        if (!terms[term]) {
+
+            terms[term] = 0;
+
+        }
+
+        terms[term] += Number(record.paidAmount || 0);
+
+    });
+
+    if (collectionTermChart) collectionTermChart.destroy();
+
+    collectionTermChart = new Chart(
+
+        document.getElementById("collectionTermChart"),
+
+        {
+
+            type: "doughnut",
+
+            data: {
+
+                labels: Object.keys(terms),
+
+                datasets: [
+
+                    {
+
+                        data: Object.values(terms)
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false
+
+            }
+
+        }
+
+    );
 
 }
 
