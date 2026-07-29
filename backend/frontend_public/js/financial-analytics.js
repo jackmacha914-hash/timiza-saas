@@ -633,6 +633,114 @@ function loadRevenueTrendChart(records) {
     );
 
 }
+
+// ======================================
+// REPORT BUTTONS
+// ======================================
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+    document
+    .getElementById("dailyCollectionReport")
+    ?.addEventListener("click",()=>{
+
+        generateDailyCollectionReport();
+
+    });
+
+
+    document
+    .getElementById("monthlyCollectionReport")
+    ?.addEventListener("click",()=>{
+
+        generateMonthlyCollectionReport();
+
+    });
+
+
+    document
+    .getElementById("termCollectionReport")
+    ?.addEventListener("click",()=>{
+
+        generateTermReport();
+
+    });
+
+
+    document
+    .getElementById("defaultersReport")
+    ?.addEventListener("click",()=>{
+
+        generateDefaultersReport();
+
+    });
+
+
+    document
+    .getElementById("incomeReport")
+    ?.addEventListener("click",()=>{
+
+        generateIncomeReport();
+
+    });
+
+
+    document
+    .getElementById("auditReport")
+    ?.addEventListener("click",()=>{
+
+        generateAuditReport();
+
+    });
+
+});
+
+
+// ======================================
+// REPORT FUNCTIONS
+// ======================================
+
+
+function generateDailyCollectionReport(){
+
+    alert("Daily Collection Report coming...");
+
+}
+
+
+function generateMonthlyCollectionReport(){
+
+    alert("Monthly Collection Report coming...");
+
+}
+
+
+function generateTermReport(){
+
+    alert("Term Financial Report coming...");
+
+}
+
+
+function generateDefaultersReport(){
+
+    alert("Defaulters Report coming...");
+
+}
+
+
+function generateIncomeReport(){
+
+    alert("Income Report coming...");
+
+}
+
+
+function generateAuditReport(){
+
+    alert("Audit Report coming...");
+
+}
 // ======================================
 // HELPERS
 // ======================================
