@@ -47,14 +47,39 @@ async function loadFinancialAnalytics() {
 }
 
 // ======================================
-// TEMP DATA SOURCE
+//  DATA SOURCE
 // ======================================
 //
-// Replace this function with your existing
-// Firebase function later.
-//
+async function getFinanceRecords() {
 
-async function getFinanceRecords(){
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        throw new Error("Authentication token not found.");
+    }
+
+    const response = await fetch(
+        "https://luckyjuniorschool.onrender.com/api/fees",
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json"
+            }
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error("Failed to load finance records.");
+    }
+
+    const data = await response.json();
+
+    if (Array.isArray(data)) return data;
+
+    if (Array.isArray(data.fees)) return data.fees;
+
+    if (Array.isArray(data.data)) return data.data;
 
     return [];
 
@@ -74,11 +99,14 @@ function updateSummaryCards(records){
 
     records.forEach(record=>{
 
-        expected += Number(record.totalFees || 0);
+        expected += Number(record.totalFees || record.amount || 0);
 
-        collected += Number(record.paid || 0);
+collected += Number(record.amountPaid || 0);
 
-        outstanding += Number(record.balance || 0);
+outstanding += Number(
+    record.balance ||
+    ((record.totalFees || 0) - (record.amountPaid || 0))
+);
 
         if(Number(record.balance)>0){
 
@@ -156,13 +184,13 @@ function loadRecentPayments(records){
 
             <tr>
 
-                <td>${record.studentName || "-"}</td>
+                <td>${record.student?.name || "Unknown Student" || "-"}</td>
 
-                <td>${money(record.paid || 0)}</td>
+                <td>${money(record.amountPaid || 0)}</td>
 
                 <td>${record.paymentMethod || "Cash"}</td>
 
-                <td>${record.paymentDate || "-"}</td>
+                <td>${new Date(     record.updatedAt ||     record.createdAt ||     Date.now() ).toLocaleDateString() || "-"}</td>
 
             </tr>
 
@@ -195,9 +223,9 @@ function loadDefaulters(records){
 
             <tr>
 
-                <td>${record.studentName}</td>
+                <td>${record.student?.name || "Unknown Student"}</td>
 
-                <td>${record.className}</td>
+                <td>${record.className || "-"}</td>
 
                 <td>${money(record.balance)}</td>
 
@@ -237,7 +265,7 @@ function loadClassPerformance(records){
     records.forEach(record=>{
 
         const cls =
-            record.className || "Unknown";
+            record.className || "-" || "Unknown";
 
         if(!classes[cls]){
 
@@ -257,7 +285,7 @@ function loadClassPerformance(records){
             Number(record.totalFees||0);
 
         classes[cls].collected+=
-            Number(record.paid||0);
+            Number(record.amountPaid||0);
 
         classes[cls].balance+=
             Number(record.balance||0);
