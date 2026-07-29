@@ -745,6 +745,59 @@ document.getElementById("auditReport")
 
 }
 
+// ======================================
+// REPORT BUILDERS
+// ======================================
+
+function buildDailyReport(records, period) {
+
+    let total = 0;
+    let rows = "";
+
+    const today = new Date().toLocaleDateString();
+
+    records.forEach(record => {
+
+        (record.payments || []).forEach(payment => {
+
+            if (new Date(payment.paymentDate).toLocaleDateString() === today) {
+
+                total += Number(payment.amount || 0);
+
+                rows += `
+                    <tr>
+                        <td>${record.student?.name || "Unknown"}</td>
+                        <td>${money(payment.amount)}</td>
+                        <td>${payment.paymentMethod}</td>
+                    </tr>
+                `;
+            }
+
+        });
+
+    });
+
+    return `
+        <h3>Total Collected: ${money(total)}</h3>
+
+        <table class="report-table">
+            <tr>
+                <th>Student</th>
+                <th>Amount</th>
+                <th>Method</th>
+            </tr>
+
+            ${rows || "<tr><td colspan='3'>No collections</td></tr>"}
+
+        </table>
+
+        <div class="report-actions">
+            <button onclick="downloadPDF()">Download PDF</button>
+            <button onclick="downloadExcel()">Download Excel</button>
+        </div>
+    `;
+}
+
 
 // ======================================
 // DAILY COLLECTION
