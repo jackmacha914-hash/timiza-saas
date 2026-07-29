@@ -556,80 +556,7 @@ function loadClassPerformance(records) {
 
 }
 
-function loadRevenueTrendChart(records) {
 
-    const monthly = {};
-
-    records.forEach(record => {
-
-        (record.payments || []).forEach(payment => {
-
-    const date = new Date(payment.paymentDate);
-
-            const month =
-                date.toLocaleString("default", {
-                    month: "short",
-                    year: "numeric"
-                });
-
-            monthly[month] =
-                (monthly[month] || 0) +
-                Number(payment.amount || 0);
-
-        });
-
-    });
-
-    const labels = Object.keys(monthly);
-
-    const values = Object.values(monthly);
-
-    if (revenueTrendChart) revenueTrendChart.destroy();
-
-    revenueTrendChart = new Chart(
-
-        document.getElementById("revenueTrendChart"),
-
-        {
-            type: "line",
-
-            data: {
-
-                labels,
-
-                datasets: [{
-
-                    label: "Revenue",
-
-                    data: values,
-
-                    tension: .3,
-
-                    fill: true
-
-                }]
-
-            },
-
-            options: {
-
-                responsive: true,
-
-                plugins: {
-
-                    legend: {
-
-                        display: false
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    );
 
 }
 
@@ -753,44 +680,6 @@ function getReportTitle(type){
 // REPORT BUTTON ACTIONS
 // ======================================
 
-document.addEventListener("DOMContentLoaded", () => {
-
-    setupReportButtons();
-
-});
-
-//setup button//
-
-function setupReportButtons() {
-
-    document.getElementById("dailyCollectionReport")
-        ?.addEventListener("click", () => showReportPeriodSelector("daily"));
-
-    document.getElementById("monthlyCollectionReport")
-        ?.addEventListener("click", () => showReportPeriodSelector("monthly"));
-
-    document.getElementById("termCollectionReport")
-        ?.addEventListener("click", () => generateReport("term"));
-
-    document.getElementById("incomeReport")
-        ?.addEventListener("click", () => showReportPeriodSelector("income"));
-
-    document.getElementById("defaultersReport")
-        ?.addEventListener("click", () => generateReport("defaulters"));
-
-    document.getElementById("auditReport")
-        ?.addEventListener("click", () => showReportPeriodSelector("audit"));
-
-}
-// ======================================
-// REPORT BUTTON ACTIONS
-// ======================================
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    setupReportButtons();
-
-});
 
 
 
@@ -899,16 +788,7 @@ function buildDailyReport(records, period) {
                 </tr>
             </thead>
 
-            <tbody>
-                ${
-                    rows ||
-                    `
-                    <tr>
-                        <td colspan="3">No collections today.</td>
-                    </tr>
-                `
-                }
-            </tbody>
+        
         </table>
 
         <div class="report-actions">
@@ -922,65 +802,6 @@ function buildDailyReport(records, period) {
 // ======================================
 // MONTHLY REPORT BUILDER
 // ======================================
-
-function buildMonthlyReport(records, period){
-
-    let total = 0;
-
-    records.forEach(record => {
-
-        (record.payments || []).forEach(payment => {
-
-            if (isPaymentInPeriod(payment.paymentDate, period)) {
-                total += Number(payment.amount || 0);
-            }
-
-        });
-
-    });
-
-    return `
-        <h3>${getPeriodLabel(period)}</h3>
-        <h3>Total Collected: ${money(total)}</h3>
-
-        <div class="report-actions">
-            <button onclick="downloadPDF()">Download PDF</button>
-            <button onclick="downloadExcel()">Download Excel</button>
-        </div>
-    `;
-}
-        <h3>${getPeriodLabel(period)}</h3>
-
-        <h3>Total Collected: ${money(total)}</h3>
-
-        <div class="report-actions">
-            <button onclick="downloadPDF()">Download PDF</button>
-            <button onclick="downloadExcel()">Download Excel</button>
-        </div>
-    `;
-
-}
-            {
-
-                total += Number(payment.amount || 0);
-
-            }
-
-        });
-
-
-    return `
-        <h3>Month: ${now.toLocaleString("default",{month:"long"})}</h3>
-
-        <h3>Total Collected: ${money(total)}</h3>
-
-        <div class="report-actions">
-            <button onclick="downloadPDF()">Download PDF</button>
-            <button onclick="downloadExcel()">Download Excel</button>
-        </div>
-    `;
-
-}
 
 // ======================================
 // TERM REPORT BUILDER
@@ -1129,55 +950,6 @@ function buildAuditReport(records, period){
 
 }
 
-//open report modal//
-
-function openReportModal(title, content){
-
-    document.getElementById("reportModalTitle").textContent = title;
-
-    document.getElementById("reportModalBody").innerHTML = content;
-
-    document.getElementById("reportModal").style.display = "flex";
-
-}
-
-function closeReportModal(){
-
-    document.getElementById("reportModal").style.display = "none";
-
-}
-
-//funcion periods//
-
-function isPaymentInPeriod(paymentDate, period) {
-
-    const date = new Date(paymentDate);
-    const today = new Date();
-
-    switch (period) {
-
-        case "today":
-            return date.toDateString() === today.toDateString();
-
-        case "yesterday":
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            return date.toDateString() === yesterday.toDateString();
-
-        case "last7":
-            const last7 = new Date(today);
-            last7.setDate(today.getDate() - 7);
-            return date >= last7 && date <= today;
-
-        case "month":
-            return (
-                date.getMonth() === today.getMonth() &&
-                date.getFullYear() === today.getFullYear()
-            );
-
-        default:
-            return true;
-    }
 
 }
 
