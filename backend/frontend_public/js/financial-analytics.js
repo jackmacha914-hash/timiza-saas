@@ -105,13 +105,13 @@ function updateSummaryCards(records){
 
     records.forEach(record=>{
 
-        expected += Number(record.totalFees || record.amount || 0);
+        expected += Number(record.totalPayable || 0);
 
-collected += Number(record.amountPaid || 0);
+collected += Number(record.paidAmount || 0);
 
 outstanding += Number(
-    record.balance ||
-    ((record.totalFees || 0) - (record.amountPaid || 0))
+    record.balance ??
+    (Number(record.totalPayable || 0) - Number(record.paidAmount || 0))
 );
 
         if(Number(record.balance)>0){
@@ -173,80 +173,67 @@ outstanding += Number(
 // RECENT PAYMENTS
 // ======================================
 
-function loadRecentPayments(records){
+function loadRecentPayments(records) {
 
-    const body =
-        document.getElementById("recentPaymentsBody");
+    const body = document.getElementById("recentPaymentsBody");
 
-    if(!body)return;
+    if (!body) return;
 
-    body.innerHTML="";
+    body.innerHTML = "";
 
     records
-        .slice(0,10)
-        .forEach(record=>{
+        .filter(record => Number(record.paidAmount || 0) > 0)
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+        .slice(0, 10)
+        .forEach(record => {
 
-            body.innerHTML+=`
+            const latestPayment = record.payments?.[record.payments.length - 1];
 
-            <tr>
-
-                <td>${record.student?.name || "Unknown Student" || "-"}</td>
-
-                <td>${money(record.amountPaid || 0)}</td>
-
-                <td>${record.paymentMethod || "Cash"}</td>
-
-                <td>${new Date(     record.updatedAt ||     record.createdAt ||     Date.now() ).toLocaleDateString() || "-"}</td>
-
-            </tr>
-
+            body.innerHTML += `
+                <tr>
+                    <td>${record.student?.name || "Unknown Student"}</td>
+                    <td>${money(record.paidAmount || 0)}</td>
+                    <td>${latestPayment?.paymentMethod || "-"}</td>
+                    <td>${new Date(
+                        latestPayment?.paymentDate ||
+                        record.updatedAt ||
+                        record.createdAt
+                    ).toLocaleDateString()}</td>
+                </tr>
             `;
 
         });
 
 }
-
 // ======================================
 // DEFAULTERS
 // ======================================
 
-function loadDefaulters(records){
+function loadDefaulters(records) {
 
-    const body =
-        document.getElementById("defaultersTableBody");
+    const body = document.getElementById("defaultersTableBody");
 
-    if(!body)return;
+    if (!body) return;
 
-    body.innerHTML="";
+    body.innerHTML = "";
 
     records
-        .filter(r=>Number(r.balance)>0)
-        .sort((a,b)=>b.balance-a.balance)
-        .slice(0,10)
-        .forEach(record=>{
+        .filter(r => Number(r.balance || 0) > 0)
+        .sort((a, b) => Number(b.balance) - Number(a.balance))
+        .slice(0, 10)
+        .forEach(record => {
 
-            body.innerHTML+=`
-
-            <tr>
-
-                <td>${record.student?.name || "Unknown Student"}</td>
-
-                <td>${record.className || "-"}</td>
-
-                <td>${money(record.balance)}</td>
-
-                <td>
-
-                    <span style="color:red;font-weight:bold">
-
-                    Pending
-
-                    </span>
-
-                </td>
-
-            </tr>
-
+            body.innerHTML += `
+                <tr>
+                    <td>${record.student?.name || "Unknown Student"}</td>
+                    <td>${record.className || "-"}</td>
+                    <td>${money(record.balance || 0)}</td>
+                    <td>
+                        <span style="color:red;font-weight:bold">
+                            ${record.status || "Pending"}
+                        </span>
+                    </td>
+                </tr>
             `;
 
         });
@@ -257,78 +244,58 @@ function loadDefaulters(records){
 // CLASS PERFORMANCE
 // ======================================
 
-function loadClassPerformance(records){
+function loadClassPerformance(records) {
 
-    const body =
-        document.getElementById("classPerformanceBody");
+    const body = document.getElementById("classPerformanceBody");
 
-    if(!body)return;
+    if (!body) return;
 
-    body.innerHTML="";
+    body.innerHTML = "";
 
-    const classes={};
+    const classes = {};
 
-    records.forEach(record=>{
+    records.forEach(record => {
 
-        const cls =
-            record.className || "-" || "Unknown";
+        const cls = record.className || "Unknown";
 
-        if(!classes[cls]){
+        if (!classes[cls]) {
 
-            classes[cls]={
-
-                expected:0,
-
-                collected:0,
-
-                balance:0
-
+            classes[cls] = {
+                expected: 0,
+                collected: 0,
+                balance: 0
             };
 
         }
 
-        classes[cls].expected+=
-            Number(record.totalFees||0);
-
-        classes[cls].collected+=
-            Number(record.amountPaid||0);
-
-        classes[cls].balance+=
-            Number(record.balance||0);
+        classes[cls].expected += Number(record.totalPayable || 0);
+        classes[cls].collected += Number(record.paidAmount || 0);
+        classes[cls].balance += Number(record.balance || 0);
 
     });
 
-    Object.keys(classes).forEach(cls=>{
+    Object.keys(classes).forEach(cls => {
 
-        const c=classes[cls];
+        const c = classes[cls];
 
-        const rate=
-            c.expected===0
-            ?0
-            :((c.collected/c.expected)*100);
+        const rate =
+            c.expected === 0
+                ? 0
+                : (c.collected / c.expected) * 100;
 
-        body.innerHTML+=`
-
-        <tr>
-
-            <td>${cls}</td>
-
-            <td>${money(c.expected)}</td>
-
-            <td>${money(c.collected)}</td>
-
-            <td>${money(c.balance)}</td>
-
-            <td>${rate.toFixed(1)}%</td>
-
-        </tr>
-
+        body.innerHTML += `
+            <tr>
+                <td>${cls}</td>
+                <td>${money(c.expected)}</td>
+                <td>${money(c.collected)}</td>
+                <td>${money(c.balance)}</td>
+                <td>${rate.toFixed(1)}%</td>
+            </tr>
         `;
 
     });
 
 }
-
 // ======================================
 // HELPERS
 // ======================================
