@@ -187,46 +187,45 @@ async function loadReportCards() {
 
     try {
 
-        const reports = await api("/reportcards");
-        console.log("REPORTS:", reports);
+        const response = await api("/reportcards");
 
-        const body =
-            document.getElementById("reportCardsBody");
+console.log("REPORTS:", response);
 
-        body.innerHTML = "";
+const reports = response.data || [];
 
-        reports.forEach(report => {
+const body = document.getElementById("reportCardsBody");
+
+body.innerHTML = "";
+
+if (!reports.length) {
+    body.innerHTML = `
+        <tr>
+            <td colspan="7" style="text-align:center;">
+                No report cards found
+            </td>
+        </tr>
+    `;
+    return;
+}
+
+reports.forEach(report => {
 
             body.innerHTML += `
-
-            <tr>
-
-                <td>${report.student}</td>
-
-                <td>${report.class}</td>
-
-                <td>${report.term}</td>
-
-                <td>${report.average}%</td>
-
-                <td>${report.grade}</td>
-
-                <td>${report.position}</td>
-
-                <td>
-
-                    <button
-                        class="action-btn view-btn">
-
-                        View
-
-                    </button>
-
-                </td>
-
-            </tr>
-
-            `;
+<tr>
+    <td>${report.studentName || "-"}</td>
+    <td>${report.className || "-"}</td>
+    <td>${report.term || "-"}</td>
+    <td>${report.average || 0}%</td>
+    <td>${report.grade || "-"}</td>
+    <td>${report.position || "-"}</td>
+    <td>
+        <button class="action-btn view-btn"
+            onclick="viewReportCard('${report._id}')">
+            View
+        </button>
+    </td>
+</tr>
+`;
 
         });
 
