@@ -109,6 +109,7 @@ app.use('/api/other-charges', protect, requireSchool, require('./routes/otherCha
 app.use('/api/schools', require('./routes/schoolRoutes'));
 app.use('/api/superadmin', require('./routes/superAdminRoutes'));
 app.use('/api/subjects', require('./routes/subjectRoutes'));
+app.use("/api/academic", require("./routes/academicRoutes"));
 
 
 // -------------------------
