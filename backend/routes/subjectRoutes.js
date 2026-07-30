@@ -1,26 +1,28 @@
 const express = require("express");
 const router = express.Router();
 
-const auth = require("../middleware/auth");
+const {
+    authenticateUser,
+    authorizeRoles
+} = require("../middleware/authMiddleware");
 
 const {
-
     getSubjects,
-
     createSubject,
-
     updateSubject,
-
     deleteSubject
-
 } = require("../controllers/subjectController");
 
-router.get("/", auth, getSubjects);
+// Protect all subject routes
+router.use(authenticateUser);
 
-router.post("/", auth, createSubject);
+// Subject Management (Admin only)
+router.get("/", authorizeRoles("admin"), getSubjects);
 
-router.put("/:id", auth, updateSubject);
+router.post("/", authorizeRoles("admin"), createSubject);
 
-router.delete("/:id", auth, deleteSubject);
+router.put("/:id", authorizeRoles("admin"), updateSubject);
+
+router.delete("/:id", authorizeRoles("admin"), deleteSubject);
 
 module.exports = router;
