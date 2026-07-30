@@ -311,25 +311,45 @@ const getReportCard = async (req, res) => {
 // Get all report cards
 const getAllReportCards = async (req, res) => {
     try {
-        // Get all report cards with student information
+
+        console.log("========== REPORT CARD DEBUG ==========");
+        console.log("Logged in user:", req.user);
+
+        const totalReports = await ReportCard.find({});
+        console.log("TOTAL REPORT CARDS:", totalReports.length);
+
+        const schoolReports = await ReportCard.find({
+            school: req.user.school
+        });
+
+        console.log("REPORTS FOR THIS SCHOOL:", schoolReports.length);
+
+        if (totalReports.length > 0) {
+            console.log("FIRST REPORT:", totalReports[0]);
+        }
+
         const reportCards = await ReportCard.find({
-        school: req.user.school
-         })
-            .populate('studentId', 'firstName lastName email')
-            .sort({ createdAt: -1 });
+            school: req.user.school
+        })
+        .populate("studentId", "firstName lastName email")
+        .sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
             count: reportCards.length,
             data: reportCards
         });
+
     } catch (error) {
-        console.error('Error fetching report cards:', error);
+
+        console.error("Error fetching report cards:", error);
+
         res.status(500).json({
             success: false,
-            message: 'Server error',
+            message: "Server error",
             error: error.message
         });
+
     }
 };
 
