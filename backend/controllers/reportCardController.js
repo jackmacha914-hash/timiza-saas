@@ -121,7 +121,7 @@ const sendReportCard = async (req, res) => {
         const reportCard = new ReportCard({
             school: req.user.school,
             studentId,
-            studentName: `${student.firstName} ${student.lastName}`,
+            studentName: student.name,
             term,
             year,
             comments: comments || '',
@@ -331,7 +331,7 @@ const getAllReportCards = async (req, res) => {
         const reportCards = await ReportCard.find({
             school: req.user.school
         })
-        .populate("studentId", "firstName lastName email")
+        .populate("studentId", "name email class")
         .sort({ createdAt: -1 });
 
         res.status(200).json({
