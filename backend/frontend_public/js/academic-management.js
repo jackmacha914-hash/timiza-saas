@@ -188,6 +188,7 @@ async function loadReportCards() {
     try {
 
         const reports = await api("/reportcards");
+        console.log("REPORTS:", reports);
 
         const body =
             document.getElementById("reportCardsBody");
