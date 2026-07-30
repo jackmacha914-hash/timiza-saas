@@ -108,6 +108,7 @@ app.use('/api/meals', protect, requireSchool, require('./routes/meals'));
 app.use('/api/other-charges', protect, requireSchool, require('./routes/otherCharges'));
 app.use('/api/schools', require('./routes/schoolRoutes'));
 app.use('/api/superadmin', require('./routes/superAdminRoutes'));
+app.use('/api/subjects', require('./routes/subjectRoutes'));
 
 
 // -------------------------
