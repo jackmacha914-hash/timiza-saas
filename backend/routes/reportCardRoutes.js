@@ -268,17 +268,23 @@ router.post(
             
             // Create report card record with all required fields
             const reportCard = new ReportCard({
-                studentId,
-                studentName: `${student.firstName} ${student.lastName}`.trim(),
-                term: term.trim(),
-                year: year.trim(),
-                comments: comments || '',
-                path: publicPdfPath, // Public URL for the PDF
-                htmlPath: publicHtmlPath, // Public URL for the HTML
-                status: 'published', // Must be one of: 'draft', 'published', 'archived'
-                uploadedBy: req.user.id,
-                htmlContent: htmlContent
-            });
+    school: req.user.school,      // <-- ADD THIS
+
+    studentId,
+    studentName: student.name,    // <-- CHANGE THIS
+
+    term,
+    year,
+    comments: comments || '',
+
+    path: publicPdfPath,
+    htmlPath: publicHtmlPath,
+
+    status: 'published',
+    uploadedBy: req.user.id,
+
+    htmlContent
+});
             
             console.log('Creating report card with data:', {
                 studentId: reportCard.studentId,
