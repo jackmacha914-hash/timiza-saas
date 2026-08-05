@@ -418,7 +418,7 @@ console.log("Toggle:", sidebarToggle);
             // Toggle sidebar on mobile
             if (sidebarToggle) {
                 sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('active');
+                    sidebar.classList.toggle("open");
                     document.body.classList.toggle('sidebar-active');
                 });
             }
