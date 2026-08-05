@@ -2223,7 +2223,7 @@ await fetchAndDisplayAttendance(url);
     
     }
     
-    } // End of loadTeachersCount
+      // End of loadTeachersCount
     
     // Load students count
     async function loadStudentsCount() {
