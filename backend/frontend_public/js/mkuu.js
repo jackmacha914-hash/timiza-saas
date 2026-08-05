@@ -37,7 +37,7 @@ window.fetch = async (input, init = {}) => {
   };
 })(XMLHttpRequest);
 
- <!-- Modal functions -->
+ // Modal functions 
 
         // Global variable to store the current user type for registration
         let currentUserType = '';
@@ -1145,7 +1145,7 @@ if (sidebarToggle) {
         }              
     
     
-    <!-- Test script to verify loading -->
+    // Test script to verify loading 
 
         console.log('Test script running');
         
@@ -2692,7 +2692,7 @@ await fetchAndDisplayAttendance(url);
         loadBooksCount().catch(console.error);
     });
 
-     <!-- Attendance Auto-Load Script -->
+     // Attendance Auto-Load Script 
         // Make loadTodaysAttendance globally available
         if (typeof loadTodaysAttendance === 'function') {
             window.loadTodaysAttendance = loadTodaysAttendance;
@@ -2711,7 +2711,7 @@ await fetchAndDisplayAttendance(url);
             console.error('Failed to initialize attendance loading');
         }
 
-        <!-- Class Management JavaScript -->
+        // Class Management JavaScript 
         document.addEventListener('DOMContentLoaded', function() {
             // Get DOM elements
             const classSelect = document.getElementById('class-select');
