@@ -2215,6 +2215,7 @@ await fetchAndDisplayAttendance(url);
             }
         }
     }
+    }
     
     } // End of loadTeachersCount
     
