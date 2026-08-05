@@ -1136,38 +1136,7 @@ window.fetch = async (input, init = {}) => {
         if (roleSelect) {
             roleSelect.addEventListener('change', updateFields);
             updateFields();
-        }
-    
-  <script src="/js/apiConfig.js"></script>
-  <script src="/js/apiFetch.js"></script>
-    <script src="/js/admin.js"></script>
-    <script src="/js/clubs.js"></script>
-    <script src="/js/library.js"></script>
-    <script src="/js/events.js"></script>
-    <script src="/js/backup.js"></script>
-    <script src="/js/roles.js"></script>
-    <script src="../js/script.js"></script>
-    <script src="../js/accountant-fees.js"></script>
-    <script src="/js/meals-collections.js"></script>
-   <script src="/js/accountant-new.js"></script>
-    <!-- 1. CONFIG (must load first) -->
-<script src="js/finance/feeconfig.js"></script>
-
-<!-- 2. CLASSES (depends on config) -->
-<script src="js/finance/feeclasses.js"></script>
-
-<!-- 3. FEE FORM (depends on config + classes) -->
-<script src="js/finance/feeForm.js"></script>
-
-<!-- 4. RECORDS (optional later) -->
-<script src="js/finance/feeRecords.js"></script>
-
-<!-- 5. RECEIPTS (optional) -->
-<script src="js/finance/feereceipt.js"></script>
-
-<!-- 6. MAIN INIT (must be last) -->
-<script src="js/finance/feemain.js"></script>
-                    
+        }              
     
     
     <!-- Test script to verify loading -->
