@@ -397,7 +397,7 @@ window.fetch = async (input, init = {}) => {
         }
     
 
-    <!-- Add the registration form submit event listener -->
+    // Add the registration form submit event listener 
   
         document.addEventListener('DOMContentLoaded', () => {
             const registrationForm = document.getElementById('registration-form');
@@ -1224,7 +1224,7 @@ if (sidebarToggle) {
             updateFields();
         });
 
-          <!-- API Configuration -->
+          // API Configuration 
     window.API_CONFIG = { 
         BASE_URL: 'https://timiza-saas.onrender.com',
         API_BASE_URL: 'https://timiza-saas.onrender.com/api',
@@ -1239,7 +1239,7 @@ if (sidebarToggle) {
         BOOKS_URL: 'https://timiza-saas.onrender.com/api/books'
     };
     
-     <!-- Global Attendance Function -->
+     // Global Attendance Function 
   
     // Define the function in the global scope
     window.loadTodaysAttendance = async function() {
@@ -2064,164 +2064,135 @@ await fetchAndDisplayAttendance(url);
         }
     }
     
-    // Load teachers count
-    async function loadTeachersCount() {
-        console.log('=== loadTeachersCount STARTED ===');
-        const countElement = document.getElementById('teacher-count');
-        
-        // Check if element exists
-        if (!countElement) {
-            console.error('❌ teacher-count element not found in the DOM');
-            console.log('Available elements with class "stat-value":', 
-                Array.from(document.querySelectorAll('.stat-value')).map(el => ({
-                    id: el.id,
-                    class: el.className,
-                    text: el.textContent
-                }))
-            );
-            return false;
-        }
-        
-        // Show loading state
-        countElement.textContent = '...';
-        
-        // Show loading state
-        countElement.textContent = '...';
-        
-        // First try to get from localStorage
-        try {
-            const savedCount = localStorage.getItem('teachersCount');
-            if (savedCount) {
-                countElement.textContent = savedCount;
-                return true;
-            }
-            
-            const savedTeachers = localStorage.getItem('teachers');
-            if (savedTeachers) {
-                const teachers = JSON.parse(savedTeachers);
-                if (Array.isArray(teachers)) {
-                    countElement.textContent = teachers.length.toString();
-                    return true;
-                }
-            }
-        } catch (e) {
-            console.error('Error parsing saved teachers:', e);
-        }
-        
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.error('❌ No authentication token found');
-                countElement.textContent = '-';
-                return false;
-            }
-            
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            };
-            
-            console.log('🔍 Attempting to fetch teachers count...');
-            
-            // First try the count endpoint
-            let response;
-            try {
+   // Load teachers count
+async function loadTeachersCount() {
+    console.log("=== loadTeachersCount STARTED ===");
 
-                response = await fetch('https://timiza-saas.onrender.com/api/teachers/count', {
-                    method: 'GET',
-                    headers: headers
-                });
-                
-                if (response.ok) {
-                const data = await response.json();
-                const count = data.count || 0;
-                countElement.textContent = count.toString();
-                
-                // Save to localStorage for offline use
-                try {
-                    localStorage.setItem('teachersCount', count.toString());
-                } catch (e) {
-                    console.error('Error saving to localStorage:', e);
-                }
-                
-                return true;
-            }
-            
-            console.log('Count endpoint failed, trying to fetch all teachers...');
-            // If count endpoint fails, try to fetch all teachers and count them
-            console.log('⚠️ Count endpoint failed, trying to fetch all teachers...');
-            
-            let teachersResponse;
-            try {
+    const countElement = document.getElementById("teacher-count");
 
-                teachersResponse = await fetch('https://timiza-saas.onrender.com/api/teachers', {
-                    method: 'GET',
-                    headers: headers
-                });
-                
-                if (teachersResponse.ok) {
-                const data = await teachersResponse.json();
-                console.log('Teachers list API response:', data);
-                const teachers = Array.isArray(data) ? data : (data.teachers || data.data || []);
-                const count = teachers.length;
-                countElement.textContent = count.toString();
-                
-                // Save to localStorage for offline use
-                try {
-                    localStorage.setItem('teachersCount', count.toString());
-                    localStorage.setItem('teachers', JSON.stringify(teachers));
-                } catch (e) {
-                    console.error('Error saving to localStorage:', e);
-                }
-                
-                return true;
-            }
-            
-                // If we get here, both API endpoints failed
-                console.error('❌ Both count and list endpoints failed');
-                throw new Error(`Failed to load teachers data: ${teachersResponse.status} ${teachersResponse.statusText}`);
-            } catch (innerError) {
-                console.error('❌ Error fetching teachers list:', innerError);
-                throw new Error('Failed to fetch teachers list');
-            }
-        } catch (error) {
-            console.error('❌ Error in loadTeachersCount:', error);
-            
-            // Try to use cached data as fallback
-            try {
-                const cachedCount = localStorage.getItem('teachersCount');
-                if (cachedCount) {
-                    console.log('ℹ️ Using cached teacher count:', cachedCount);
-                    countElement.textContent = cachedCount;
-                    return true;
-                }
-                
-                // Try to get count from cached teachers list
-                const cachedTeachers = localStorage.getItem('teachers');
-                if (cachedTeachers) {
-                    try {
-                        const teachers = JSON.parse(cachedTeachers);
-                        if (Array.isArray(teachers)) {
-                            const count = teachers.length;
-                            console.log('ℹ️ Calculated count from cached teachers:', count);
-                            countElement.textContent = count.toString();
-                            return true;
-                        }
-                    } catch (e) {
-                        console.error('Error parsing cached teachers:', e);
-                    }
-                }
-                
-                countElement.textContent = '-';
-                return false;
-            } catch (e) {
-                console.error('Error in fallback logic:', e);
-                countElement.textContent = '-';
-                return false;
-            }
-        }
-    
+    if (!countElement) {
+        console.error("❌ teacher-count element not found");
+        return false;
     }
+
+    // Loading state
+    countElement.textContent = "...";
+
+    // Authentication token
+    const token = localStorage.getItem("token");
+    if (!token) {
+        console.error("❌ No authentication token found");
+        countElement.textContent = "-";
+        return false;
+    }
+
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+    };
+
+    try {
+        // ===========================
+        // 1. Try Count Endpoint
+        // ===========================
+        console.log("🔍 Fetching teachers count...");
+
+        let response = await fetch(
+            "https://timiza-saas.onrender.com/api/teachers/count",
+            {
+                method: "GET",
+                headers
+            }
+        );
+
+        if (response.ok) {
+            const data = await response.json();
+
+            const count = data.count || 0;
+
+            countElement.textContent = count;
+
+            localStorage.setItem("teachersCount", count);
+
+            console.log("✅ Teacher count loaded:", count);
+
+            return true;
+        }
+
+        // ===========================
+        // 2. Fallback - Fetch Teachers
+        // ===========================
+        console.warn("⚠️ Count endpoint unavailable. Loading teachers list...");
+
+        response = await fetch(
+            "https://timiza-saas.onrender.com/api/teachers",
+            {
+                method: "GET",
+                headers
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const teachers = Array.isArray(data)
+            ? data
+            : (data.teachers || data.data || []);
+
+        const count = teachers.length;
+
+        countElement.textContent = count;
+
+        localStorage.setItem("teachersCount", count);
+        localStorage.setItem("teachers", JSON.stringify(teachers));
+
+        console.log("✅ Teacher count calculated:", count);
+
+        return true;
+
+    } catch (error) {
+
+        console.error("❌ Failed to load teachers:", error);
+
+        // ===========================
+        // 3. Offline Cache
+        // ===========================
+        try {
+
+            const cachedCount = localStorage.getItem("teachersCount");
+
+            if (cachedCount !== null) {
+                console.log("ℹ️ Using cached teacher count");
+
+                countElement.textContent = cachedCount;
+
+                return true;
+            }
+
+            const cachedTeachers = JSON.parse(
+                localStorage.getItem("teachers") || "[]"
+            );
+
+            if (Array.isArray(cachedTeachers)) {
+                countElement.textContent = cachedTeachers.length;
+
+                return true;
+            }
+
+        } catch (cacheError) {
+
+            console.error("Cache error:", cacheError);
+
+        }
+
+        countElement.textContent = "-";
+
+        return false;
+    }
+}
     
       // End of loadTeachersCount
     
@@ -3098,7 +3069,7 @@ await fetchAndDisplayAttendance(url);
             }
         });
 
-         <!-- Initialize admin functionality -->
+         // Initialize admin functionality 
         // Make sure the admin.js is loaded after the DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
             // Check if the current user is an admin
