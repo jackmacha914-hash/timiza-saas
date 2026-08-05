@@ -415,13 +415,17 @@ console.log("Toggle:", sidebarToggle);
             const tabLinks = document.querySelectorAll('.tab-link');
             const tabSections = document.querySelectorAll('.tab-section');
             
-            // Toggle sidebar on mobile
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle("open");
-                    document.body.classList.toggle('sidebar-active');
-                });
-            }
+           // Toggle sidebar on mobile
+if (sidebarToggle) {
+    sidebarToggle.addEventListener("click", function () {
+        console.log("Menu button clicked");
+        alert("Menu button clicked");
+
+        sidebar.classList.toggle("open");
+
+        console.log(sidebar.className);
+    });
+}
             
             // Tab switching functionality
             tabLinks.forEach(link => {
