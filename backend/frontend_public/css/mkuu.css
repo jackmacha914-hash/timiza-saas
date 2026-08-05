@@ -1012,7 +1012,7 @@
             color: white;
         }
 
-         <!-- Custom Styles -->
+         /* Custom Styles */
         /* Main Content Styling */
         .main-content header {
             margin-bottom: 2rem;
@@ -1088,7 +1088,7 @@
             background-color: rgba(79, 70, 229, 0.1);
         }
 
-            <!-- Club Members Modal -->
+            /* Club Members Modal */
 
    @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -1140,7 +1140,7 @@
             transition: all 0.3s ease;
             overflow: hidden;
         }
-        <script src="../js/dashboard.js"></script>
+        
         .card:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
