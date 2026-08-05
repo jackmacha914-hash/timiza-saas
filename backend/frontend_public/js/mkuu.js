@@ -410,6 +410,8 @@ window.fetch = async (input, init = {}) => {
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.querySelector('.sidebar');
             const sidebarToggle = document.querySelector('.sidebar-toggle');
+          console.log("Sidebar:", sidebar);
+console.log("Toggle:", sidebarToggle);
             const tabLinks = document.querySelectorAll('.tab-link');
             const tabSections = document.querySelectorAll('.tab-section');
             
