@@ -129,11 +129,7 @@ function renderFilteredTeachersTable(filteredTeachers) {
     `).join('');
 }
 
-// Handle Logout
-document.getElementById('logout-link').addEventListener('click', function() {
-    localStorage.clear();
-    window.location.reload();
-});
+
 
 // Initialize the dashboard
 renderData();
