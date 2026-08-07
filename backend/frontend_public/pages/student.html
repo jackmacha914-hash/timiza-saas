@@ -54,74 +54,116 @@
     <i class="fas fa-bars"></i>
   </button>
   
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">
-        <i class="fas fa-graduation-cap"></i>
-      </div>
-      <h2>SchoolSync</h2>
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <i class="fas fa-graduation-cap"></i>
     </div>
-    <div class="sidebar-profile">
-      <div class="profile-avatar">
-        <i class="fas fa-user-circle"></i>
-      </div>
-      <div class="profile-info">
-        <div class="profile-name">Student</div>
-      </div>
+    <h2>SchoolSync</h2>
+  </div>
+
+  <div class="sidebar-profile">
+    <div class="profile-avatar">
+      <i class="fas fa-user-circle"></i>
     </div>
-    <div class="divider"></div>
-    <ul class="sidebar-menu">
-      <li class="tab-link active" data-tab="dashboard-section">
-        <i class="fas fa-tachometer-alt"></i>
-        <span>Dashboard</span>
-      </li>
-      <li class="tab-link" data-tab="profile-section">
-        <i class="fas fa-user"></i>
-        <span>Profile</span>
-      </li>
-      <li class="tab-link" data-tab="calendar-section">
-        <i class="fas fa-calendar-alt"></i>
-        <span>Academic Calendar</span>
-      </li>
-      <li class="tab-link" data-tab="announcements-section">
-        <i class="fas fa-bullhorn"></i>
-        <span>Announcements</span>
-      </li>
-      <li class="tab-link" data-tab="assignments-section">
-        <i class="fas fa-tasks"></i>
-        <span>Assignments</span>
-      </li>
-      <li class="tab-link" data-tab="homework-section">
-        <i class="fas fa-book-reader"></i>
-        <span>Homework</span>
-      </li>
-      <li class="tab-link" data-tab="resources-section">
-        <i class="fas fa-book"></i>
-        <span>Resources</span>
-      </li>
-      <li class="tab-link" data-tab="quizzes-section" onclick="window.location.href='quizzes.html'">
-        <i class="fas fa-question-circle"></i>
-        <span>Quizzes</span>
-      </li>
-      <li class="tab-link" data-tab="fee-records-section">
-        <i class="fas fa-money-bill-wave"></i>
-        <span>Fee Records</span>
-      </li>
-      <li class="tab-link" data-tab="library-section">
-        <i class="fas fa-book-reader"></i>
-        <span>Library</span>
-      </li>
-      <li class="tab-link" data-tab="report-cards-section">
-        <i class="fas fa-file-alt"></i>
-        <span>Report Cards</span>
-      </li>
-      <li class="tab-link" data-tab="logout-section" onclick="window.location.href='/pages/login'">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Logout</span>
-      </li>
-    </ul>
-  </aside>
+    <div class="profile-info">
+      <div class="profile-name">Student</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <ul class="sidebar-menu">
+
+    <li class="tab-link active"
+        data-tab="dashboard-section"
+        data-url="?tab=dashboard-section">
+      <i class="fas fa-tachometer-alt"></i>
+      <span>Dashboard</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="profile-section"
+        data-url="?tab=profile-section">
+      <i class="fas fa-user"></i>
+      <span>Profile</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="calendar-section"
+        data-url="?tab=calendar-section">
+      <i class="fas fa-calendar-alt"></i>
+      <span>Academic Calendar</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="announcements-section"
+        data-url="?tab=announcements-section">
+      <i class="fas fa-bullhorn"></i>
+      <span>Announcements</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="assignments-section"
+        data-url="?tab=assignments-section">
+      <i class="fas fa-tasks"></i>
+      <span>Assignments</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="homework-section"
+        data-url="?tab=homework-section">
+      <i class="fas fa-book-reader"></i>
+      <span>Homework</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="resources-section"
+        data-url="?tab=resources-section">
+      <i class="fas fa-book"></i>
+      <span>Resources</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="quizzes-section"
+        data-url="quizzes.html"
+        onclick="window.location.href='quizzes.html'">
+      <i class="fas fa-question-circle"></i>
+      <span>Quizzes</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="fee-records-section"
+        data-url="?tab=fee-records-section">
+      <i class="fas fa-money-bill-wave"></i>
+      <span>Fee Records</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="library-section"
+        data-url="?tab=library-section">
+      <i class="fas fa-book-reader"></i>
+      <span>Library</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="report-cards-section"
+        data-url="?tab=report-cards-section">
+      <i class="fas fa-file-alt"></i>
+      <span>Report Cards</span>
+    </li>
+
+    <li class="tab-link"
+        data-tab="logout-section"
+        data-url="/pages/login"
+        onclick="window.location.href='/pages/login'">
+      <i class="fas fa-sign-out-alt"></i>
+      <span>Logout</span>
+    </li>
+
+  </ul>
+</aside>
 
   <!-- Main Content -->
   <main class="main-content">
