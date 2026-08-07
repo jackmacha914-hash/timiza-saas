@@ -27,72 +27,97 @@
     <i class="fas fa-bars"></i>
   </button>
   
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">
-        <i class="fas fa-graduation-cap"></i>
-      </div>
-      <h2>SchoolSync</h2>
-    </div>
-    
-    <div class="sidebar-profile">
-      <div class="profile-avatar">
-        <i class="fas fa-user"></i>
-      </div>
-      <div class="profile-info">
-        <div class="profile-name">Teacher</div>
-      </div>
-    </div>
-    
-    <ul class="sidebar-menu">
-      <li class="tab-link active" data-tab="profile-section">
-        <i class="fas fa-user"></i>
-        <span>Profile</span>
-      </li>
-      <li class="tab-link" data-tab="class-management-section">
-        <i class="fas fa-chalkboard-teacher"></i>
-        <span>Class Management</span>
-      </li>
-      <li class="tab-link" data-tab="homework-section">
-        <i class="fas fa-book"></i>
-        <span>Homework</span>
-      </li>
-      <li class="tab-link" data-tab="timetable-section">
-        <i class="fas fa-calendar-alt"></i>
-        <span>Timetable</span>
-      </li>
-      <li class="tab-link" data-tab="reportcard-section">
-        <i class="fas fa-file-alt"></i>
-        <span>Report Card</span>
-      </li>
-      <li class="tab-link" data-tab="attendance-section">
-        <i class="fas fa-clipboard-check"></i>
-        <span>Attendance</span>
-      </li>
-      <li class="tab-link" data-tab="announcements-section">
-        <i class="fas fa-bullhorn"></i>
-        <span>Announcements</span>
-      </li>
-      <li class="tab-link" data-tab="resources-section">
-        <i class="fas fa-book-open"></i>
-        <span>Resources</span>
-      </li>
-      <li class="tab-link" data-tab="quizzes-section" onclick="window.location.href='manage-quizzes.html'">
-        <i class="fas fa-question-circle"></i>
-        <span>Quizzes</span>
-      </li>
-      <li class="tab-link" data-tab="communication-section">
-        <i class="fas fa-comments"></i>
-        <span>Communication</span>
-      </li>
-      <li class="tab-link" data-tab="logout-section">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Logout</span>
-      </li>
-    </ul>
-  </aside>
+ <div class="sidebar-profile">
+  <div class="profile-avatar">
+    <i class="fas fa-user"></i>
+  </div>
+  <div class="profile-info">
+    <div class="profile-name">Teacher</div>
+  </div>
+</div>
 
+<ul class="sidebar-menu">
+
+  <li class="tab-link active"
+      data-tab="profile-section"
+      data-url="?tab=profile-section">
+    <i class="fas fa-user"></i>
+    <span>Profile</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="class-management-section"
+      data-url="?tab=class-management-section">
+    <i class="fas fa-chalkboard-teacher"></i>
+    <span>Class Management</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="homework-section"
+      data-url="?tab=homework-section">
+    <i class="fas fa-book"></i>
+    <span>Homework</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="timetable-section"
+      data-url="?tab=timetable-section">
+    <i class="fas fa-calendar-alt"></i>
+    <span>Timetable</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="reportcard-section"
+      data-url="?tab=reportcard-section">
+    <i class="fas fa-file-alt"></i>
+    <span>Report Card</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="attendance-section"
+      data-url="?tab=attendance-section">
+    <i class="fas fa-clipboard-check"></i>
+    <span>Attendance</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="announcements-section"
+      data-url="?tab=announcements-section">
+    <i class="fas fa-bullhorn"></i>
+    <span>Announcements</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="resources-section"
+      data-url="?tab=resources-section">
+    <i class="fas fa-book-open"></i>
+    <span>Resources</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="quizzes-section"
+      data-url="manage-quizzes.html"
+      onclick="window.location.href='manage-quizzes.html'">
+    <i class="fas fa-question-circle"></i>
+    <span>Quizzes</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="communication-section"
+      data-url="?tab=communication-section">
+    <i class="fas fa-comments"></i>
+    <span>Communication</span>
+  </li>
+
+  <li class="tab-link"
+      data-tab="logout-section"
+      data-url="/pages/login.html">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Logout</span>
+  </li>
+
+</ul>
+</aside>
   <!-- Main Content -->
   <main class="main-content">
     <header>
