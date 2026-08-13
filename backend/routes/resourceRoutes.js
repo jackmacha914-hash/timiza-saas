@@ -38,7 +38,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage, fileFilter: fileFilter }).single('resource');
 
 // POST route for uploading a file
-router.post('/upload', protect, authorize('Teacher'), function (req, res, next) {
+router.post('/upload', protect, authorize('teacher'), function (req, res, next) {
   upload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       return res.status(400).json({ success: false, message: err.message });
