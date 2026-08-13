@@ -320,29 +320,28 @@ res.json({
     }
 };
 
-// ✅ Upload Profile Photo
-exports.uploadProfilePhoto = async (req, res) => {
+// ✅ Update Student Profile
+exports.updateStudentProfile = async (req, res) => {
     try {
-        // ==========================================
-        // CHECK FILE
-        // ==========================================
+        console.log(
+            'Received update request:',
+            JSON.stringify(req.body, null, 2)
+        );
 
-        if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: 'No file uploaded'
-            });
-        }
-
-        // ==========================================
-        // USER / SCHOOL
-        // ==========================================
+        const {
+            name,
+            email,
+            profile,
+            class: rootClass
+        } = req.body;
 
         const userId = req.user.id;
-        const schoolId = req.user.school;
-        const filename = req.file.filename;
 
-        if (!schoolId) {
+        // ==========================================
+        // SCHOOL IS REQUIRED
+        // ==========================================
+
+        if (!req.user.school) {
             return res.status(400).json({
                 success: false,
                 message: 'School not found in authenticated user'
@@ -350,86 +349,118 @@ exports.uploadProfilePhoto = async (req, res) => {
         }
 
         // ==========================================
-        // PHOTO PATH
+        // FIND USER IN CURRENT SCHOOL
         // ==========================================
 
-        const photoPath = `/uploads/profile-photos/${filename}`;
+        const student = await User.findOne({
+            _id: userId,
+            school: req.user.school
+        });
 
-        const baseUrl =
-            `${req.protocol}://${req.get('host')}`;
-
-        const fullPhotoUrl =
-            `${baseUrl}${photoPath}`;
-
-        // ==========================================
-        // UPDATE USER
-        // SCHOOL IS PART OF QUERY
-        // ==========================================
-
-        const updatedUser = await User.findOneAndUpdate(
-            {
-                _id: userId,
-                school: schoolId
-            },
-            {
-                $set: {
-                    'profile.photo': fullPhotoUrl,
-                    'profile.photoPath': photoPath,
-                    'profile.originalFilename': req.file.originalname,
-                    'profile.photoUploadedAt': new Date()
-                }
-            },
-            {
-                new: true
-            }
-        );
-
-        if (!updatedUser) {
+        if (!student) {
             return res.status(404).json({
                 success: false,
-                message: 'User not found in this school'
+                message: 'Student not found'
             });
         }
 
         // ==========================================
-        // DELETE OLD PHOTO
+        // BASIC INFORMATION
         // ==========================================
 
-        const oldPhotoPath =
-            updatedUser.profile?.photoPath;
+        if (name) {
+            student.name = name;
+        }
 
-        // Since findOneAndUpdate already changed photoPath,
-        // we don't have the old path here.
-        // We therefore do not delete anything in this request.
-        //
-        // This avoids accidentally deleting another file/user's
-        // photo in a multi-school SaaS environment.
+        if (email) {
+            student.email = email;
+        }
 
         // ==========================================
-        // RESPONSE
+        // ROOT CLASS
         // ==========================================
 
-        res.json({
+        if (rootClass) {
+            student.class = rootClass;
+
+            student.profile = student.profile || {};
+
+            student.profile.class = rootClass;
+        }
+
+        // ==========================================
+        // PROFILE
+        // ==========================================
+
+        if (profile) {
+            student.profile = student.profile || {};
+
+            // Class
+            if (profile.class) {
+                student.class = profile.class;
+                student.profile.class = profile.class;
+            }
+
+            // Grade
+            if (profile.grade) {
+                student.profile.grade = profile.grade;
+            }
+
+            // Subjects
+            if (profile.subjects) {
+                student.profile.subjects =
+                    Array.isArray(profile.subjects)
+                        ? profile.subjects
+                        : [profile.subjects].filter(Boolean);
+            }
+        }
+
+        // ==========================================
+        // SAVE
+        // ==========================================
+
+        await student.save();
+
+        // ==========================================
+        // RETURN UPDATED USER
+        // ==========================================
+
+        const updatedStudent = await User.findOne({
+            _id: userId,
+            school: req.user.school
+        })
+            .select('-password')
+            .populate('profile.subjects', 'name')
+            .lean();
+
+        return res.json({
             success: true,
-            message: 'Profile photo updated successfully',
-            photoUrl: fullPhotoUrl,
-            photoPath: photoPath
+            message: 'Profile updated successfully',
+            profile: updatedStudent
         });
 
     } catch (err) {
         console.error(
-            'Error uploading profile photo:',
+            'Error updating student profile:',
             err
         );
 
-        res.status(500).json({
+        // Duplicate email
+        if (err.code === 11000) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email already exists',
+                field: 'email'
+            });
+        }
+
+        return res.status(500).json({
             success: false,
-            message: 'Failed to upload profile photo',
+            message: 'Failed to update profile',
             error: err.message
         });
     }
 };
-
 // ✅ Change Password
 exports.changePassword = async (req, res) => {
     try {
