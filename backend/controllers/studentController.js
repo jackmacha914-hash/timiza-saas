@@ -614,3 +614,104 @@ exports.registerStudent = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// =====================================================
+// Upload Profile Photo
+// =====================================================
+
+exports.uploadProfilePhoto = async (req, res) => {
+    try {
+        // Check if file was uploaded
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const userId = req.user.id;
+
+        // Relative path stored in database
+        const photoPath = `/uploads/profile-photos/${req.file.filename}`;
+
+        // Full URL
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const fullPhotoUrl = `${baseUrl}${photoPath}`;
+
+        // Find current user
+        const user = await User.findOne({
+            _id: userId,
+            school: req.user.school
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Save old photo path before updating
+        const oldPhotoPath = user.profile?.photoPath;
+
+        // Make sure profile exists
+        user.profile = user.profile || {};
+
+        // Update profile photo information
+        user.profile.photo = fullPhotoUrl;
+        user.profile.photoPath = photoPath;
+        user.profile.originalFilename = req.file.originalname;
+        user.profile.photoUploadedAt = new Date();
+
+        await user.save();
+
+        // Delete previous local photo if it exists
+        if (
+            oldPhotoPath &&
+            oldPhotoPath !== photoPath &&
+            oldPhotoPath.startsWith('/uploads/profile-photos/')
+        ) {
+            try {
+                const oldFilePath = path.join(
+                    __dirname,
+                    '..',
+                    oldPhotoPath
+                );
+
+                if (fs.existsSync(oldFilePath)) {
+                    fs.unlinkSync(oldFilePath);
+
+                    console.log(
+                        'Deleted old profile photo:',
+                        oldFilePath
+                    );
+                }
+            } catch (deleteError) {
+                // Do not fail the upload if old photo deletion fails
+                console.error(
+                    'Error deleting old profile photo:',
+                    deleteError
+                );
+            }
+        }
+
+        return res.json({
+            success: true,
+            message: 'Profile photo updated successfully',
+            photoUrl: fullPhotoUrl,
+            photoPath: photoPath
+        });
+
+    } catch (err) {
+        console.error(
+            'Error uploading profile photo:',
+            err
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to upload profile photo',
+            error: err.message
+        });
+    }
+};
