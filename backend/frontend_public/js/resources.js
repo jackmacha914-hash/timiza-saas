@@ -32,27 +32,75 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-    // Set up event listener for the upload button
-  const uploadBtn = document.getElementById('upload-resource-btn');
-  if (uploadBtn) {
-    // Always show the button for teachers
+// =====================================================
+// RESOURCE UPLOAD BUTTON
+// =====================================================
+
+const uploadBtn = document.getElementById('upload-resource-btn');
+const uploadContainer = document.getElementById('upload-form-container');
+const classSelector = document.getElementById('resource-class');
+const classSelect = document.getElementById('class-select');
+
+if (uploadBtn) {
+
+    // Always show Upload Resource button
     uploadBtn.style.display = 'block';
-    uploadBtn.style.visibility = 'visible'; // Ensure it's visible
-    uploadBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const container = document.getElementById('upload-form-container');
-      if (container) {
-        container.style.display = container.style.display === 'none' ? 'block' : 'none';
-      }
-      
-      // Only show class selector for teachers/admins
-      const classSelector = document.getElementById('resource-class');
-      if (classSelector) {
-        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-        classSelector.style.display = userProfile.class ? 'none' : 'block';
-      }
+    uploadBtn.style.visibility = 'visible';
+
+    uploadBtn.addEventListener('click', function (e) {
+
+        e.preventDefault();
+
+        console.log('[RESOURCES] Upload Resource clicked');
+
+        // ---------------------------------------------
+        // SHOW UPLOAD FORM
+        // ---------------------------------------------
+
+        if (uploadContainer) {
+
+            uploadContainer.style.display = 'block';
+            uploadContainer.style.visibility = 'visible';
+            uploadContainer.style.opacity = '1';
+
+            console.log('[RESOURCES] Upload form shown');
+        }
+
+        // ---------------------------------------------
+        // ALWAYS SHOW CLASS SELECTOR
+        // ---------------------------------------------
+
+        if (classSelector) {
+
+            classSelector.style.display = 'block';
+            classSelector.style.visibility = 'visible';
+            classSelector.style.opacity = '1';
+
+            console.log('[RESOURCES] Class selector shown');
+        }
+
+        // ---------------------------------------------
+        // ALWAYS SHOW CLASS DROPDOWN
+        // ---------------------------------------------
+
+        if (classSelect) {
+
+            classSelect.style.display = 'block';
+            classSelect.style.visibility = 'visible';
+            classSelect.style.opacity = '1';
+            classSelect.style.pointerEvents = 'auto';
+
+            console.log('[RESOURCES] Class dropdown shown');
+        }
+
     });
-  }
+
+} else {
+
+    console.error(
+        '[RESOURCES] upload-resource-btn was not found'
+    );
+}
   
   // Set up event listener for the cancel button
   const cancelBtn = document.getElementById('cancel-upload-btn');
