@@ -121,6 +121,10 @@ router.post(
           req.user?.class ||
           "General";
 
+        console.log("[UPLOAD] AUTH USER:", req.user);
+console.log("[UPLOAD] USER ID:", req.user?._id);
+console.log("[UPLOAD] USER id:", req.user?.id);
+
         const resource = await Resource.create({
           school,
           name: req.file.originalname,
