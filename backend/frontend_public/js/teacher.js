@@ -1,2030 +1,926 @@
 document.addEventListener('DOMContentLoaded', () => {
-/* =========================================================
-   HOMEWORK & ASSIGNMENT MANAGEMENT
-   Ready-to-paste replacement
-   ========================================================= */
-
-(() => {
-    'use strict';
-
-    /* =========================================================
-       CONFIGURATION
-       ========================================================= */
-
-    const API_BASE_URL =
-        window.API_CONFIG?.BASE_URL ||
-        'https://timiza-saas.onrender.com';
-
-    const API_HOMEWORKS = `${API_BASE_URL}/api/homeworks`;
-    const API_ASSIGNMENTS = `${API_BASE_URL}/api/assignments`;
-
-    let allHomeworks = [];
-    let allAssignments = [];
-
-    /* =========================================================
-       HELPER FUNCTIONS
-       ========================================================= */
-
-    function getToken() {
-        return localStorage.getItem('token');
-    }
-
-    function requireToken() {
-        const token = getToken();
-
-        if (!token) {
-            showMessage('Please log in first.', 'error');
-            return null;
-        }
-
-        return token;
-    }
-
-    function escapeHTML(value) {
-        if (value === null || value === undefined) {
-            return '';
-        }
-
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    function getFileUrl(file) {
-        if (!file) {
-            return '';
-        }
-
-        // If backend already returns a complete URL
-        if (/^https?:\/\//i.test(file)) {
-            return file;
-        }
-
-        // If backend returns a path beginning with /
-        if (file.startsWith('/')) {
-            return `${API_BASE_URL}${file}`;
-        }
-
-        return `${API_BASE_URL}/${file}`;
-    }
-
-    async function parseResponse(response) {
-        const contentType = response.headers.get('content-type') || '';
-
-        if (contentType.includes('application/json')) {
-            return await response.json();
-        }
-
-        const text = await response.text();
-
-        return {
-            error: text || `Request failed with status ${response.status}`
-        };
-    }
-
-    function formatDate(date) {
-        if (!date) {
-            return 'N/A';
-        }
-
-        const parsedDate = new Date(date);
-
-        if (Number.isNaN(parsedDate.getTime())) {
-            return 'Invalid date';
-        }
-
-        return parsedDate.toLocaleDateString();
-    }
-
-    function formatDateTime(date) {
-        if (!date) {
-            return 'N/A';
-        }
-
-        const parsedDate = new Date(date);
-
-        if (Number.isNaN(parsedDate.getTime())) {
-            return 'Invalid date';
-        }
-
-        return parsedDate.toLocaleString();
-    }
-
-    function showMessage(message, type = 'info') {
-        const messageDiv = document.createElement('div');
-
-        const bootstrapType =
-            type === 'error'
-                ? 'danger'
-                : type === 'success'
-                    ? 'success'
-                    : type === 'warning'
-                        ? 'warning'
-                        : 'info';
-
-        messageDiv.className =
-            `alert alert-${bootstrapType} alert-dismissible fade show`;
-
-        messageDiv.setAttribute('role', 'alert');
-
-        messageDiv.style.position = 'fixed';
-        messageDiv.style.top = '20px';
-        messageDiv.style.right = '20px';
-        messageDiv.style.zIndex = '99999';
-        messageDiv.style.minWidth = '300px';
-        messageDiv.style.maxWidth = '500px';
-
-        const text = document.createElement('span');
-        text.textContent = message;
-
-        const closeButton = document.createElement('button');
-        closeButton.type = 'button';
-        closeButton.className = 'btn-close';
-        closeButton.setAttribute('aria-label', 'Close');
-
-        closeButton.onclick = () => {
-            messageDiv.remove();
-        };
-
-        messageDiv.appendChild(text);
-        messageDiv.appendChild(closeButton);
-
-        document.body.appendChild(messageDiv);
-
-        setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.style.opacity = '0';
-                messageDiv.style.transition = 'opacity 0.3s ease';
-
-                setTimeout(() => {
-                    if (messageDiv.parentNode) {
-                        messageDiv.remove();
-                    }
-                }, 300);
-            }
-        }, 5000);
-    }
-
-    function setFormMessage(elementId, message, type = 'error') {
-        const msgDiv = document.getElementById(elementId);
-
-        if (!msgDiv) {
-            showMessage(message, type);
-            return;
-        }
-
-        msgDiv.style.display = 'block';
-        msgDiv.textContent = message;
-
-        if (type === 'success') {
-            msgDiv.style.color = 'green';
-        } else if (type === 'error') {
-            msgDiv.style.color = 'red';
-        } else {
-            msgDiv.style.color = '#333';
-        }
-    }
-
-    /* =========================================================
-       HOMEWORK CREATION
-       ========================================================= */
-
-    function initializeHomeworkCreation() {
-        const form = document.getElementById('create-homework-form');
-
-        if (!form) {
-            return;
-        }
-
-        form.onsubmit = async function (e) {
+ // Handle homework creation form
+    const createHomeworkForm = document.getElementById('create-homework-form');
+    if (createHomeworkForm) {
+        createHomeworkForm.onsubmit = async (e) => {
             e.preventDefault();
-
-            const title =
-                document.getElementById('homework-title')?.value.trim() || '';
-
-            const description =
-                document.getElementById('homework-description')?.value.trim() || '';
-
-            const dueDate =
-                document.getElementById('homework-due-date')?.value.trim() || '';
-
-            const classAssigned =
-                document.getElementById('homework-class')?.value.trim() || '';
-
+            
+            // Get form elements
+            const title = document.getElementById('homework-title')?.value.trim();
+            const description = document.getElementById('homework-description')?.value.trim();
+            const dueDate = document.getElementById('homework-due-date')?.value.trim();
+            const classAssigned = document.getElementById('homework-class')?.value.trim();
+            const msgDiv = document.getElementById('homework-create-msg');
+            
+            // Validate required fields
             if (!title || !dueDate || !classAssigned) {
-                setFormMessage(
-                    'homework-create-msg',
-                    'Please fill in all required fields: title, due date, and class.',
-                    'error'
-                );
+                msgDiv.style.display = 'block';
+                msgDiv.textContent = 'Please fill in all required fields: title, due date, and class';
+                msgDiv.style.color = 'red';
                 return;
             }
-
-            const token = requireToken();
-
-            if (!token) {
-                return;
-            }
-
-            const submitButton = form.querySelector(
-                'button[type="submit"], input[type="submit"]'
-            );
-
-            const originalButtonText = submitButton
-                ? submitButton.textContent
-                : '';
 
             try {
-                if (submitButton) {
-                    submitButton.disabled = true;
-                    submitButton.textContent = 'Creating...';
-                }
-
-                const formData = new FormData(form);
-
-                const response = await fetch(API_HOMEWORKS, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-
-                const data = await parseResponse(response);
-
-                if (!response.ok) {
-                    throw new Error(
-                        data.error ||
-                        data.message ||
-                        `Failed to create homework (${response.status})`
-                    );
-                }
-
-                setFormMessage(
-                    'homework-create-msg',
-                    'Homework created successfully!',
-                    'success'
-                );
-
-                form.reset();
-
-                const formContainer =
-                    document.getElementById('homework-form-container');
-
-                if (formContainer) {
-                    formContainer.style.display = 'none';
-                }
-
-                await fetchHomeworks();
-
-            } catch (error) {
-                console.error('Error creating homework:', error);
-
-                setFormMessage(
-                    'homework-create-msg',
-                    `Error: ${error.message || 'Failed to create homework'}`,
-                    'error'
-                );
-
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = originalButtonText || 'Create Homework';
-                }
-            }
-        };
-    }
-
-    /* =========================================================
-       ASSIGNMENT CREATION
-       ========================================================= */
-
-    function initializeAssignmentCreation() {
-        const form = document.getElementById('create-assignment-form');
-
-        if (!form) {
-            return;
-        }
-
-        form.onsubmit = async function (e) {
-            e.preventDefault();
-
-            const title =
-                document.getElementById('assignment-title')?.value.trim() || '';
-
-            const description =
-                document.getElementById('assignment-description')?.value.trim() || '';
-
-            const dueDate =
-                document.getElementById('assignment-due-date')?.value.trim() || '';
-
-            const classAssigned =
-                document.getElementById('assignment-class')?.value.trim() || '';
-
-            if (!title || !dueDate || !classAssigned) {
-                setFormMessage(
-                    'assignment-create-msg',
-                    'Please fill in all required fields: title, due date, and class.',
-                    'error'
-                );
-                return;
-            }
-
-            const token = requireToken();
-
-            if (!token) {
-                return;
-            }
-
-            const submitButton = form.querySelector(
-                'button[type="submit"], input[type="submit"]'
-            );
-
-            const originalButtonText = submitButton
-                ? submitButton.textContent
-                : '';
-
-            try {
-                if (submitButton) {
-                    submitButton.disabled = true;
-                    submitButton.textContent = 'Creating...';
-                }
-
-                const formData = new FormData(form);
-
-                const response = await fetch(API_ASSIGNMENTS, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-
-                const data = await parseResponse(response);
-
-                if (!response.ok) {
-                    throw new Error(
-                        data.error ||
-                        data.message ||
-                        `Failed to create assignment (${response.status})`
-                    );
-                }
-
-                setFormMessage(
-                    'assignment-create-msg',
-                    'Assignment created successfully!',
-                    'success'
-                );
-
-                form.reset();
-
-                const formContainer =
-                    document.getElementById('assignment-form-container');
-
-                if (formContainer) {
-                    formContainer.style.display = 'none';
-                }
-
-                await fetchAssignments();
-
-            } catch (error) {
-                console.error('Error creating assignment:', error);
-
-                setFormMessage(
-                    'assignment-create-msg',
-                    `Error: ${error.message || 'Failed to create assignment'}`,
-                    'error'
-                );
-
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent =
-                        originalButtonText || 'Create Assignment';
-                }
-            }
-        };
-    }
-
-    /* =========================================================
-       HOMEWORK CLASS FILTER
-       ========================================================= */
-
-    function updateClassFilter(classes) {
-        const classFilter = document.getElementById('class-filter');
-
-        if (!classFilter) {
-            return;
-        }
-
-        const currentValue = classFilter.value;
-
-        // Keep "All Classes"
-        while (classFilter.options.length > 1) {
-            classFilter.remove(1);
-        }
-
-        const uniqueClasses = [
-            ...new Set(
-                classes
-                    .map(item => String(item || '').trim())
-                    .filter(Boolean)
-            )
-        ].sort((a, b) => a.localeCompare(b));
-
-        uniqueClasses.forEach(className => {
-            const option = document.createElement('option');
-
-            option.value = className;
-            option.textContent = className;
-
-            classFilter.appendChild(option);
-        });
-
-        const stillExists = Array.from(classFilter.options)
-            .some(option => option.value === currentValue);
-
-        if (stillExists) {
-            classFilter.value = currentValue;
-        } else {
-            classFilter.value = 'all';
-        }
-    }
-
-    function initializeClassFilter() {
-        const classFilter = document.getElementById('class-filter');
-
-        if (!classFilter || classFilter.dataset.listenerAttached === 'true') {
-            return;
-        }
-
-        classFilter.dataset.listenerAttached = 'true';
-
-        classFilter.addEventListener('change', function (e) {
-            renderHomeworks(e.target.value);
-        });
-    }
-
-    /* =========================================================
-       RENDER HOMEWORKS
-       ========================================================= */
-
-    function renderHomeworks(classFilter = 'all') {
-        const homeworkList =
-            document.getElementById('homework-list');
-
-        if (!homeworkList) {
-            console.warn('Could not find #homework-list');
-            return;
-        }
-
-        homeworkList.innerHTML = '';
-
-        const filteredHomeworks =
-            classFilter === 'all'
-                ? allHomeworks
-                : allHomeworks.filter(homework =>
-                    String(homework.classAssigned || '').trim() ===
-                    String(classFilter).trim()
-                );
-
-        if (!filteredHomeworks.length) {
-            const li = document.createElement('li');
-
-            li.textContent =
-                classFilter === 'all'
-                    ? 'No homeworks found.'
-                    : `No homeworks found for class "${classFilter}".`;
-
-            homeworkList.appendChild(li);
-            return;
-        }
-
-        filteredHomeworks.forEach(homework => {
-            const li = document.createElement('li');
-
-            li.className = 'homework-item';
-
-            const title = escapeHTML(homework.title);
-            const description = escapeHTML(homework.description);
-            const className = escapeHTML(homework.classAssigned);
-            const teacherName = escapeHTML(
-                homework.teacher?.name || 'N/A'
-            );
-
-            const fileUrl = homework.file
-                ? getFileUrl(homework.file)
-                : '';
-
-            li.innerHTML = `
-                <h4>${title}</h4>
-
-                <p>
-                    <strong>Description:</strong>
-                    ${description || 'No description'}
-                </p>
-
-                <p>
-                    <strong>Due Date:</strong>
-                    ${formatDate(homework.dueDate)}
-                </p>
-
-                <p>
-                    <strong>Class:</strong>
-                    ${className || 'N/A'}
-                </p>
-
-                <p>
-                    <strong>Created By:</strong>
-                    ${teacherName}
-                </p>
-
-                ${
-                    fileUrl
-                        ? `
-                            <p>
-                                <strong>File:</strong>
-                                <a
-                                    href="${escapeHTML(fileUrl)}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    Download
-                                </a>
-                            </p>
-                        `
-                        : ''
-                }
-
-                <div class="homework-actions">
-
-                    <button
-                        type="button"
-                        class="edit-homework-btn"
-                        data-id="${escapeHTML(homework._id)}"
-                    >
-                        Edit
-                    </button>
-
-                    <button
-                        type="button"
-                        class="delete-homework-btn"
-                        data-id="${escapeHTML(homework._id)}"
-                    >
-                        Delete
-                    </button>
-
-                    <button
-                        type="button"
-                        class="view-submissions-btn"
-                        data-id="${escapeHTML(homework._id)}"
-                    >
-                        View Submissions
-                    </button>
-
-                </div>
-            `;
-
-            // Attach events without putting IDs into onclick strings
-            const editButton =
-                li.querySelector('.edit-homework-btn');
-
-            const deleteButton =
-                li.querySelector('.delete-homework-btn');
-
-            const submissionsButton =
-                li.querySelector('.view-submissions-btn');
-
-            editButton?.addEventListener('click', () => {
-                editHomework(homework._id);
-            });
-
-            deleteButton?.addEventListener('click', () => {
-                deleteHomework(homework._id);
-            });
-
-            submissionsButton?.addEventListener('click', () => {
-                viewHomeworkSubmissions(homework._id);
-            });
-
-            homeworkList.appendChild(li);
-        });
-    }
-
-    /* =========================================================
-       FETCH HOMEWORKS
-       ========================================================= */
-
-    async function fetchHomeworks() {
-        const token = getToken();
-
-        if (!token) {
-            console.warn('No authentication token found.');
-            return;
-        }
-
-        try {
-            const response = await fetch(API_HOMEWORKS, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    data.message ||
-                    `Failed to fetch homeworks (${response.status})`
-                );
-            }
-
-            // Make sure we always have an array
-            allHomeworks = Array.isArray(data)
-                ? data
-                : Array.isArray(data.homeworks)
-                    ? data.homeworks
-                    : [];
-
-            const classes = allHomeworks
-                .map(homework => homework.classAssigned)
-                .filter(Boolean);
-
-            updateClassFilter(classes);
-
-            const classFilter =
-                document.getElementById('class-filter');
-
-            renderHomeworks(
-                classFilter?.value || 'all'
-            );
-
-        } catch (error) {
-            console.error('Error fetching homeworks:', error);
-
-            const homeworkList =
-                document.getElementById('homework-list');
-
-            if (homeworkList) {
-                homeworkList.innerHTML = '';
-
-                const li = document.createElement('li');
-                li.textContent =
-                    `Failed to load homeworks: ${error.message}`;
-
-                homeworkList.appendChild(li);
-            }
-        }
-    }
-
-    /* =========================================================
-       RENDER ASSIGNMENTS
-       ========================================================= */
-
-    function renderAssignments(assignments) {
-        const assignmentList =
-            document.getElementById('assignment-list');
-
-        if (!assignmentList) {
-            return;
-        }
-
-        assignmentList.innerHTML = '';
-
-        if (!assignments.length) {
-            const li = document.createElement('li');
-            li.textContent = 'No assignments found.';
-            assignmentList.appendChild(li);
-            return;
-        }
-
-        assignments.forEach(assignment => {
-            const li = document.createElement('li');
-
-            const fileUrl = assignment.file
-                ? getFileUrl(assignment.file)
-                : '';
-
-            li.className = 'assignment-item';
-
-            li.innerHTML = `
-                <h4>
-                    ${escapeHTML(assignment.title)}
-                </h4>
-
-                <p>
-                    <strong>Class:</strong>
-                    ${escapeHTML(assignment.classAssigned || 'N/A')}
-                </p>
-
-                <p>
-                    <strong>Due Date:</strong>
-                    ${formatDate(assignment.dueDate)}
-                </p>
-
-                <p>
-                    <strong>Description:</strong>
-                    ${escapeHTML(assignment.description || 'No description')}
-                </p>
-
-                ${
-                    fileUrl
-                        ? `
-                            <p>
-                                <a
-                                    href="${escapeHTML(fileUrl)}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    View Assignment File
-                                </a>
-                            </p>
-                        `
-                        : ''
-                }
-
-                <div class="assignment-actions">
-
-                    <button
-                        type="button"
-                        class="view-assignment-submissions-btn"
-                    >
-                        View Submissions
-                    </button>
-
-                    <button
-                        type="button"
-                        class="grade-assignment-btn"
-                    >
-                        Grade
-                    </button>
-
-                    <button
-                        type="button"
-                        class="edit-assignment-btn"
-                    >
-                        Edit
-                    </button>
-
-                    <button
-                        type="button"
-                        class="delete-assignment-btn warning-btn"
-                    >
-                        Delete
-                    </button>
-
-                </div>
-            `;
-
-            li.querySelector(
-                '.view-assignment-submissions-btn'
-            )?.addEventListener('click', () => {
-                if (typeof window.viewAssignmentSubmissions === 'function') {
-                    window.viewAssignmentSubmissions(assignment._id);
-                } else {
-                    showMessage(
-                        'Assignment submissions function is not available.',
-                        'error'
-                    );
-                }
-            });
-
-            li.querySelector(
-                '.grade-assignment-btn'
-            )?.addEventListener('click', () => {
-                if (typeof window.gradeAssignment === 'function') {
-                    window.gradeAssignment(assignment._id);
-                } else {
-                    showMessage(
-                        'Assignment grading function is not available.',
-                        'error'
-                    );
-                }
-            });
-
-            li.querySelector(
-                '.edit-assignment-btn'
-            )?.addEventListener('click', () => {
-                if (typeof window.editAssignment === 'function') {
-                    window.editAssignment(assignment._id);
-                } else {
-                    showMessage(
-                        'Assignment editing function is not available.',
-                        'error'
-                    );
-                }
-            });
-
-            li.querySelector(
-                '.delete-assignment-btn'
-            )?.addEventListener('click', () => {
-                if (typeof window.deleteAssignment === 'function') {
-                    window.deleteAssignment(assignment._id);
-                } else {
-                    showMessage(
-                        'Assignment deletion function is not available.',
-                        'error'
-                    );
-                }
-            });
-
-            assignmentList.appendChild(li);
-        });
-    }
-
-    /* =========================================================
-       FETCH ASSIGNMENTS
-       ========================================================= */
-
-    async function fetchAssignments() {
-        const token = getToken();
-
-        if (!token) {
-            console.warn('No authentication token found.');
-            return;
-        }
-
-        try {
-            const response = await fetch(API_ASSIGNMENTS, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    data.message ||
-                    `Failed to fetch assignments (${response.status})`
-                );
-            }
-
-            allAssignments = Array.isArray(data)
-                ? data
-                : Array.isArray(data.assignments)
-                    ? data.assignments
-                    : [];
-
-            renderAssignments(allAssignments);
-
-        } catch (error) {
-            console.error('Error fetching assignments:', error);
-
-            const assignmentList =
-                document.getElementById('assignment-list');
-
-            if (assignmentList) {
-                assignmentList.innerHTML = '';
-
-                const li = document.createElement('li');
-                li.textContent =
-                    `Failed to load assignments: ${error.message}`;
-
-                assignmentList.appendChild(li);
-            }
-        }
-    }
-
-    /* =========================================================
-       HOMEWORK SUBMISSIONS MODAL
-       ========================================================= */
-
-    async function viewHomeworkSubmissions(homeworkId) {
-        if (!homeworkId) {
-            showMessage('Invalid homework ID.', 'error');
-            return;
-        }
-
-        const token = requireToken();
-
-        if (!token) {
-            return;
-        }
-
-        const loadingModal = createLoadingModal();
-
-        document.body.appendChild(loadingModal);
-
-        try {
-            const response = await fetch(
-                `${API_HOMEWORKS}/${encodeURIComponent(homeworkId)}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                }
-            );
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    data.message ||
-                    'Failed to fetch homework submissions.'
-                );
-            }
-
-            loadingModal.remove();
-
-            createSubmissionsModal(data);
-
-        } catch (error) {
-            console.error('Error loading submissions:', error);
-
-            loadingModal.remove();
-
-            showMessage(
-                error.message ||
-                'Failed to load submissions. Please try again.',
-                'error'
-            );
-        }
-    }
-
-    function createLoadingModal() {
-        const modal = document.createElement('div');
-
-        modal.className = 'custom-loading-modal';
-
-        Object.assign(modal.style, {
-            position: 'fixed',
-            inset: '0',
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: '100000'
-        });
-
-        modal.innerHTML = `
-            <div style="
-                background:white;
-                padding:30px;
-                border-radius:10px;
-                width:90%;
-                max-width:450px;
-                text-align:center;
-            ">
-                <div style="
-                    width:40px;
-                    height:40px;
-                    border:4px solid #ddd;
-                    border-top-color:#007bff;
-                    border-radius:50%;
-                    animation: homeworkSpin 0.8s linear infinite;
-                    margin:0 auto 20px;
-                "></div>
-
-                <h3>Loading Submissions</h3>
-
-                <p>
-                    Please wait while we load the submissions.
-                </p>
-            </div>
-        `;
-
-        if (!document.getElementById('homework-spin-animation')) {
-            const style = document.createElement('style');
-
-            style.id = 'homework-spin-animation';
-
-            style.textContent = `
-                @keyframes homeworkSpin {
-                    to {
-                        transform: rotate(360deg);
-                    }
-                }
-            `;
-
-            document.head.appendChild(style);
-        }
-
-        return modal;
-    }
-
-    function createSubmissionsModal(data) {
-        const backdrop = document.createElement('div');
-
-        backdrop.className = 'homework-submissions-backdrop';
-
-        Object.assign(backdrop.style, {
-            position: 'fixed',
-            inset: '0',
-            background: 'rgba(0,0,0,0.55)',
-            zIndex: '10000'
-        });
-
-        const modal = document.createElement('div');
-
-        modal.className = 'homework-submissions-modal';
-
-        Object.assign(modal.style, {
-            position: 'fixed',
-            inset: '0',
-            zIndex: '10001',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'flex-start',
-            overflowY: 'auto',
-            padding: '40px 20px'
-        });
-
-        const content = document.createElement('div');
-
-        Object.assign(content.style, {
-            background: '#fff',
-            width: '100%',
-            maxWidth: '850px',
-            borderRadius: '12px',
-            padding: '25px',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
-        });
-
-        const header = document.createElement('div');
-
-        Object.assign(header.style, {
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: '20px',
-            borderBottom: '1px solid #eee',
-            paddingBottom: '15px',
-            marginBottom: '20px'
-        });
-
-        const title = document.createElement('h3');
-
-        title.textContent =
-            `Submissions for ${data.title || 'Homework'}`;
-
-        title.style.margin = '0';
-
-        const closeButton = document.createElement('button');
-
-        closeButton.type = 'button';
-        closeButton.innerHTML = '&times;';
-        closeButton.setAttribute('aria-label', 'Close');
-
-        Object.assign(closeButton.style, {
-            background: 'transparent',
-            border: 'none',
-            fontSize: '30px',
-            cursor: 'pointer',
-            lineHeight: '1'
-        });
-
-        function closeModal() {
-            modal.remove();
-            backdrop.remove();
-        }
-
-        closeButton.addEventListener('click', closeModal);
-        backdrop.addEventListener('click', closeModal);
-
-        header.appendChild(title);
-        header.appendChild(closeButton);
-
-        const submissionsContainer = document.createElement('div');
-
-        Object.assign(submissionsContainer.style, {
-            maxHeight: '70vh',
-            overflowY: 'auto'
-        });
-
-        const submissions =
-            Array.isArray(data.submissions)
-                ? data.submissions
-                : [];
-
-        if (!submissions.length) {
-            const empty = document.createElement('p');
-
-            empty.textContent = 'No submissions yet.';
-            empty.style.padding = '20px';
-            empty.style.textAlign = 'center';
-
-            submissionsContainer.appendChild(empty);
-
-        } else {
-            submissions.forEach(submission => {
-                submissionsContainer.appendChild(
-                    createSubmissionElement(
-                        data._id,
-                        submission
-                    )
-                );
-            });
-        }
-
-        content.appendChild(header);
-        content.appendChild(submissionsContainer);
-
-        modal.appendChild(content);
-
-        document.body.appendChild(backdrop);
-        document.body.appendChild(modal);
-
-        document.addEventListener(
-            'keydown',
-            function escapeHandler(e) {
-                if (e.key === 'Escape') {
-                    closeModal();
-                    document.removeEventListener(
-                        'keydown',
-                        escapeHandler
-                    );
-                }
-            }
-        );
-    }
-
-    function createSubmissionElement(homeworkId, submission) {
-        const submissionEl = document.createElement('div');
-
-        submissionEl.className = 'submission-item';
-        submissionEl.dataset.submissionId = submission._id;
-
-        Object.assign(submissionEl.style, {
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            padding: '18px',
-            marginBottom: '15px'
-        });
-
-        const studentName =
-            submission.student?.name ||
-            submission.student?.username ||
-            'Unknown Student';
-
-        submissionEl.innerHTML = `
-            <div style="
-                display:flex;
-                justify-content:space-between;
-                gap:15px;
-                flex-wrap:wrap;
-                margin-bottom:12px;
-            ">
-                <div>
-                    <strong>Student:</strong>
-                    ${escapeHTML(studentName)}
-                </div>
-
-                <div>
-                    <small>
-                        Submitted:
-                        ${escapeHTML(
-                            formatDateTime(submission.submittedAt)
-                        )}
-                    </small>
-                </div>
-            </div>
-        `;
-
-        if (submission.file) {
-            const fileDiv = document.createElement('div');
-
-            fileDiv.style.marginBottom = '15px';
-
-            const fileUrl = getFileUrl(submission.file);
-
-            fileDiv.innerHTML = `
-                <strong>File:</strong>
-                <a
-                    href="${escapeHTML(fileUrl)}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    ${escapeHTML(
-                        String(submission.file).split('/').pop()
-                    )}
-                </a>
-            `;
-
-            submissionEl.appendChild(fileDiv);
-        }
-
-        const hasGrade =
-            submission.grade !== null &&
-            submission.grade !== undefined &&
-            submission.grade !== '';
-
-        if (hasGrade) {
-            const gradeDisplay = document.createElement('div');
-
-            gradeDisplay.className = 'grade-display';
-
-            gradeDisplay.innerHTML = `
-                <strong>Grade:</strong>
-                ${escapeHTML(submission.grade)}%
-            `;
-
-            submissionEl.appendChild(gradeDisplay);
-
-            if (submission.comments) {
-                const feedbackDisplay = document.createElement('div');
-
-                feedbackDisplay.className = 'feedback-display';
-
-                feedbackDisplay.style.marginTop = '8px';
-                feedbackDisplay.style.padding = '10px';
-                feedbackDisplay.style.background = '#f8f9fa';
-                feedbackDisplay.style.borderRadius = '5px';
-
-                feedbackDisplay.innerHTML = `
-                    <strong>Feedback:</strong>
-                    ${escapeHTML(submission.comments)}
-                `;
-
-                submissionEl.appendChild(feedbackDisplay);
-            }
-
-            return submissionEl;
-        }
-
-        /* =====================================================
-           GRADING FORM
-           ===================================================== */
-
-        const gradeForm = document.createElement('div');
-
-        gradeForm.className = 'grade-form';
-
-        Object.assign(gradeForm.style, {
-            marginTop: '15px',
-            paddingTop: '15px',
-            borderTop: '1px solid #eee'
-        });
-
-        const gradeLabel = document.createElement('label');
-
-        gradeLabel.textContent = 'Grade (0-100):';
-        gradeLabel.htmlFor = `grade-${submission._id}`;
-
-        gradeLabel.style.display = 'block';
-        gradeLabel.style.marginBottom = '5px';
-
-        const gradeInput = document.createElement('input');
-
-        gradeInput.type = 'number';
-        gradeInput.id = `grade-${submission._id}`;
-        gradeInput.min = '0';
-        gradeInput.max = '100';
-        gradeInput.step = '1';
-        gradeInput.placeholder = '0-100';
-
-        Object.assign(gradeInput.style, {
-            width: '120px',
-            padding: '8px',
-            marginBottom: '12px'
-        });
-
-        const commentsLabel = document.createElement('label');
-
-        commentsLabel.textContent = 'Feedback:';
-        commentsLabel.htmlFor = `comments-${submission._id}`;
-
-        commentsLabel.style.display = 'block';
-        commentsLabel.style.marginBottom = '5px';
-
-        const commentsInput = document.createElement('textarea');
-
-        commentsInput.id = `comments-${submission._id}`;
-        commentsInput.placeholder =
-            'Add feedback for the student...';
-
-        Object.assign(commentsInput.style, {
-            width: '100%',
-            minHeight: '90px',
-            padding: '8px',
-            resize: 'vertical',
-            marginBottom: '12px'
-        });
-
-        const submitButton = document.createElement('button');
-
-        submitButton.type = 'button';
-        submitButton.textContent = 'Submit Grade';
-
-        submitButton.dataset.homeworkId = homeworkId;
-        submitButton.dataset.submissionId = submission._id;
-
-        Object.assign(submitButton.style, {
-            padding: '9px 18px',
-            background: '#28a745',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
-        });
-
-        submitButton.addEventListener('click', async () => {
-            await gradeHomework(
-                homeworkId,
-                submission._id
-            );
-        });
-
-        gradeForm.appendChild(gradeLabel);
-        gradeForm.appendChild(gradeInput);
-
-        gradeForm.appendChild(commentsLabel);
-        gradeForm.appendChild(commentsInput);
-
-        gradeForm.appendChild(submitButton);
-
-        submissionEl.appendChild(gradeForm);
-
-        return submissionEl;
-    }
-
-    /* =========================================================
-       GRADE HOMEWORK
-       ========================================================= */
-
-    async function gradeHomework(homeworkId, submissionId) {
-        const gradeInput =
-            document.getElementById(`grade-${submissionId}`);
-
-        const commentsInput =
-            document.getElementById(`comments-${submissionId}`);
-
-        if (!gradeInput || !commentsInput) {
-            showMessage(
-                'Could not find the grading form.',
-                'error'
-            );
-            return false;
-        }
-
-        const grade = Number(gradeInput.value);
-        const comments = commentsInput.value.trim();
-
-        if (
-            !Number.isFinite(grade) ||
-            grade < 0 ||
-            grade > 100
-        ) {
-            showMessage(
-                'Please enter a valid grade between 0 and 100.',
-                'error'
-            );
-            return false;
-        }
-
-        if (!comments) {
-            showMessage(
-                'Please provide feedback for the student.',
-                'error'
-            );
-            return false;
-        }
-
-        const token = requireToken();
-
-        if (!token) {
-            return false;
-        }
-
-        const submitButton =
-            document.querySelector(
-                `button[data-homework-id="${CSS.escape(String(homeworkId))}"][data-submission-id="${CSS.escape(String(submissionId))}"]`
-            );
-
-        if (!submitButton) {
-            showMessage(
-                'Could not find the grade button.',
-                'error'
-            );
-            return false;
-        }
-
-        const originalText = submitButton.textContent;
-
-        try {
-            submitButton.disabled = true;
-            submitButton.textContent = 'Submitting...';
-
-            const response = await fetch(
-                `${API_HOMEWORKS}/grade/${encodeURIComponent(homeworkId)}/${encodeURIComponent(submissionId)}`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        grade,
-                        comments
-                    })
-                }
-            );
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    data.message ||
-                    'Failed to submit grade.'
-                );
-            }
-
-            showMessage(
-                'Grade submitted successfully!',
-                'success'
-            );
-
-            const submissionElement =
-                document.querySelector(
-                    `.submission-item[data-submission-id="${CSS.escape(String(submissionId))}"]`
-                );
-
-            if (submissionElement) {
-                const gradeForm =
-                    submissionElement.querySelector('.grade-form');
-
-                if (gradeForm) {
-                    gradeForm.remove();
-                }
-
-                const gradeDisplay =
-                    document.createElement('div');
-
-                gradeDisplay.className = 'grade-display';
-
-                gradeDisplay.innerHTML = `
-                    <strong>Grade:</strong>
-                    ${escapeHTML(grade)}%
-                `;
-
-                submissionElement.appendChild(gradeDisplay);
-
-                const feedbackDisplay =
-                    document.createElement('div');
-
-                feedbackDisplay.className =
-                    'feedback-display';
-
-                Object.assign(feedbackDisplay.style, {
-                    marginTop: '8px',
-                    padding: '10px',
-                    background: '#f8f9fa',
-                    borderRadius: '5px'
-                });
-
-                feedbackDisplay.innerHTML = `
-                    <strong>Feedback:</strong>
-                    ${escapeHTML(comments)}
-                `;
-
-                submissionElement.appendChild(
-                    feedbackDisplay
-                );
-            }
-
-            return true;
-
-        } catch (error) {
-            console.error(
-                'Error submitting grade:',
-                error
-            );
-
-            showMessage(
-                error.message ||
-                'Failed to submit grade.',
-                'error'
-            );
-
-            submitButton.disabled = false;
-            submitButton.textContent = originalText;
-
-            return false;
-        }
-    }
-
-    /* =========================================================
-       DELETE HOMEWORK
-       ========================================================= */
-
-    async function deleteHomework(homeworkId) {
-        if (!homeworkId) {
-            showMessage(
-                'Invalid homework ID.',
-                'error'
-            );
-            return;
-        }
-
-        const confirmed = confirm(
-            'Are you sure you want to delete this homework?'
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        const token = requireToken();
-
-        if (!token) {
-            return;
-        }
-
-        try {
-            const response = await fetch(
-                `${API_HOMEWORKS}/${encodeURIComponent(homeworkId)}`,
-                {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                }
-            );
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    data.message ||
-                    'Failed to delete homework.'
-                );
-            }
-
-            showMessage(
-                'Homework deleted successfully!',
-                'success'
-            );
-
-            await fetchHomeworks();
-
-        } catch (error) {
-            console.error(
-                'Error deleting homework:',
-                error
-            );
-
-            showMessage(
-                error.message ||
-                'Failed to delete homework.',
-                'error'
-            );
-        }
-    }
-
-    /* =========================================================
-       EDIT HOMEWORK
-       ========================================================= */
-
-    async function editHomework(homeworkId) {
-        if (!homeworkId) {
-            showMessage(
-                'Invalid homework ID.',
-                'error'
-            );
-            return;
-        }
-
-        const token = requireToken();
-
-        if (!token) {
-            return;
-        }
-
-        try {
-            const response = await fetch(
-                `${API_HOMEWORKS}/${encodeURIComponent(homeworkId)}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                }
-            );
-
-            const data = await parseResponse(response);
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error ||
-                    data.message ||
-                    'Failed to fetch homework.'
-                );
-            }
-
-            createEditHomeworkModal(
-                homeworkId,
-                data,
-                token
-            );
-
-        } catch (error) {
-            console.error(
-                'Error fetching homework:',
-                error
-            );
-
-            showMessage(
-                error.message ||
-                'Failed to load homework.',
-                'error'
-            );
-        }
-    }
-
-    function createEditHomeworkModal(
-        homeworkId,
-        data,
-        token
-    ) {
-        const backdrop =
-            document.createElement('div');
-
-        Object.assign(backdrop.style, {
-            position: 'fixed',
-            inset: '0',
-            background: 'rgba(0,0,0,0.55)',
-            zIndex: '10000'
-        });
-
-        const modal =
-            document.createElement('div');
-
-        Object.assign(modal.style, {
-            position: 'fixed',
-            inset: '0',
-            zIndex: '10001',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'flex-start',
-            overflowY: 'auto',
-            padding: '40px 20px'
-        });
-
-        const content =
-            document.createElement('div');
-
-        Object.assign(content.style, {
-            background: '#fff',
-            width: '100%',
-            maxWidth: '600px',
-            padding: '25px',
-            borderRadius: '10px',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
-        });
-
-        content.innerHTML = `
-            <div style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                margin-bottom:20px;
-            ">
-                <h3 style="margin:0;">
-                    Edit Homework
-                </h3>
-
-                <button
-                    type="button"
-                    class="edit-homework-close"
-                    style="
-                        background:none;
-                        border:none;
-                        font-size:28px;
-                        cursor:pointer;
-                    "
-                >
-                    &times;
-                </button>
-            </div>
-
-            <form id="edit-homework-form">
-
-                <div class="form-group" style="margin-bottom:15px;">
-                    <label for="edit-title">
-                        Title:
-                    </label>
-
-                    <input
-                        type="text"
-                        id="edit-title"
-                        name="title"
-                        value="${escapeHTML(data.title || '')}"
-                        required
-                        style="width:100%;padding:9px;"
-                    />
-                </div>
-
-                <div class="form-group" style="margin-bottom:15px;">
-                    <label for="edit-description">
-                        Description:
-                    </label>
-
-                    <textarea
-                        id="edit-description"
-                        name="description"
-                        required
-                        style="width:100%;min-height:100px;padding:9px;"
-                    >${escapeHTML(data.description || '')}</textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom:15px;">
-                    <label for="edit-due-date">
-                        Due Date:
-                    </label>
-
-                    <input
-                        type="date"
-                        id="edit-due-date"
-                        name="dueDate"
-                        required
-                        style="width:100%;padding:9px;"
-                    />
-                </div>
-
-                <div class="form-group" style="margin-bottom:15px;">
-                    <label for="edit-class">
-                        Class Assigned:
-                    </label>
-
-                    <input
-                        type="text"
-                        id="edit-class"
-                        name="classAssigned"
-                        value="${escapeHTML(data.classAssigned || '')}"
-                        required
-                        style="width:100%;padding:9px;"
-                    />
-                </div>
-
-                <div class="form-group" style="margin-bottom:20px;">
-                    <label for="edit-file">
-                        Upload File (PDF/DOC/DOCX):
-                    </label>
-
-                    <input
-                        type="file"
-                        id="edit-file"
-                        name="homework-file"
-                        accept=".pdf,.doc,.docx"
-                        style="width:100%;"
-                    />
-                </div>
-
-                <div id="edit-homework-message"
-                    style="margin-bottom:15px;">
-                </div>
-
-                <button
-                    type="submit"
-                    class="modern-btn"
-                    style="
-                        padding:10px 18px;
-                        border:none;
-                        border-radius:5px;
-                        cursor:pointer;
-                    "
-                >
-                    Update Homework
-                </button>
-
-            </form>
-        `;
-
-        // Correct date format for input[type=date]
-        const dueDateInput =
-            content.querySelector('#edit-due-date');
-
-        if (data.dueDate) {
-            const date = new Date(data.dueDate);
-
-            if (!Number.isNaN(date.getTime())) {
-                dueDateInput.value =
-                    date.toISOString().split('T')[0];
-            }
-        }
-
-        function close() {
-            modal.remove();
-            backdrop.remove();
-        }
-
-        content.querySelector(
-            '.edit-homework-close'
-        ).addEventListener('click', close);
-
-        backdrop.addEventListener('click', close);
-
-        const form =
-            content.querySelector('#edit-homework-form');
-
-        form.addEventListener('submit', async e => {
-            e.preventDefault();
-
-            const submitButton =
-                form.querySelector('button[type="submit"]');
-
-            const messageDiv =
-                content.querySelector(
-                    '#edit-homework-message'
-                );
-
-            try {
-                submitButton.disabled = true;
-                submitButton.textContent = 'Updating...';
-
-                const formData =
-                    new FormData(form);
-
-                const response = await fetch(
-                    `${API_HOMEWORKS}/${encodeURIComponent(homeworkId)}`,
-                    {
-                        method: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: formData
-                    }
-                );
-
-                const result =
-                    await parseResponse(response);
-
-                if (!response.ok) {
-                    throw new Error(
-                        result.error ||
-                        result.message ||
-                        'Failed to update homework.'
-                    );
-                }
-
-                messageDiv.textContent =
-                    'Homework updated successfully!';
-
-                messageDiv.style.color = 'green';
-
-                showMessage(
-                    'Homework updated successfully!',
-                    'success'
-                );
-
-                setTimeout(async () => {
-                    close();
-                    await fetchHomeworks();
-                }, 500);
-
-            } catch (error) {
-                console.error(
-                    'Error updating homework:',
-                    error
-                );
-
-                messageDiv.textContent =
-                    error.message ||
-                    'Failed to update homework.';
-
-                messageDiv.style.color = 'red';
-
-                submitButton.disabled = false;
-                submitButton.textContent =
-                    'Update Homework';
-            }
-        });
-
-        modal.appendChild(content);
-
-        document.body.appendChild(backdrop);
-        document.body.appendChild(modal);
-    }
-
-    /* =========================================================
-       TABS
-       ========================================================= */
-
-    function initializeTabs() {
-        const tabs =
-            document.querySelectorAll('.tab');
-
-        const sections =
-            document.querySelectorAll('.tab-section');
-
-        tabs.forEach(tab => {
-            if (tab.dataset.listenerAttached === 'true') {
-                return;
-            }
-
-            tab.dataset.listenerAttached = 'true';
-
-            tab.addEventListener('click', () => {
-                tabs.forEach(t =>
-                    t.classList.remove('active')
-                );
-
-                sections.forEach(section =>
-                    section.classList.remove('active')
-                );
-
-                tab.classList.add('active');
-
-                const sectionId =
-                    tab.getAttribute('data-section');
-
-                if (!sectionId) {
+                // Get token from localStorage
+                const token = localStorage.getItem('token');
+                
+                // Check if user is logged in
+                if (!token) {
+                    alert('Please log in first');
                     return;
                 }
 
-                const section =
-                    document.getElementById(sectionId);
+                // Create FormData
+                const formData = new FormData(createHomeworkForm);
+                
+                // Prepare the request
+                const response = await fetch('https://luckyjuniorschool.onrender.com/api/homeworks', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
 
-                if (section) {
-                    section.classList.add('active');
-                }
 
-                if (sectionId === 'homework-section') {
+                // Handle response
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Show success message
+                    msgDiv.style.display = 'block';
+                    msgDiv.textContent = 'Homework created successfully!';
+                    msgDiv.style.color = 'green';
+                    
+                    // Clear the form
+                    createHomeworkForm.reset();
+                    
+                    // Hide the form if container exists
+                    const formContainer = document.getElementById('homework-form-container');
+                    if (formContainer) {
+                        formContainer.style.display = 'none';
+                    }
+                    
+                    // Refresh homeworks list
                     fetchHomeworks();
+                } else {
+                    throw new Error(data.error || 'Failed to create homework');
                 }
+            } catch (error) {
+                console.error('Error creating homework:', error);
+                msgDiv.style.display = 'block';
+                msgDiv.textContent = 'Error: ' + (error.message || 'Failed to create homework');
+                msgDiv.style.color = 'red';
+            }
+        };
+    }
 
-                if (sectionId === 'assignments-section') {
+    // Handle assignment creation form
+    const createAssignmentForm = document.getElementById('create-assignment-form');
+    if (createAssignmentForm) {
+        createAssignmentForm.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const msgDiv = document.getElementById('assignment-create-msg');
+            
+            try {
+                // Get form values
+                const title = document.getElementById('assignment-title')?.value.trim();
+                const description = document.getElementById('assignment-description')?.value.trim();
+                const dueDate = document.getElementById('assignment-due-date')?.value.trim();
+                const classAssigned = document.getElementById('assignment-class')?.value.trim();
+                
+                // Validate required fields
+                if (!title || !dueDate || !classAssigned) {
+                    msgDiv.style.display = 'block';
+                    msgDiv.textContent = 'Please fill in all required fields: title, due date, and class';
+                    msgDiv.style.color = 'red';
+                    return;
+                }
+                
+                // Get token from localStorage
+                const token = localStorage.getItem('token');
+                
+                // Check if user is logged in
+                if (!token) {
+                    alert('Please log in first');
+                    return;
+                }
+                
+                // Create FormData
+                const formData = new FormData(createAssignmentForm);
+                
+                // Prepare the request
+                const response = await fetch('https://luckyjuniorschool.onrender.com/api/assignments', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                // Handle response
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Show success message
+                    msgDiv.style.display = 'block';
+                    msgDiv.textContent = 'Assignment created successfully!';
+                    msgDiv.style.color = 'green';
+                    
+                    // Clear the form
+                    createAssignmentForm.reset();
+                    
+                    // Hide the form
+                    document.getElementById('assignment-form-container').style.display = 'none';
+                    
+                    // Refresh assignments list
                     fetchAssignments();
+                } else {
+                    throw new Error(data.error || 'Failed to create assignment');
                 }
-            });
+            } catch (error) {
+                console.error('Error creating assignment:', error);
+                msgDiv.style.display = 'block';
+                msgDiv.textContent = 'Error: ' + (error.message || 'Failed to create assignment');
+                msgDiv.style.color = 'red';
+            }
+        };
+    }
+
+  // Store all homeworks for filtering
+  let allHomeworks = [];
+  
+  // Function to render homeworks with optional class filter
+  function renderHomeworks(classFilter = 'all') {
+    console.log('Rendering homeworks with filter:', classFilter);
+    console.log('All homeworks:', allHomeworks);
+    
+    const homeworkList = document.getElementById('homework-list');
+    homeworkList.innerHTML = '';
+
+    // Filter homeworks based on the selected class
+    const filteredHomeworks = classFilter === 'all' 
+      ? allHomeworks 
+      : allHomeworks.filter(hw => {
+          console.log(`Homework class: "${hw.classAssigned}", Filter: "${classFilter}", Match: ${hw.classAssigned === classFilter}`);
+          return hw.classAssigned === classFilter;
         });
+
+    console.log('Filtered homeworks:', filteredHomeworks);
+    
+    if (filteredHomeworks.length === 0) {
+      console.log('No homeworks found for filter:', classFilter);
+      const li = document.createElement('li');
+      li.textContent = 'No homeworks found' + (classFilter !== 'all' ? ` for class "${classFilter}"` : '');
+      homeworkList.appendChild(li);
+      return;
     }
 
-    /* =========================================================
-       MAKE FUNCTIONS AVAILABLE TO OTHER CODE
-       ========================================================= */
+    filteredHomeworks.forEach(homework => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <h4>${homework.title}</h4>
+        <p><strong>Description:</strong> ${homework.description}</p>
+        <p><strong>Due Date:</strong> ${new Date(homework.dueDate).toLocaleDateString()}</p>
+        <p><strong>Class:</strong> ${homework.classAssigned}</p>
+        <p><strong>Created By:</strong> ${homework.teacher?.name || 'N/A'}</p>
+        ${homework.file ? `<p><strong>File:</strong> <a href="${window.API_CONFIG?.BASE_URL || 'https://luckyjuniorschool.onrender.com'}${homework.file}" target="_blank">Download</a></p>` : ''}
+        <div class="homework-actions">
+          <button class="edit-homework-btn" onclick="editHomework('${homework._id}')">Edit</button>
+          <button class="delete-homework-btn" onclick="deleteHomework('${homework._id}')">Delete</button>
+          <button class="view-submissions-btn" onclick="viewHomeworkSubmissions('${homework._id}')">View Submissions</button>
+        </div>
+      `;
+      homeworkList.appendChild(li);
+    });
+  }
 
-    window.fetchHomeworks = fetchHomeworks;
-    window.fetchAssignments = fetchAssignments;
-
-    window.renderHomeworks = renderHomeworks;
-
-    window.viewHomeworkSubmissions =
-        viewHomeworkSubmissions;
-
-    window.gradeHomework =
-        gradeHomework;
-
-    window.deleteHomework =
-        deleteHomework;
-
-    window.editHomework =
-        editHomework;
-
-    window.showMessage =
-        showMessage;
-
-    /* =========================================================
-       INITIALIZE
-       ========================================================= */
-
-    function initializeHomeworkSystem() {
-        console.log('Initializing Homework & Assignment system...');
-
-        initializeHomeworkCreation();
-        initializeAssignmentCreation();
-
-        initializeClassFilter();
-        initializeTabs();
-
-        // Load initial data
-        fetchHomeworks();
-        fetchAssignments();
-
-        console.log(
-            'Homework & Assignment system initialized.'
-        );
+  // Function to update the class filter dropdown
+  function updateClassFilter(classes) {
+    const classFilter = document.getElementById('class-filter');
+    const currentValue = classFilter.value;
+    
+    // Clear existing options except the first one (All Classes)
+    while (classFilter.options.length > 1) {
+      classFilter.remove(1);
     }
+    
+    // Add unique classes to the dropdown
+    Array.from(new Set(classes))
+      .sort()
+      .forEach(className => {
+        if (className) { // Skip empty class names
+          const option = document.createElement('option');
+          option.value = className;
+          option.textContent = className;
+          classFilter.appendChild(option);
+        }
+      });
+    
+    // Restore the previous selection if it still exists
+    if (currentValue && Array.from(classFilter.options).some(opt => opt.value === currentValue)) {
+      classFilter.value = currentValue;
+    }
+  }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            initializeHomeworkSystem,
-            { once: true }
-        );
+  // Function to fetch homeworks
+  async function fetchHomeworks() {
+    try {
+      console.log('Fetching homeworks...');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found, user not logged in');
+        alert('Please log in first');
+        return;
+      }
+
+      const response = await fetch('https://luckyjuniorschool.onrender.com/api/homeworks', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      console.log('Fetched homeworks data:', data);
+      
+      if (response.ok) {
+        allHomeworks = data;
+        console.log('Stored homeworks in allHomeworks:', allHomeworks);
+        
+        // Extract all unique class names for the filter
+        const allClasses = data.map(hw => hw.classAssigned).filter(Boolean);
+        console.log('Extracted classes for filter:', allClasses);
+        
+        updateClassFilter(allClasses);
+        
+        // Initial render with all homeworks
+        console.log('Rendering initial homeworks...');
+        renderHomeworks();
+      } else {
+        console.error('Error fetching homeworks:', data.error);
+        alert('Failed to fetch homeworks: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to fetch homeworks: ' + error.message);
+    }
+  }
+  
+  // Add event listener for class filter change
+  document.addEventListener('DOMContentLoaded', () => {
+    const classFilter = document.getElementById('class-filter');
+    console.log('Class filter element:', classFilter);
+    
+    if (classFilter) {
+      classFilter.addEventListener('change', (e) => {
+        console.log('Filter changed to:', e.target.value);
+        renderHomeworks(e.target.value);
+      });
     } else {
-        initializeHomeworkSystem();
+      console.error('Could not find class-filter element');
+    }
+  });
+
+  // Function to fetch assignments
+  async function fetchAssignments() {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in first');
+        return;
+      }
+
+      const response = await fetch('https://luckyjuniorschool.onrender.com/api/assignments', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Check if response is ok
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch assignments');
+      }
+      
+      const assignments = await response.json();
+      
+      const assignmentList = document.getElementById('assignment-list');
+      if (assignmentList) {
+        assignmentList.innerHTML = '';
+        assignments.forEach(assignment => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <h4>${assignment.title}</h4>
+            <p>Class: ${assignment.classAssigned}</p>
+            <p>Due Date: ${new Date(assignment.dueDate).toLocaleDateString()}</p>
+            <p>Description: ${assignment.description}</p>
+            ${assignment.file ? `<a href="/uploads/${assignment.file}" target="_blank">View Assignment</a>` : ''}
+            <div class="assignment-actions">
+              <button onclick="viewAssignmentSubmissions('${assignment._id}')">View Submissions</button>
+              <button onclick="gradeAssignment('${assignment._id}')">Grade</button>
+              <button onclick="editAssignment('${assignment._id}')">Edit</button>
+              <button onclick="deleteAssignment('${assignment._id}')" class="warning-btn">Delete</button>
+            </div>
+          `;
+          assignmentList.appendChild(li);
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    }
+  }
+
+  // Initialize tabs
+  const tabs = document.querySelectorAll('.tab');
+  const tabSections = document.querySelectorAll('.tab-section');
+  
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Remove active class from all tabs
+      tabs.forEach(t => t.classList.remove('active'));
+      // Remove active class from all sections
+      tabSections.forEach(section => section.classList.remove('active'));
+      
+      // Add active class to clicked tab
+      tab.classList.add('active');
+      // Add active class to corresponding section
+      const sectionId = tab.getAttribute('data-section');
+      document.getElementById(sectionId).classList.add('active');
+
+      // Fetch data for the active section
+      if (sectionId === 'homework-section') {
+        fetchHomeworks();
+      } else if (sectionId === 'assignments-section') {
+        fetchAssignments();
+      }
+    });
+  });
+
+  // Function to view homework submissions
+  async function viewHomeworkSubmissions(homeworkId) {
+    try {
+      console.log('Fetching homework with ID:', homeworkId);
+      
+      // Validate homeworkId
+      if (!homeworkId || typeof homeworkId !== 'string' || !homeworkId.trim()) {
+        console.error('Invalid homework ID:', homeworkId);
+        showMessage('Error: Invalid homework ID', 'error');
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showMessage('Please log in first', 'error');
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Show loading indicator
+      const loadingModal = document.createElement('div');
+      loadingModal.className = 'modal';
+      loadingModal.style.display = 'flex';
+      loadingModal.style.justifyContent = 'center';
+      loadingModal.style.alignItems = 'center';
+      loadingModal.style.position = 'fixed';
+      loadingModal.style.top = '0';
+      loadingModal.style.left = '0';
+      loadingModal.style.width = '100%';
+      loadingModal.style.height = '100%';
+      loadingModal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+      loadingModal.style.zIndex = '1000';
+      
+      loadingModal.innerHTML = `
+        <div class="modal-content" style="background: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%;">
+          <div class="d-flex justify-content-center mb-3">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <h3 class="text-center">Loading Submissions</h3>
+          <p class="text-center">Please wait while we load the submissions.</p>
+        </div>
+      `;
+      
+      document.body.appendChild(loadingModal);
+
+      try {
+        const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/${homeworkId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          },
+          credentials: 'include'
+        });
+
+        console.log('Response status:', response.status);
+        
+        if (!response.ok) {
+          let errorMessage = 'Failed to fetch homework';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+            console.error('Error details:', errorData);
+          } catch (e) {
+            console.error('Failed to parse error response:', e);
+          }
+          throw new Error(errorMessage);
+        }
+        
+        const data = await response.json();
+        console.log('Received homework data:', data);
+        
+        if (!data) {
+          throw new Error('No data received from server');
+        }
+
+        // Create modal to display submissions
+        const modal = document.createElement('div');
+        modal.className = 'modal show active';
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.zIndex = '1050';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'flex-start';
+        modal.style.overflowY = 'auto';
+        modal.style.paddingTop = '50px';
+        modal.style.paddingBottom = '50px';
+        
+        // Add backdrop
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.id = 'submissionsBackdrop';
+        backdrop.style.position = 'fixed';
+        backdrop.style.top = '0';
+        backdrop.style.left = '0';
+        backdrop.style.width = '100vw';
+        backdrop.style.height = '100vh';
+        backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        backdrop.style.zIndex = '1040';
+        document.body.appendChild(backdrop);
+        
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content';
+        modalContent.style.position = 'relative';
+        modalContent.style.width = '90%';
+        modalContent.style.maxWidth = '800px';
+        modalContent.style.margin = '0 auto';
+        modalContent.style.padding = '20px';
+        modalContent.style.backgroundColor = 'white';
+        modalContent.style.borderRadius = '8px';
+        modalContent.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+        modalContent.style.zIndex = '1051';
+        
+        // Create modal header
+        const modalHeader = document.createElement('div');
+        modalHeader.style.display = 'flex';
+        modalHeader.style.justifyContent = 'space-between';
+        modalHeader.style.alignItems = 'center';
+        modalHeader.style.marginBottom = '20px';
+        modalHeader.style.paddingBottom = '10px';
+        modalHeader.style.borderBottom = '1px solid #eee';
+        
+        const modalTitle = document.createElement('h3');
+        modalTitle.style.margin = '0';
+        modalTitle.textContent = `Submissions for ${data.title || 'Homework'}`;
+        
+        const closeButton = document.createElement('button');
+        closeButton.className = 'close-modal';
+        closeButton.innerHTML = '&times;';
+        closeButton.style.background = 'none';
+        closeButton.style.border = 'none';
+        closeButton.style.fontSize = '1.5rem';
+        closeButton.style.cursor = 'pointer';
+        closeButton.onclick = () => {
+          modal.remove();
+          backdrop.remove();
+        };
+        
+        modalHeader.appendChild(modalTitle);
+        modalHeader.appendChild(closeButton);
+        
+        // Create submissions container
+        const submissionsContainer = document.createElement('div');
+        submissionsContainer.style.maxHeight = '500px';
+        submissionsContainer.style.overflowY = 'auto';
+        
+        if (data.submissions && data.submissions.length > 0) {
+          data.submissions.forEach(submission => {
+            const submissionEl = document.createElement('div');
+            submissionEl.className = 'submission-item';
+            submissionEl.style.marginBottom = '20px';
+            submissionEl.style.padding = '15px';
+            submissionEl.style.border = '1px solid #ddd';
+            submissionEl.style.borderRadius = '4px';
+            
+            const header = document.createElement('div');
+            header.className = 'submission-header';
+            header.style.display = 'flex';
+            header.style.justifyContent = 'space-between';
+            header.style.marginBottom = '10px';
+            
+            const studentInfo = document.createElement('div');
+            studentInfo.innerHTML = `<strong>Student:</strong> ${submission.student?.name || 'Unknown'}`;
+            
+            const dateInfo = document.createElement('div');
+            dateInfo.innerHTML = `<small>Submitted: ${new Date(submission.submittedAt).toLocaleString()}</small>`;
+            
+            header.appendChild(studentInfo);
+            header.appendChild(dateInfo);
+            submissionEl.appendChild(header);
+            
+            // Add file download link if exists
+            if (submission.file) {
+              const fileLink = document.createElement('div');
+              fileLink.style.marginBottom = '10px';
+              fileLink.innerHTML = `
+                <strong>File:</strong> 
+                <a href="/uploads/homeworks/${submission.file}" target="_blank" style="color: #4a90e2; text-decoration: none;">
+                  ${submission.file}
+                </a>
+              `;
+              submissionEl.appendChild(fileLink);
+            }
+            
+            // Add grade and comments
+            const gradeInfo = document.createElement('div');
+            if (submission.grade) {
+              gradeInfo.innerHTML = `
+                <div>
+                  <strong>Grade:</strong> ${submission.grade}
+                  ${submission.comments ? 
+                    `<p style="margin: 5px 0 0 0; padding: 5px; background: #f8f9fa; border-radius: 4px;">
+                      <strong>Feedback:</strong> ${submission.comments}
+                    </p>` : ''
+                  }
+                </div>
+              `;
+              submissionEl.appendChild(gradeInfo);
+            } else {
+              // Add grade form if not graded
+              const gradeForm = document.createElement('div');
+              gradeForm.className = 'grade-form';
+              gradeForm.style.marginTop = '10px';
+              gradeForm.style.paddingTop = '10px';
+              gradeForm.style.borderTop = '1px solid #eee';
+              
+              const gradeInputDiv = document.createElement('div');
+              gradeInputDiv.style.marginBottom = '10px';
+              
+              const gradeLabel = document.createElement('label');
+              gradeLabel.htmlFor = `grade-${submission._id}`;
+              gradeLabel.style.display = 'block';
+              gradeLabel.style.marginBottom = '5px';
+              gradeLabel.textContent = 'Grade (0-100):';
+              
+              const gradeInput = document.createElement('input');
+              gradeInput.type = 'number';
+              gradeInput.id = `grade-${submission._id}`;
+              gradeInput.min = '0';
+              gradeInput.max = '100';
+              gradeInput.style.width = '100px';
+              gradeInput.style.padding = '5px';
+              gradeInput.style.border = '1px solid #ddd';
+              gradeInput.style.borderRadius = '4px';
+              
+              gradeInputDiv.appendChild(gradeLabel);
+              gradeInputDiv.appendChild(gradeInput);
+              
+              const commentsDiv = document.createElement('div');
+              commentsDiv.style.marginBottom = '10px';
+              
+              const commentsLabel = document.createElement('label');
+              commentsLabel.htmlFor = `comments-${submission._id}`;
+              commentsLabel.style.display = 'block';
+              commentsLabel.style.marginBottom = '5px';
+              commentsLabel.textContent = 'Feedback:';
+              
+              const commentsInput = document.createElement('textarea');
+              commentsInput.id = `comments-${submission._id}`;
+              commentsInput.placeholder = 'Add your feedback here';
+              commentsInput.style.width = '100%';
+              commentsInput.style.minHeight = '80px';
+              commentsInput.style.padding = '8px';
+              commentsInput.style.border = '1px solid #ddd';
+              commentsInput.style.borderRadius = '4px';
+              
+              commentsDiv.appendChild(commentsLabel);
+              commentsDiv.appendChild(commentsInput);
+              
+              const submitButton = document.createElement('button');
+              submitButton.type = 'button'; // Prevent form submission
+              submitButton.textContent = 'Submit Grade';
+              submitButton.dataset.homeworkId = data._id;
+              submitButton.dataset.submissionId = submission._id;
+              submitButton.style.padding = '8px 16px';
+              submitButton.style.background = '#28a745';
+              submitButton.style.color = 'white';
+              submitButton.style.border = 'none';
+              submitButton.style.borderRadius = '4px';
+              submitButton.style.cursor = 'pointer';
+              submitButton.style.marginTop = '10px';
+              submitButton.addEventListener('click', async (e) => {
+                e.preventDefault();
+                try {
+                  submitButton.disabled = true;
+                  submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Grading...';
+                  await gradeHomework(data._id, submission._id);
+                } catch (error) {
+                  console.error('Error in grade button click handler:', error);
+                  submitButton.disabled = false;
+                  submitButton.textContent = 'Submit Grade';
+                }
+              });
+              
+              gradeForm.appendChild(gradeInputDiv);
+              gradeForm.appendChild(commentsDiv);
+              gradeForm.appendChild(submitButton);
+              submissionEl.appendChild(gradeForm);
+            }
+            
+            submissionsContainer.appendChild(submissionEl);
+          });
+        } else {
+          const noSubmissions = document.createElement('p');
+          noSubmissions.textContent = 'No submissions yet.';
+          submissionsContainer.appendChild(noSubmissions);
+        }
+        
+        // Assemble the modal
+        modalContent.appendChild(modalHeader);
+        modalContent.appendChild(submissionsContainer);
+        modal.appendChild(modalContent);
+        
+        // Add to body
+        document.body.appendChild(modal);
+        
+        // Close modal when clicking outside
+        backdrop.addEventListener('click', () => {
+          modal.remove();
+          backdrop.remove();
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        loadingModal.remove();
+        alert(error.message || 'Failed to load submissions. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An unexpected error occurred. Please try again.');
+    }
+  }
+
+  // Function to show user feedback messages
+  function showMessage(message, type = 'info') {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    messageDiv.role = 'alert';
+    messageDiv.style.position = 'fixed';
+    messageDiv.style.top = '20px';
+    messageDiv.style.right = '20px';
+    messageDiv.style.zIndex = '1100';
+    messageDiv.style.minWidth = '300px';
+    messageDiv.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    document.body.appendChild(messageDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      messageDiv.style.opacity = '0';
+      setTimeout(() => messageDiv.remove(), 300);
+    }, 5000);
+  }
+
+  // Function to grade homework submission
+  async function gradeHomework(homeworkId, submissionId) {
+    try {
+      // Get form elements
+      const gradeInput = document.getElementById(`grade-${submissionId}`);
+      const commentsInput = document.getElementById(`comments-${submissionId}`);
+      
+      if (!gradeInput || !commentsInput) {
+        throw new Error('Could not find grade or comments input');
+      }
+      
+      // Get and validate grade
+      const grade = parseInt(gradeInput.value);
+      const comments = commentsInput.value.trim();
+      
+      if (isNaN(grade) || grade < 0 || grade > 100) {
+        throw new Error('Please enter a valid grade between 0 and 100');
+      }
+      
+      if (!comments) {
+        throw new Error('Please provide some feedback for the student');
+      }
+      
+      // Get submit button
+      const submitButton = document.querySelector(`button[data-homework-id="${homeworkId}"][data-submission-id="${submissionId}"]`);
+      if (!submitButton) {
+        throw new Error('Could not find submit button');
+      }
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      console.log('Submitting grade:', { homeworkId, submissionId, grade, comments });
+      
+      const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/grade/${homeworkId}/${submissionId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ grade, comments })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit grade');
+      }
+      
+      showMessage('Grade submitted successfully!', 'success');
+      
+      // Find and update the submission in the UI
+      const submissionElement = document.querySelector(`.submission-item[data-submission-id="${submissionId}"]`);
+      if (submissionElement) {
+        const gradeDisplay = submissionElement.querySelector('.grade-display');
+        if (gradeDisplay) {
+          gradeDisplay.textContent = `Grade: ${grade}%`;
+        }
+        
+        const feedbackDisplay = submissionElement.querySelector('.feedback-display');
+        if (feedbackDisplay) {
+          feedbackDisplay.textContent = `Feedback: ${comments}`;
+        }
+        
+        // Remove the grade form
+        const gradeForm = submissionElement.querySelector('.grade-form');
+        if (gradeForm) {
+          gradeForm.remove();
+        }
+      }
+      
+      return true;
+      
+    } catch (error) {
+      console.error('Error in gradeHomework:', error);
+      showMessage(error.message || 'Failed to submit grade. Please try again.', 'error');
+      throw error; // Re-throw to be caught by the button click handler
+    }
+  }
+
+  // Function to delete homework
+  async function deleteHomework(homeworkId) {
+    if (!confirm('Are you sure you want to delete this homework?')) {
+      return;
     }
 
-})();
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in first');
+        return;
+      }
 
+      const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/${homeworkId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert('Homework deleted successfully!');
+        fetchHomeworks();
+      } else {
+        console.error('Error deleting homework:', data.error);
+        alert('Failed to delete homework');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to delete homework');
+    }
+  }
+
+  // Function to edit homework
+  async function editHomework(homeworkId) {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in first');
+        return;
+      }
+
+      const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/${homeworkId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Create modal for editing
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="modal-content">
+            <h3>Edit Homework</h3>
+            <button class="close-modal">&times;</button>
+            <form id="edit-homework-form">
+              <div class="form-group">
+                <label for="edit-title">Title:</label>
+                <input type="text" id="edit-title" value="${data.title}" required />
+              </div>
+              <div class="form-group">
+                <label for="edit-description">Description:</label>
+                <textarea id="edit-description" required>${data.description}</textarea>
+              </div>
+              <div class="form-group">
+                <label for="edit-due-date">Due Date:</label>
+                <input type="date" id="edit-due-date" value="${new Date(data.dueDate).toISOString().split('T')[0]}" required />
+              </div>
+              <div class="form-group">
+                <label for="edit-class">Class Assigned:</label>
+                <input type="text" id="edit-class" value="${data.classAssigned}" required />
+              </div>
+              <div class="form-group">
+                <label for="edit-file">Upload File (PDF/DOCX):</label>
+                <input type="file" id="edit-file" name="homework-file" accept=".pdf,.doc,.docx" />
+              </div>
+              <button type="submit" class="modern-btn">Update Homework</button>
+            </form>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add close functionality
+        const closeBtn = modal.querySelector('.close-modal');
+        closeBtn.onclick = () => {
+          modal.remove();
+        }
+
+        // Handle form submission
+        const editForm = modal.querySelector('#edit-homework-form');
+        editForm.onsubmit = async (e) => {
+          e.preventDefault();
+          
+          const formData = new FormData(editForm);
+          
+          try {
+            const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/${homeworkId}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              },
+              body: formData
+            });
+
+            const result = await response.json();
+            
+            if (response.ok) {
+              alert('Homework updated successfully!');
+              modal.remove();
+              fetchHomeworks();
+            } else {
+              console.error('Error updating homework:', result.error);
+              alert('Failed to update homework');
+            }
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to update homework');
+          }
+        };
+      } else {
+        console.error('Error fetching homework:', data.error);
+        alert('Failed to fetch homework');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to fetch homework');
+    }
+  }
+
+  // Fetch assignments and homeworks when the page loads
+  fetchAssignments();
+  fetchHomeworks();
   /* ---------------------------
      TAB MANAGER (for tab switching)
      --------------------------- */
