@@ -3793,14 +3793,25 @@ window.fetch = async (input, init = {}) => {
       required
     />
 
-   <!-- Class Selection -->
+  <!-- Class Selection -->
 <div
   id="resource-class"
-  style="margin-bottom: 10px; display: block;"
+  style="
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100%;
+    margin-bottom: 15px;
+  "
 >
   <label
     for="class-select"
-    style="display: block; margin-bottom: 5px;"
+    style="
+      display: block !important;
+      visibility: visible !important;
+      margin-bottom: 6px;
+      font-weight: 600;
+    "
   >
     Select Class:
   </label>
@@ -3809,7 +3820,14 @@ window.fetch = async (input, init = {}) => {
     id="class-select"
     name="classAssigned"
     class="form-control"
-    style="width: 100%;"
+    style="
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      width: 100%;
+      min-height: 42px;
+      padding: 8px 12px;
+    "
   >
     <option value="">-- Select a class --</option>
 
