@@ -288,25 +288,20 @@ exports.updateStudentProfile = async (req, res) => {
         
         console.log('Student saved successfully');
 
-        // Get updated student data
-        const updatedStudent = await User.findOne({
-        _id: userId,
-       school: req.user.school
-        })
+       // Get updated student data
+const updatedStudent = await User.findOne({
+    _id: userId,
+    school: req.user.school
+})
     .select('-password')
     .populate('profile.subjects', 'name')
     .lean();
-            .select('-password')
-            .populate('profile.subjects', 'name')
-            .lean();
 
-        res.json({
-            success: true,
-            message: 'Profile updated successfully',
-            profile: updatedStudent
-        });
-    } catch (err) {
-        console.error('Error updating student profile:', err);
+res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    profile: updatedStudent
+});
         
         // Handle duplicate key error (e.g., duplicate email)
         if (err.code === 11000) {
