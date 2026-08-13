@@ -20,6 +20,32 @@ const router = express.Router();
 router.use(protect);
 
 // =====================================================
+// ALL CLASS ROUTES REQUIRE A SCHOOL
+// =====================================================
+router.use((req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+  }
+
+  if (!req.user.school) {
+    console.error("[CLASS] No school found in authenticated user:", {
+      userId: req.user.id,
+      role: req.user.role,
+    });
+
+    return res.status(400).json({
+      success: false,
+      message: "School not found in authenticated user",
+    });
+  }
+
+  next();
+});
+
+// =====================================================
 // TEACHER ROUTES
 // =====================================================
 
@@ -30,51 +56,65 @@ router.post(
   createClass
 );
 
-// Get all classes for the logged-in teacher
-// Supports GET /api/classes
+// =====================================================
+// GET ALL CLASSES FOR CURRENT SCHOOL
+// =====================================================
 router.get(
   "/",
   authorize("teacher"),
   getTeacherClasses
 );
 
+// =====================================================
+// GET CLASSES BELONGING TO CURRENT TEACHER
 // Backwards-compatible endpoint
-// Supports GET /api/classes/my-classes
+// GET /api/classes/my-classes
+// =====================================================
 router.get(
   "/my-classes",
   authorize("teacher"),
   getTeacherClasses
 );
 
-// Get a specific class
+// =====================================================
+// GET A SPECIFIC CLASS
+// =====================================================
 router.get(
   "/:id",
   authorize("teacher"),
   getClassById
 );
 
-// Update a class
+// =====================================================
+// UPDATE CLASS
+// =====================================================
 router.put(
   "/:id",
   authorize("teacher"),
   updateClass
 );
 
-// Delete a class
+// =====================================================
+// DELETE CLASS
+// =====================================================
 router.delete(
   "/:id",
   authorize("teacher"),
   deleteClass
 );
 
-// Add a student to a class
+// =====================================================
+// ADD STUDENT TO CLASS
+// =====================================================
 router.post(
   "/:id/students",
   authorize("teacher"),
   addStudentToClass
 );
 
-// Remove a student from a class
+// =====================================================
+// REMOVE STUDENT FROM CLASS
+// =====================================================
 router.delete(
   "/:id/students/:studentId",
   authorize("teacher"),
