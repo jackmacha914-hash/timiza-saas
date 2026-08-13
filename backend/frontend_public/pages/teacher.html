@@ -3767,99 +3767,170 @@ window.fetch = async (input, init = {}) => {
         </div>
     </section>
 
-    <!-- Resources Section -->
+   <!-- ============================= -->
+
+<!-- RESOURCES SECTION -->
+
+<!-- ============================= -->
 
 <section id="resources-section" class="tab-section">
+
   <h2>Resources</h2>
 
   <div class="form-section">
-    <p>Upload or share study materials (PDF, DOC, DOCX only).</p>
 
-<button id="upload-resource-btn" class="modern-btn" type="button">
+```
+<p>
+  Upload or share study materials (PDF, DOC, DOCX only).
+</p>
+
+<!-- Upload Button -->
+<button
+  id="upload-resource-btn"
+  class="modern-btn"
+  type="button"
+>
   Upload Resource
 </button>
 
-<!-- Upload Form -->
-<div id="upload-form-container" style="display: none;">
-  <form id="upload-form" style="margin-bottom: 15px;">
 
-    <!-- File -->
-    <input
-      type="file"
-      id="resource-file"
-      name="resource"
-      accept=".pdf,.doc,.docx"
-      style="margin-bottom: 10px; display: block;"
-      required
-    />
+<!-- ============================= -->
+<!-- UPLOAD FORM -->
+<!-- ============================= -->
 
-  <!-- Class Selection -->
 <div
-  id="resource-class"
+  id="upload-form-container"
   style="
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+    display: none;
+    margin-top: 15px;
     width: 100%;
-    margin-bottom: 15px;
   "
 >
-  <label
-    for="class-select"
-    style="
-      display: block !important;
-      visibility: visible !important;
-      margin-bottom: 6px;
-      font-weight: 600;
-    "
+
+  <form
+    id="upload-form"
+    enctype="multipart/form-data"
+    novalidate
+    style="margin-bottom: 15px;"
   >
-    Select Class:
-  </label>
 
-  <select
-    id="class-select"
-    name="classAssigned"
-    class="form-control"
-    style="
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      width: 100%;
-      min-height: 42px;
-      padding: 8px 12px;
-    "
-  >
-    <option value="">-- Select a class --</option>
+    <!-- FILE -->
+    <div style="margin-bottom: 15px;">
 
-    <optgroup label="Primary School">
-      <option value="Grade 1">Grade 1</option>
-      <option value="Grade 2">Grade 2</option>
-      <option value="Grade 3">Grade 3</option>
-      <option value="Grade 4">Grade 4</option>
-      <option value="Grade 5">Grade 5</option>
-      <option value="Grade 6">Grade 6</option>
-      <option value="Grade 7">Grade 7</option>
-      <option value="Grade 8">Grade 8</option>
-    </optgroup>
+      <label
+        for="resource-file"
+        style="
+          display: block;
+          margin-bottom: 6px;
+          font-weight: 600;
+        "
+      >
+        Select Resource File:
+      </label>
 
-    <optgroup label="Secondary School">
-      <option value="Form 1">Form 1</option>
-      <option value="Form 2">Form 2</option>
-      <option value="Form 3">Form 3</option>
-      <option value="Form 4">Form 4</option>
-    </optgroup>
-  </select>
-</div>
+      <input
+        type="file"
+        id="resource-file"
+        name="resource"
+        accept=".pdf,.doc,.docx"
+        style="
+          display: block;
+          width: 100%;
+          padding: 8px;
+        "
+      >
 
-    <!-- Upload Status -->
+    </div>
+
+
+    <!-- ============================= -->
+    <!-- CLASS SELECTION -->
+    <!-- ============================= -->
+
+    <div
+      id="resource-class"
+      style="
+        display: block;
+        width: 100%;
+        margin-bottom: 15px;
+      "
+    >
+
+      <label
+        for="class-select"
+        style="
+          display: block;
+          margin-bottom: 6px;
+          font-weight: 600;
+        "
+      >
+        Select Class:
+      </label>
+
+      <select
+        id="class-select"
+        name="classAssigned"
+        class="form-control"
+        style="
+          display: block;
+          width: 100%;
+          min-height: 42px;
+          padding: 8px 12px;
+          visibility: visible;
+          opacity: 1;
+        "
+      >
+
+        <option value="">
+          -- Select a class --
+        </option>
+
+        <optgroup label="Primary School">
+          <option value="Grade 1">Grade 1</option>
+          <option value="Grade 2">Grade 2</option>
+          <option value="Grade 3">Grade 3</option>
+          <option value="Grade 4">Grade 4</option>
+          <option value="Grade 5">Grade 5</option>
+          <option value="Grade 6">Grade 6</option>
+          <option value="Grade 7">Grade 7</option>
+          <option value="Grade 8">Grade 8</option>
+        </optgroup>
+
+        <optgroup label="Secondary School">
+          <option value="Form 1">Form 1</option>
+          <option value="Form 2">Form 2</option>
+          <option value="Form 3">Form 3</option>
+          <option value="Form 4">Form 4</option>
+        </optgroup>
+
+      </select>
+
+    </div>
+
+
+    <!-- UPLOAD STATUS -->
+
     <div
       id="upload-status"
-      style="display: none; margin: 10px 0;"
+      style="
+        display: none;
+        margin: 10px 0;
+      "
     ></div>
 
-    <!-- Form Buttons -->
-    <div style="display: flex; gap: 10px;">
+
+    <!-- BUTTONS -->
+
+    <div
+      style="
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      "
+    >
+
       <button
+        id="submit-resource-btn"
         type="submit"
         class="modern-btn"
       >
@@ -3867,38 +3938,53 @@ window.fetch = async (input, init = {}) => {
       </button>
 
       <button
-        type="button"
         id="cancel-upload-btn"
+        type="button"
         class="modern-btn btn-cancel"
       >
         Cancel
       </button>
+
     </div>
 
   </form>
+
 </div>
+```
 
   </div>
 
-  <!-- Shared Resources -->
+  <!-- ============================= -->
 
-  <div id="resources-list">
+  <!-- AVAILABLE RESOURCES -->
 
+  <!-- ============================= -->
+
+  <div
+    id="resources-list"
+    style="margin-top: 25px;"
+  >
+
+```
 <div
+  id="resource-header"
   style="
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
     gap: 15px;
     flex-wrap: wrap;
+    margin-bottom: 15px;
   "
 >
+
   <h3 style="margin: 0;">
     Available Resources
   </h3>
 
-  <!-- Class Filter -->
+
+  <!-- CLASS FILTER -->
+
   <div
     id="resource-filter-container"
     style="
@@ -3908,9 +3994,13 @@ window.fetch = async (input, init = {}) => {
       flex-wrap: wrap;
     "
   >
+
     <label
       for="class-filter"
-      style="margin: 0;"
+      style="
+        margin: 0;
+        font-weight: 600;
+      "
     >
       Filter by Class:
     </label>
@@ -3918,9 +4008,15 @@ window.fetch = async (input, init = {}) => {
     <select
       id="class-filter"
       class="form-control"
-      style="width: auto; min-width: 180px;"
+      style="
+        width: auto;
+        min-width: 180px;
+      "
     >
-      <option value="all">All Classes</option>
+
+      <option value="all">
+        All Classes
+      </option>
 
       <optgroup label="Primary School">
         <option value="Grade 1">Grade 1</option>
@@ -3939,15 +4035,25 @@ window.fetch = async (input, init = {}) => {
         <option value="Form 3">Form 3</option>
         <option value="Form 4">Form 4</option>
       </optgroup>
+
     </select>
+
   </div>
+
 </div>
 
-<!-- Resource Items -->
+
+<!-- RESOURCE LIST -->
+
 <ul
   id="resource-list"
-  style="list-style: none; padding: 0; margin: 0;"
+  style="
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  "
 ></ul>
+```
 
   </div>
 
