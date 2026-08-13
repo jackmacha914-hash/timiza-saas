@@ -3768,76 +3768,174 @@ window.fetch = async (input, init = {}) => {
     </section>
 
     <!-- Resources Section -->
-    <section id="resources-section" class="tab-section">
-      <h2>Resources</h2>
-      <div class="form-section">
-        <p>Upload or share study materials (PDF, DOC, DOCX only).</p>
-        <button id="upload-resource-btn" class="modern-btn">Upload Resource</button>
 
-        <!-- Upload Form (initially hidden) -->
-        <div id="upload-form-container" style="display: none;">
-          <form id="upload-form" style="margin-bottom: 15px;">
-            <input type="file" id="resource-file" accept=".pdf,.doc,.docx" style="margin-bottom: 10px; display: block;" required />
-            <div id="resource-class" style="margin-bottom: 10px; display: block;">
-              <label for="class-select" style="display: block; margin-bottom: 5px;">Select Class:</label>
-              <select id="class-select" class="form-control" style="width: 100%;" required>
-                <option value="">-- Select a class --</option>
-                <optgroup label="Primary School">
-                  <option value="Grade 1">Grade 1</option>
-                  <option value="Grade 2">Grade 2</option>
-                  <option value="Grade 3">Grade 3</option>
-                  <option value="Grade 4">Grade 4</option>
-                  <option value="Grade 5">Grade 5</option>
-                  <option value="Grade 6">Grade 6</option>
-                  <option value="Grade 7">Grade 7</option>
-                  <option value="Grade 8">Grade 8</option>
-                </optgroup>
-                <optgroup label="Secondary School">
-                  <option value="Form 1">Form 1</option>
-                  <option value="Form 2">Form 2</option>
-                  <option value="Form 3">Form 3</option>
-                  <option value="Form 4">Form 4</option>
-                </optgroup>
-              </select>
-            </div>
-            <div id="upload-status" style="display: none; margin: 10px 0;"></div>
-            <div style="display: flex; gap: 10px;">
-              <button type="submit" class="modern-btn">Submit Resource</button>
-              <button id="cancel-upload-btn" class="modern-btn btn-cancel">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </div>
-      <!-- List of shared resources -->
-      <div id="resources-list">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h3>Available Resources</h3>
-          <div>
-            <label for="class-filter" style="margin-right: 10px;">Filter by Class:</label>
-            <select id="class-filter" class="form-control" style="width: auto;">
-              <option value="all">All Classes</option>
-              <optgroup label="Primary School">
-                <option value="Grade 1">Grade 1</option>
-                <option value="Grade 2">Grade 2</option>
-                <option value="Grade 3">Grade 3</option>
-                <option value="Grade 4">Grade 4</option>
-                <option value="Grade 5">Grade 5</option>
-                <option value="Grade 6">Grade 6</option>
-                <option value="Grade 7">Grade 7</option>
-                <option value="Grade 8">Grade 8</option>
-              </optgroup>
-              <optgroup label="Secondary School">
-                <option value="Form 1">Form 1</option>
-                <option value="Form 2">Form 2</option>
-                <option value="Form 3">Form 3</option>
-                <option value="Form 4">Form 4</option>
-              </optgroup>
-            </select>
-          </div>
-        </div>
-        <ul id="resource-list"></ul>
-      </div>
-    </section>
+<section id="resources-section" class="tab-section">
+  <h2>Resources</h2>
+
+  <div class="form-section">
+    <p>Upload or share study materials (PDF, DOC, DOCX only).</p>
+
+<button id="upload-resource-btn" class="modern-btn" type="button">
+  Upload Resource
+</button>
+
+<!-- Upload Form -->
+<div id="upload-form-container" style="display: none;">
+  <form id="upload-form" style="margin-bottom: 15px;">
+
+    <!-- File -->
+    <input
+      type="file"
+      id="resource-file"
+      name="resource"
+      accept=".pdf,.doc,.docx"
+      style="margin-bottom: 10px; display: block;"
+      required
+    />
+
+    <!-- Class Selection -->
+    <div
+      id="resource-class"
+      style="margin-bottom: 10px; display: block;"
+    >
+      <label
+        for="class-select"
+        style="display: block; margin-bottom: 5px;"
+      >
+        Select Class:
+      </label>
+
+      <select
+        id="class-select"
+        name="classAssigned"
+        class="form-control"
+        style="width: 100%;"
+        required
+      >
+        <option value="">-- Select a class --</option>
+
+        <optgroup label="Primary School">
+          <option value="Grade 1">Grade 1</option>
+          <option value="Grade 2">Grade 2</option>
+          <option value="Grade 3">Grade 3</option>
+          <option value="Grade 4">Grade 4</option>
+          <option value="Grade 5">Grade 5</option>
+          <option value="Grade 6">Grade 6</option>
+          <option value="Grade 7">Grade 7</option>
+          <option value="Grade 8">Grade 8</option>
+        </optgroup>
+
+        <optgroup label="Secondary School">
+          <option value="Form 1">Form 1</option>
+          <option value="Form 2">Form 2</option>
+          <option value="Form 3">Form 3</option>
+          <option value="Form 4">Form 4</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <!-- Upload Status -->
+    <div
+      id="upload-status"
+      style="display: none; margin: 10px 0;"
+    ></div>
+
+    <!-- Form Buttons -->
+    <div style="display: flex; gap: 10px;">
+      <button
+        type="submit"
+        class="modern-btn"
+      >
+        Submit Resource
+      </button>
+
+      <button
+        type="button"
+        id="cancel-upload-btn"
+        class="modern-btn btn-cancel"
+      >
+        Cancel
+      </button>
+    </div>
+
+  </form>
+</div>
+
+  </div>
+
+  <!-- Shared Resources -->
+
+  <div id="resources-list">
+
+<div
+  style="
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 15px;
+    flex-wrap: wrap;
+  "
+>
+  <h3 style="margin: 0;">
+    Available Resources
+  </h3>
+
+  <!-- Class Filter -->
+  <div
+    id="resource-filter-container"
+    style="
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    "
+  >
+    <label
+      for="class-filter"
+      style="margin: 0;"
+    >
+      Filter by Class:
+    </label>
+
+    <select
+      id="class-filter"
+      class="form-control"
+      style="width: auto; min-width: 180px;"
+    >
+      <option value="all">All Classes</option>
+
+      <optgroup label="Primary School">
+        <option value="Grade 1">Grade 1</option>
+        <option value="Grade 2">Grade 2</option>
+        <option value="Grade 3">Grade 3</option>
+        <option value="Grade 4">Grade 4</option>
+        <option value="Grade 5">Grade 5</option>
+        <option value="Grade 6">Grade 6</option>
+        <option value="Grade 7">Grade 7</option>
+        <option value="Grade 8">Grade 8</option>
+      </optgroup>
+
+      <optgroup label="Secondary School">
+        <option value="Form 1">Form 1</option>
+        <option value="Form 2">Form 2</option>
+        <option value="Form 3">Form 3</option>
+        <option value="Form 4">Form 4</option>
+      </optgroup>
+    </select>
+  </div>
+</div>
+
+<!-- Resource Items -->
+<ul
+  id="resource-list"
+  style="list-style: none; padding: 0; margin: 0;"
+></ul>
+
+  </div>
+
+</section>
+
 
     <!-- Communication Section -->
     <section id="communication-section" class="tab-section">
