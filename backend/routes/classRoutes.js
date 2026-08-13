@@ -8,12 +8,12 @@ const {
   addStudentToClass,
   removeStudentFromClass
 } = require('../controllers/classController');
-const { authenticateUser, authorizeRoles } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
 // All routes are protected and require authentication
-router.use(authenticateUser);
+router.use(protect);
 
 // Create a new class (Teacher only)
 router.post('/', authorizeRoles('teacher'), createClass);
@@ -22,18 +22,18 @@ router.post('/', authorizeRoles('teacher'), createClass);
 router.get('/my-classes', authorizeRoles('teacher'), getTeacherClasses);
 
 // Get class by ID (Teacher only)
-router.get('/:id', authorizeRoles('teacher'), getClassById);
+router.get('/:id', authorize('teacher'), getClassById);
 
 // Update class (Teacher only)
-router.put('/:id', authorizeRoles('teacher'), updateClass);
+router.put('/:id', authorize('teacher'), updateClass);
 
 // Delete class (Teacher only)
-router.delete('/:id', authorizeRoles('teacher'), deleteClass);
+router.delete('/:id', authorize('teacher'), deleteClass);
 
 // Add student to class (Teacher only)
-router.post('/:id/students', authorizeRoles('teacher'), addStudentToClass);
+router.post('/:id/students', authorize('teacher'), addStudentToClass);
 
 // Remove student from class (Teacher only)
-router.delete('/:id/students/:studentId', authorizeRoles('teacher'), removeStudentFromClass);
+router.delete('/:id/students/:studentId', authorize('teacher'), removeStudentFromClass);
 
 module.exports = router;
