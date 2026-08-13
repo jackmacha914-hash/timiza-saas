@@ -123,7 +123,7 @@ class AttendanceDetails {
                 return;
             }
 
-            const baseUrl = 'https://luckyjuniorschool.onrender.com';
+            const baseUrl = 'https://timiza-saas.onrender.com';
             const response = await fetch(`${baseUrl}/api/attendance/${this.attendanceId}`, {
                 method: 'GET',
                 headers: {
