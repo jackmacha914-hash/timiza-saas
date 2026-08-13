@@ -4,6 +4,9 @@ const SchoolUser = require('../models/SchoolUser');
 
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const {
+    getAllUsers
+} = require('../controllers/schoolUserController');
 
 // =====================================================
 // DEBUG MIDDLEWARE
