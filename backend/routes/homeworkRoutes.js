@@ -61,6 +61,7 @@ router.post(
       }
 
       const homework = new Homework({
+        school: req.user.school,
         title,
         description,
         dueDate: new Date(dueDate),
