@@ -1,39 +1,75 @@
-const express = require('express');
-const { 
+const express = require("express");
+
+const {
   createClass,
   getTeacherClasses,
   getClassById,
   updateClass,
   deleteClass,
   addStudentToClass,
-  removeStudentFromClass
-} = require('../controllers/classController');
-const { protect, authorize } = require('../middleware/auth');
+  removeStudentFromClass,
+} = require("../controllers/classController");
+
+const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
 
-// All routes are protected and require authentication
+// =====================================================
+// ALL CLASS ROUTES REQUIRE AUTHENTICATION
+// =====================================================
 router.use(protect);
 
-// Create a new class (Teacher only)
-router.post('/', authorizeRoles('teacher'), createClass);
+// =====================================================
+// TEACHER ROUTES
+// =====================================================
 
-// Get all classes for the logged-in teacher
-router.get('/my-classes', authorizeRoles('teacher'), getTeacherClasses);
+// Create a class
+router.post(
+  "/",
+  authorize("teacher"),
+  createClass
+);
 
-// Get class by ID (Teacher only)
-router.get('/:id', authorize('teacher'), getClassById);
+// Get classes belonging to the logged-in teacher
+router.get(
+  "/my-classes",
+  authorize("teacher"),
+  getTeacherClasses
+);
 
-// Update class (Teacher only)
-router.put('/:id', authorize('teacher'), updateClass);
+// Get a specific class
+router.get(
+  "/:id",
+  authorize("teacher"),
+  getClassById
+);
 
-// Delete class (Teacher only)
-router.delete('/:id', authorize('teacher'), deleteClass);
+// Update a class
+router.put(
+  "/:id",
+  authorize("teacher"),
+  updateClass
+);
 
-// Add student to class (Teacher only)
-router.post('/:id/students', authorize('teacher'), addStudentToClass);
+// Delete a class
+router.delete(
+  "/:id",
+  authorize("teacher"),
+  deleteClass
+);
 
-// Remove student from class (Teacher only)
-router.delete('/:id/students/:studentId', authorize('teacher'), removeStudentFromClass);
+// Add a student to a class
+router.post(
+  "/:id/students",
+  authorize("teacher"),
+  addStudentToClass
+);
+
+// Remove a student from a class
+router.delete(
+  "/:id/students/:studentId",
+  authorize("teacher"),
+  removeStudentFromClass
+);
 
 module.exports = router;
