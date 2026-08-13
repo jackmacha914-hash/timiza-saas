@@ -136,12 +136,10 @@ exports.getAllUsers = async (req, res) => {
     // IMPORTANT:
     // Query SchoolUser ONLY with the school restriction.
     // =================================================
-    const users = await SchoolUser.find(filter)
-      .sort({
-        createdAt: -1
-      })
-      .lean();
-
+    const users = await User.find(filter)
+    .select('-password')
+    .sort({ createdAt: -1 })
+    .lean();
     // =================================================
     // SECURITY CHECK
     // Never return a user belonging to another school.
