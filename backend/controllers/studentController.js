@@ -289,7 +289,13 @@ exports.updateStudentProfile = async (req, res) => {
         console.log('Student saved successfully');
 
         // Get updated student data
-        const updatedStudent = await User.findById(userId)
+        const updatedStudent = await User.findOne({
+        _id: userId,
+       school: req.user.school
+        })
+    .select('-password')
+    .populate('profile.subjects', 'name')
+    .lean();
             .select('-password')
             .populate('profile.subjects', 'name')
             .lean();
