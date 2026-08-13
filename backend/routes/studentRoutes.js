@@ -19,12 +19,45 @@ const {
 const router = express.Router();
 
 //
-// ==============================
-// Multer Configuration
-// ==============================
+// =====================================================
+// SCHOOL REQUIREMENT
+// =====================================================
+// Every protected student route must have a school.
+// The school comes from the authenticated JWT:
+// req.user.school
+// =====================================================
 //
 
-const uploadsDir = path.join(__dirname, '..', 'uploads', 'profile-photos');
+const requireSchool = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
+    if (!req.user.school) {
+        return res.status(400).json({
+            success: false,
+            message: 'School not found in authenticated user'
+        });
+    }
+
+    next();
+};
+
+//
+// =====================================================
+// MULTER CONFIGURATION
+// =====================================================
+//
+
+const uploadsDir = path.join(
+    __dirname,
+    '..',
+    'uploads',
+    'profile-photos'
+);
 
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
@@ -34,6 +67,7 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadsDir);
     },
+
     filename: (req, file, cb) => {
         const userEmail = req.user?.email || 'unknown';
 
@@ -44,9 +78,13 @@ const storage = multer.diskStorage({
             .replace(/^-+|-+$/g, '');
 
         const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9).toString(36);
+            Date.now() +
+            '-' +
+            Math.round(Math.random() * 1e9).toString(36);
 
-        const ext = path.extname(file.originalname).toLowerCase();
+        const ext = path
+            .extname(file.originalname)
+            .toLowerCase();
 
         cb(
             null,
@@ -57,9 +95,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage,
+
     limits: {
         fileSize: 5 * 1024 * 1024
     },
+
     fileFilter: (req, file, cb) => {
         const filetypes = /jpeg|jpg|png|gif/;
 
@@ -67,44 +107,78 @@ const upload = multer({
             path.extname(file.originalname).toLowerCase()
         );
 
-        const mimetype = filetypes.test(file.mimetype);
+        const mimetype = filetypes.test(
+            file.mimetype
+        );
 
         if (extname && mimetype) {
             return cb(null, true);
         }
 
-        cb(new Error('Only image files are allowed.'));
+        cb(
+            new Error(
+                'Only image files are allowed.'
+            )
+        );
     }
 });
 
 //
-// ==============================
+// =====================================================
 // PUBLIC ROUTES
-// ==============================
+// =====================================================
 //
 
+//
 // Register Student/Teacher
-router.post('/register', registerUser);
-
-// Register Student only
-router.post('/register/student', registerStudent);
+//
+// NOTE:
+// These registration routes remain public because
+// registration happens before authentication.
+//
+// The controller should assign the correct school
+// during SaaS registration.
+//
+router.post(
+    '/register',
+    registerUser
+);
 
 //
-// ==============================
+// Register Student only
+//
+router.post(
+    '/register/student',
+    registerStudent
+);
+
+//
+// =====================================================
 // PROTECTED ROUTES
-// ==============================
+// =====================================================
 //
 
 // Get all students
-router.get('/', protect, getStudents);
+router.get(
+    '/',
+    protect,
+    requireSchool,
+    getStudents
+);
 
 // Get all teachers
-router.get('/teachers', protect, getStudents);
+router.get(
+    '/teachers',
+    protect,
+    requireSchool,
+    getStudents
+);
 
 // Get students by class
 router.get(
     '/class/:className',
     protect,
+    requireSchool,
     getStudentsByClass
 );
 
@@ -112,6 +186,7 @@ router.get(
 router.get(
     '/profile',
     protect,
+    requireSchool,
     getStudentProfile
 );
 
@@ -119,6 +194,7 @@ router.get(
 router.get(
     '/profile/:id',
     protect,
+    requireSchool,
     getStudentProfile
 );
 
@@ -126,6 +202,7 @@ router.get(
 router.put(
     '/profile',
     protect,
+    requireSchool,
     updateStudentProfile
 );
 
@@ -133,6 +210,7 @@ router.put(
 router.put(
     '/change-password',
     protect,
+    requireSchool,
     changePassword
 );
 
@@ -140,9 +218,11 @@ router.put(
 router.post(
     '/profile/photo',
     protect,
+    requireSchool,
     upload.single('photo'),
     uploadProfilePhoto,
     (err, req, res, next) => {
+
         if (err instanceof multer.MulterError) {
             return res.status(400).json({
                 success: false,
