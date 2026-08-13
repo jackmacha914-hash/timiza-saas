@@ -1,203 +1,173 @@
-// Student Management System
+// ============================================================
+// STUDENT MANAGEMENT SYSTEM
+// ============================================================
+
 class StudentManagement {
     constructor() {
         this.students = [];
         this.currentPage = 1;
         this.itemsPerPage = 10;
-        this.currentSort = { column: 'admissionNumber', direction: 'asc' };
-        // Don't initialize here to prevent double initialization
-    }
+        this.currentSort = {
+            column: 'admissionNumber',
+            direction: 'asc'
+        };
 
-    async initialize() {
-        await this.loadStudents();
-        this.renderStudentTable();
-        this.setupEventListeners();
-    }
-
-    async loadStudents() {
-        try {
-            // Check if a class is selected
-            const classSelect = document.getElementById('class-select');
-            if (classSelect && !classSelect.value) {
-                console.log('No class selected, skipping student load');
-                this.students = [];
-                this.renderStudentTable(); // Clear the table
-                return;
-            }
-            
-            // Try to load from localStorage first
-            const savedStudents = localStorage.getItem('students');
-            
-            if (savedStudents) {
-                this.students = JSON.parse(savedStudents);
-                console.log('Loaded students from localStorage');
-                this.renderStudentTable();
-                return;
-            }
-            
-            // If no data in localStorage, try to load from API if available
-            try {
-                // API base URL - update this to your actual API URL
-if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://timiza-saas.onrender.com/api/students';
-}
-
-                const response = await fetch(`${API_BASE_URL}/students${selectedClass ? '?class=' + selectedClass : ''}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            cache: 'no-store'
-        });
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    this.students = data;
-                    this.saveToLocalStorage();
-                    this.renderStudentTable();
-                    return;
-                }
-            } catch (apiError) {
-                console.warn('API not available, using sample data:', apiError);
-            }
-            
-            // Fall back to sample data if no data in localStorage or API
-            this.loadSampleData();
-            this.saveToLocalStorage();
-            this.renderStudentTable();
-            this.showNotification('Using sample data. API endpoint not available.', 'info');
-            
-        } catch (error) {
-            console.error('Error loading students:', error);
-            this.loadSampleData();
-            this.renderStudentTable();
-            this.showNotification('Using sample data. Could not load from server.', 'warning');
-        }
-    }
-
-    // Fetch users from the backend
-   async loadStudents() {
-    try {
-        const classSelect = document.getElementById('class-select');
-
-        if (classSelect && !classSelect.value) {
-            console.log('No class selected, skipping student load');
-            this.students = [];
-            this.renderStudentTable();
-            return;
-        }
-
-        const selectedClass = classSelect ? classSelect.value : '';
-
-        console.log('[STUDENTS] Loading students for class:', selectedClass);
-
-        // IMPORTANT:
-        // Do not use localStorage here because it can contain students
-        // from another school/class.
-        //
-        // The backend must be the source of truth.
-
-        if (typeof API_BASE_URL === 'undefined') {
+        // API base URL
+        if (typeof window.API_BASE_URL === 'undefined') {
             window.API_BASE_URL = 'https://timiza-saas.onrender.com/api';
         }
 
-        const url = selectedClass
-            ? `${API_BASE_URL}/students?class=${encodeURIComponent(selectedClass)}`
-            : `${API_BASE_URL}/students`;
-
-        console.log('[STUDENTS] Fetching:', url);
-
-        const token = localStorage.getItem('token');
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token ? {
-                    'Authorization': `Bearer ${token}`
-                } : {})
-            },
-            cache: 'no-store'
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        console.log('[STUDENTS] API response:', data);
-
-        // Support either:
-        // { students: [...] }
-        // { data: [...] }
-        // or [...]
-        let students = [];
-
-        if (Array.isArray(data)) {
-            students = data;
-        } else if (Array.isArray(data.students)) {
-            students = data.students;
-        } else if (Array.isArray(data.data)) {
-            students = data.data;
-        }
-
-        this.students = students;
-
-        console.log(
-            `[STUDENTS] Loaded ${this.students.length} students`
-        );
-
-        this.currentPage = 1;
-        this.renderStudentTable();
-
-    } catch (error) {
-        console.error('[STUDENTS] Error loading students:', error);
-
-        this.students = [];
-        this.renderStudentTable();
-
-        this.showNotification(
-            'Could not load students from the server.',
-            'error'
-        );
+        this.API_BASE_URL = window.API_BASE_URL;
     }
-}
 
-    // Render users into the table
-    renderUserTable() {
-        if (!this.userTableBody) return;
-        this.userTableBody.innerHTML = '';
+    // ============================================================
+    // INITIALIZATION
+    // ============================================================
 
-        if (!this.users || this.users.length === 0) {
-            this.userTableBody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
-            return;
-        }
+    async initialize() {
+        console.log('[STUDENTS] Initializing Student Management...');
 
-        this.users.forEach(user => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input type="checkbox" class="user-select"></td>
-                <td>${user.name || '-'}</td>
-                <td>${user.email || '-'}</td>
-                <td>${user.username || '-'}</td>
-                <td>${user.role || '-'}</td>
-                <td>${user.status || 'Active'}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary edit-user">Edit</button>
-                    <button class="btn btn-sm btn-danger delete-user">Delete</button>
-                </td>
-            `;
-            this.userTableBody.appendChild(tr);
-        });
+        this.setupEventListeners();
+        await this.loadStudents();
+
+        console.log('[STUDENTS] Student Management initialized successfully');
     }
-}
 
-// Initialize on DOM load
-document.addEventListener('DOMContentLoaded', () => {
-    window.userManagement = new UserManagement();
-});
+    // ============================================================
+    // LOAD STUDENTS FROM BACKEND
+    // ============================================================
 
+    async loadStudents() {
+        try {
+            const classSelect = document.getElementById('class-select');
+
+            // If a class selector exists, require a selected class
+            if (classSelect && !classSelect.value) {
+                console.log('[STUDENTS] No class selected');
+
+                this.students = [];
+                this.currentPage = 1;
+                this.renderStudentTable();
+
+                return;
+            }
+
+            const selectedClass = classSelect
+                ? classSelect.value
+                : '';
+
+            console.log(
+                '[STUDENTS] Loading students for class:',
+                selectedClass || 'ALL'
+            );
+
+            let url = `${this.API_BASE_URL}/students`;
+
+            if (selectedClass) {
+                url += `?class=${encodeURIComponent(selectedClass)}`;
+            }
+
+            console.log('[STUDENTS] Fetching:', url);
+
+            // Get authentication token
+            const token = localStorage.getItem('token');
+
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers,
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    `HTTP error! status: ${response.status}`
+                );
+            }
+
+            const data = await response.json();
+
+            console.log('[STUDENTS] API response:', data);
+
+            // Support:
+            // [...]
+            // { students: [...] }
+            // { data: [...] }
+
+            if (Array.isArray(data)) {
+                this.students = data;
+            } else if (Array.isArray(data.students)) {
+                this.students = data.students;
+            } else if (Array.isArray(data.data)) {
+                this.students = data.data;
+            } else {
+                this.students = [];
+            }
+
+            console.log(
+                `[STUDENTS] Loaded ${this.students.length} students`
+            );
+
+            this.currentPage = 1;
+
+            this.renderStudentTable();
+
+        } catch (error) {
+            console.error(
+                '[STUDENTS] Error loading students:',
+                error
+            );
+
+            this.students = [];
+            this.currentPage = 1;
+
+            this.renderStudentTable();
+
+            this.showNotification(
+                'Could not load students from the server.',
+                'error'
+            );
+        }
+    }
+
+    // ============================================================
+    // SAVE TO LOCAL STORAGE
+    // ============================================================
+
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem(
+                'students',
+                JSON.stringify(this.students)
+            );
+
+            console.log(
+                '[STUDENTS] Student data saved to localStorage'
+            );
+
+        } catch (error) {
+            console.error(
+                '[STUDENTS] Error saving to localStorage:',
+                error
+            );
+
+            this.showNotification(
+                'Error saving student data.',
+                'error'
+            );
+        }
+    }
+
+    // ============================================================
+    // SAMPLE DATA
+    // ============================================================
 
     loadSampleData() {
         this.students = [
@@ -238,864 +208,1641 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
     }
 
-    saveToLocalStorage() {
-        try {
-            localStorage.setItem('students', JSON.stringify(this.students));
-            console.log('Students data saved to localStorage');
-        } catch (error) {
-            console.error('Error saving to localStorage:', error);
-            this.showNotification('Error saving student data. Some data may be lost on page refresh.', 'error');
-        }
-    }
+    // ============================================================
+    // RENDER STUDENT TABLE
+    // ============================================================
 
     renderStudentTable() {
-        console.log('Rendering student table...');
-        const tableBody = document.getElementById('student-table-body');
+        console.log('[STUDENTS] Rendering student table...');
+
+        const tableBody = document.getElementById(
+            'student-table-body'
+        );
+
         if (!tableBody) {
-            console.error('Student table body not found!');
+            console.error(
+                '[STUDENTS] Student table body not found!'
+            );
             return;
         }
 
-        console.log(`Rendering ${this.students.length} students (showing ${Math.min(this.itemsPerPage, this.students.length)})`);
-        
-        // Debug: Log the first few students
-        console.log('Sample student data:', this.students.slice(0, 2));
-
-        // Clear existing rows
         tableBody.innerHTML = '';
 
-        if (this.students.length === 0) {
-            console.log('No students to display');
-            tableBody.innerHTML = '<tr><td colspan="9" class="text-center">No students found</td></tr>';
+        if (!this.students || this.students.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center">
+                        No students found
+                    </td>
+                </tr>
+            `;
+
+            this.updatePagination();
             return;
         }
 
-        // Calculate pagination
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        const paginatedStudents = this.students.slice(startIndex, endIndex);
-        
-        console.log(`Displaying students ${startIndex + 1} to ${Math.min(endIndex, this.students.length)}`);
+        const startIndex =
+            (this.currentPage - 1) * this.itemsPerPage;
 
-        // Render each student
+        const endIndex =
+            startIndex + this.itemsPerPage;
+
+        const paginatedStudents =
+            this.students.slice(startIndex, endIndex);
+
         paginatedStudents.forEach(student => {
             const row = document.createElement('tr');
-            
-            // Format status with appropriate badge class
-            const status = student.status || 'inactive';
-            const statusClass = `status-badge status-${status.toLowerCase().replace(/\s+/g, '-')}`;
-            const statusDisplay = status.charAt(0).toUpperCase() + status.slice(1);
-            
-            // Format the data to match the table headers
-            const admissionNumber = student.admissionNumber || 'N/A';
-            const fullName = student.fullName || 'N/A';
-            const className = student.className || 'N/A';
-            const gender = student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : 'N/A';
-            const parentName = student.parentName || 'N/A';
-            const parentPhone = student.parentPhone || 'N/A';
-            
+
+            const status =
+                student.status || 'Inactive';
+
+            const statusClass =
+                status
+                    .toLowerCase()
+                    .replace(/\s+/g, '-');
+
+            const statusDisplay =
+                status.charAt(0).toUpperCase() +
+                status.slice(1);
+
             row.innerHTML = `
-                <td><input type="checkbox" class="student-checkbox" data-id="${student.id}"></td>
-                <td>${admissionNumber}</td>
-                <td>${fullName}</td>
-                <td>${className}</td>
-                <td>${gender}</td>
-                <td>${parentName}</td>
-                <td>${parentPhone}</td>
-                <td><span class="status status-${status.toLowerCase().replace(/\s+/g, '-')}">${statusDisplay}</span></td>
+                <td>
+                    <input
+                        type="checkbox"
+                        class="student-checkbox"
+                        data-id="${student.id || ''}"
+                    >
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.admissionNumber || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.fullName || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.className || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        this.capitalize(
+                            student.gender || 'N/A'
+                        )
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.parentName || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.parentPhone || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    <span
+                        class="status status-${statusClass}"
+                    >
+                        ${this.escapeHtml(statusDisplay)}
+                    </span>
+                </td>
+
                 <td class="actions">
-                    <button class="btn-action btn-view" data-id="${student.id}">View</button>
-                    <button class="btn-action btn-edit" data-id="${student.id}">Edit</button>
-                    <button class="btn-action btn-delete" data-id="${student.id}">Delete</button>
-                </td>`;
+
+                    <button
+                        type="button"
+                        class="btn-action btn-view"
+                        data-id="${student.id}"
+                    >
+                        View
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-action btn-edit"
+                        data-id="${student.id}"
+                    >
+                        Edit
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-action btn-delete"
+                        data-id="${student.id}"
+                    >
+                        Delete
+                    </button>
+
+                </td>
+            `;
+
             tableBody.appendChild(row);
         });
 
-        // Add event listeners to the new buttons
         this.setupActionButtons();
-        
-        // Update pagination controls
         this.updatePagination();
     }
-    
+
+    // ============================================================
+    // ACTION BUTTONS
+    // ============================================================
+
     setupActionButtons() {
-        console.log('Setting up action buttons...');
-        
-        const table = document.getElementById('student-table-body');
-        if (!table) {
-            console.error('Student table body not found!');
+        const tableBody =
+            document.getElementById(
+                'student-table-body'
+            );
+
+        if (!tableBody) {
             return;
         }
 
-        // Log the table content for debugging
-        console.log('Table content:', table.innerHTML);
+        // Prevent duplicate listeners
+        if (tableBody.dataset.actionsInitialized === 'true') {
+            return;
+        }
 
-        // Remove any existing click handlers to prevent duplicates
-        const newTable = table.cloneNode(true);
-        table.parentNode.replaceChild(newTable, table);
-        
-        // Log when any click happens in the table
-        newTable.addEventListener('click', (e) => {
-            console.log('Table clicked!', e.target);
-            
-            const target = e.target.closest('.btn-action');
-            if (!target) {
-                console.log('Clicked element is not an action button');
+        tableBody.dataset.actionsInitialized = 'true';
+
+        tableBody.addEventListener('click', event => {
+
+            const button =
+                event.target.closest('.btn-action');
+
+            if (!button) {
                 return;
             }
 
-            console.log('Action button clicked:', target);
-            console.log('Button classes:', target.className);
-            console.log('Button dataset:', target.dataset);
+            event.preventDefault();
 
-            const studentId = target.dataset.id;
+            const studentId =
+                button.dataset.id;
+
             if (!studentId) {
-                console.error('No student ID found for action button');
+                console.error(
+                    '[STUDENTS] Student ID missing'
+                );
                 return;
             }
 
-            console.log(`Handling action for student ID: ${studentId}`);
-
-            // Handle different button types
-            if (target.classList.contains('btn-view')) {
-                console.log('View button clicked');
+            if (
+                button.classList.contains(
+                    'btn-view'
+                )
+            ) {
                 this.viewStudentDetails(studentId);
-            } else if (target.classList.contains('btn-edit')) {
-                console.log('Edit button clicked');
-                this.editStudent(studentId);
-            } else if (target.classList.contains('btn-delete')) {
-                console.log('Delete button clicked');
-                if (confirm('Are you sure you want to delete this student?')) {
-                    this.deleteStudent(studentId);
-                }
-            } else {
-                console.log('Unknown button type clicked');
             }
-            
-            // Prevent default action
-            e.preventDefault();
-            e.stopPropagation();
+
+            else if (
+                button.classList.contains(
+                    'btn-edit'
+                )
+            ) {
+                this.editStudent(studentId);
+            }
+
+            else if (
+                button.classList.contains(
+                    'btn-delete'
+                )
+            ) {
+                this.deleteStudent(studentId);
+            }
         });
-        
-        console.log('Action buttons setup complete');
     }
 
-    updatePagination() {
-        const totalPages = Math.ceil(this.students.length / this.itemsPerPage);
-        const pagination = document.getElementById('pagination');
-        if (!pagination) return;
+    // ============================================================
+    // PAGINATION
+    // ============================================================
 
-        let paginationHTML = `
-            <button class="btn-prev" ${this.currentPage === 1 ? 'disabled' : ''}>Previous</button>
-            <span>Page ${this.currentPage} of ${totalPages || 1}</span>
-            <button class="btn-next" ${this.currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+    updatePagination() {
+        const pagination =
+            document.getElementById('pagination');
+
+        if (!pagination) {
+            return;
+        }
+
+        const totalPages =
+            Math.ceil(
+                this.students.length /
+                this.itemsPerPage
+            );
+
+        const safeTotalPages =
+            totalPages || 1;
+
+        if (this.currentPage > safeTotalPages) {
+            this.currentPage = safeTotalPages;
+        }
+
+        pagination.innerHTML = `
+            <button
+                type="button"
+                class="btn-prev"
+                ${this.currentPage <= 1 ? 'disabled' : ''}
+            >
+                Previous
+            </button>
+
+            <span>
+                Page ${this.currentPage}
+                of ${safeTotalPages}
+            </span>
+
+            <button
+                type="button"
+                class="btn-next"
+                ${this.currentPage >= safeTotalPages ? 'disabled' : ''}
+            >
+                Next
+            </button>
         `;
 
-        pagination.innerHTML = paginationHTML;
+        const previousButton =
+            pagination.querySelector('.btn-prev');
 
-        // Add event listeners
-        const prevBtn = pagination.querySelector('.btn-prev');
-        const nextBtn = pagination.querySelector('.btn-next');
+        const nextButton =
+            pagination.querySelector('.btn-next');
 
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
+        if (previousButton) {
+            previousButton.onclick = () => {
+
                 if (this.currentPage > 1) {
                     this.currentPage--;
                     this.renderStudentTable();
                 }
-            });
+
+            };
         }
 
+        if (nextButton) {
+            nextButton.onclick = () => {
 
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
-                if (this.currentPage < totalPages) {
+                if (
+                    this.currentPage <
+                    safeTotalPages
+                ) {
                     this.currentPage++;
                     this.renderStudentTable();
                 }
-            });
-        }
-    }
 
-
-    showAddStudent() {
-        try {
-            console.log('showAddStudentModal called');
-            const modal = document.getElementById('add-student-modal');
-            if (!modal) {
-                console.error('Add student modal not found');
-                return;
-            }
-            
-            console.log('Modal element found:', modal);
-            
-            const form = document.getElementById('add-student-form');
-            if (form) {
-                form.reset();
-                console.log('Form reset');
-            } else {
-                console.error('Add student form not found');
-            }
-            
-            // Make modal visible
-            modal.style.display = 'block';
-            modal.style.visibility = 'visible';
-            modal.style.opacity = '1';
-            console.log('Modal display set to block');
-            
-            // Set up close button
-            const closeBtn = modal.querySelector('.close');
-            if (closeBtn) {
-                closeBtn.onclick = () => {
-                    console.log('Close button clicked');
-                    modal.style.display = 'none';
-                };
-            } else {
-                console.warn('Close button not found in modal');
-            }
-            
-            // Close when clicking outside
-            window.onclick = (event) => {
-                if (event.target === modal) {
-                    console.log('Clicked outside modal, closing');
-                    modal.style.display = 'none';
-                }
             };
-            
-            console.log('Modal should now be visible');
-        } catch (error) {
-            console.error('Error in showAddStudentModal:', error);
         }
     }
 
+    // ============================================================
+    // SHOW ADD / EDIT MODAL
+    // ============================================================
 
-    handleAddStudent(event) {
-        // Prevent default form submission
+    showAddStudentModal(student = null) {
+        const modal =
+            document.getElementById(
+                'add-student-modal'
+            );
+
+        const form =
+            document.getElementById(
+                'add-student-form'
+            );
+
+        if (!modal || !form) {
+            console.error(
+                '[STUDENTS] Student modal or form not found'
+            );
+            return;
+        }
+
+        form.reset();
+
+        const isEdit =
+            student !== null;
+
+        form.dataset.editMode =
+            isEdit ? 'true' : 'false';
+
+        form.dataset.studentId =
+            isEdit ? String(student.id) : '';
+
+        const modalTitle =
+            modal.querySelector('h2');
+
+        if (modalTitle) {
+            modalTitle.textContent =
+                isEdit
+                    ? 'Edit Student'
+                    : 'Add New Student';
+        }
+
+        if (student) {
+
+            this.setFormValue(
+                form,
+                'fullName',
+                student.fullName
+            );
+
+            this.setFormValue(
+                form,
+                'admissionNumber',
+                student.admissionNumber
+            );
+
+            this.setFormValue(
+                form,
+                'className',
+                student.className
+            );
+
+            this.setFormValue(
+                form,
+                'gender',
+                student.gender
+            );
+
+            this.setFormValue(
+                form,
+                'dateOfBirth',
+                student.dateOfBirth
+                    ? student.dateOfBirth.split('T')[0]
+                    : ''
+            );
+
+            this.setFormValue(
+                form,
+                'parentName',
+                student.parentName
+            );
+
+            this.setFormValue(
+                form,
+                'parentPhone',
+                student.parentPhone
+            );
+
+            this.setFormValue(
+                form,
+                'parentEmail',
+                student.parentEmail
+            );
+
+            this.setFormValue(
+                form,
+                'address',
+                student.address
+            );
+
+            this.setFormValue(
+                form,
+                'status',
+                student.status || 'Active'
+            );
+
+            this.setFormValue(
+                form,
+                'bloodGroup',
+                student.bloodGroup
+            );
+
+            this.setFormValue(
+                form,
+                'allergies',
+                student.allergies
+            );
+
+            this.setFormValue(
+                form,
+                'medicalConditions',
+                student.medicalConditions
+            );
+        }
+
+        modal.style.display = 'block';
+        modal.style.visibility = 'visible';
+        modal.style.opacity = '1';
+
+        this.setupModalClose(modal);
+    }
+
+    // Backwards-compatible alias
+    showAddStudent() {
+        this.showAddStudentModal();
+    }
+
+    // ============================================================
+    // HANDLE ADD / EDIT FORM
+    // ============================================================
+
+    async handleAddStudent(event) {
         event.preventDefault();
-        
-        // Get form and check if we're in edit mode
+
         const form = event.target;
-        const isEditMode = form.dataset.editMode === 'true';
-        const studentId = form.dataset.studentId ? parseInt(form.dataset.studentId, 10) : null;
-        
-        // Get the submit button and update its text
-        const submitButton = form.querySelector('button[type="submit"]');
+
+        const isEditMode =
+            form.dataset.editMode === 'true';
+
+        const studentId =
+            form.dataset.studentId;
+
+        const submitButton =
+            form.querySelector(
+                'button[type="submit"]'
+            );
+
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = isEditMode ? 'Updating...' : 'Saving...';
+
+            submitButton.textContent =
+                isEditMode
+                    ? 'Updating...'
+                    : 'Saving...';
         }
-        
+
         try {
-            // Get form data
-            const formData = new FormData(form);
+
+            const formData =
+                new FormData(form);
+
             const studentData = {};
-            
-            // Convert FormData to object
+
             formData.forEach((value, key) => {
                 studentData[key] = value;
             });
 
             if (isEditMode && studentId) {
-                // Edit existing student
-                const index = this.students.findIndex(s => s.id === studentId);
-                if (index !== -1) {
-                    // Update the student data while preserving the ID and admission info
-                    this.students[index] = {
-                        ...this.students[index],
-                        ...studentData,
-                        id: studentId, // Preserve original ID
-                        admissionNumber: this.students[index].admissionNumber, // Preserve admission number
-                        admissionDate: this.students[index].admissionDate, // Preserve original admission date
-                        status: studentData.status || this.students[index].status || 'Active'
-                    };
-                    
-                    // Save to localStorage
-                    this.saveToLocalStorage();
-                    
-                    // Update the table
-                    this.renderStudentTable();
-                    
-                    // Close the modal
-                    const modal = document.getElementById('add-student-modal');
-                    if (modal) modal.style.display = 'none';
-                    
-                    // Show success message
-                    this.showNotification('Student updated successfully!', 'success');
-                } else {
-                    throw new Error('Student not found for editing');
+
+                const student =
+                    this.students.find(
+                        student =>
+                            String(student.id) ===
+                            String(studentId)
+                    );
+
+                if (!student) {
+                    throw new Error(
+                        'Student not found'
+                    );
                 }
-            } else {
-                // Add new student
-                const newId = this.students.length > 0 
-                    ? Math.max(...this.students.map(s => s.id)) + 1 
-                    : 1;
-                    
-                // Create new student object
-                const newStudent = {
-                    id: newId,
-                    admissionNumber: `STD${String(newId).padStart(3, '0')}`,
-                    fullName: studentData.fullName,
-                    className: studentData.className,
-                    gender: studentData.gender,
-                    dateOfBirth: studentData.dateOfBirth || null,
-                    parentName: studentData.parentName,
-                    parentPhone: studentData.parentPhone,
-                    parentEmail: studentData.parentEmail || null,
-                    address: studentData.address || null,
-                    status: studentData.status || 'Active',
-                    admissionDate: new Date().toISOString().split('T')[0],
-                    bloodGroup: studentData.bloodGroup || 'Not specified',
-                    allergies: studentData.allergies || 'None',
-                    medicalConditions: studentData.medicalConditions || 'None',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                };
-                
-                // Add to students array
-                this.students.unshift(newStudent);
-                
-                // Save to localStorage
+
+                Object.assign(
+                    student,
+                    studentData
+                );
+
+                student.id =
+                    student.id;
+
+                student.admissionNumber =
+                    student.admissionNumber;
+
+                student.admissionDate =
+                    student.admissionDate;
+
+                student.status =
+                    studentData.status ||
+                    student.status ||
+                    'Active';
+
+                student.updatedAt =
+                    new Date().toISOString();
+
                 this.saveToLocalStorage();
-                
-                // Update the table
-                this.currentPage = 1;
+
                 this.renderStudentTable();
-                
-                // Close the modal
-                const modal = document.getElementById('add-student-modal');
-                if (modal) modal.style.display = 'none';
-                
-                // Reset the form
+
+                this.closeModal(
+                    'add-student-modal'
+                );
+
+                this.showNotification(
+                    'Student updated successfully!',
+                    'success'
+                );
+
+            } else {
+
+                const newId =
+                    Date.now();
+
+                const newStudent = {
+
+                    id: newId,
+
+                    admissionNumber:
+                        `STD${String(newId).slice(-6)}`,
+
+                    fullName:
+                        studentData.fullName || '',
+
+                    className:
+                        studentData.className || '',
+
+                    gender:
+                        studentData.gender || '',
+
+                    dateOfBirth:
+                        studentData.dateOfBirth || null,
+
+                    parentName:
+                        studentData.parentName || '',
+
+                    parentPhone:
+                        studentData.parentPhone || '',
+
+                    parentEmail:
+                        studentData.parentEmail || null,
+
+                    address:
+                        studentData.address || null,
+
+                    status:
+                        studentData.status ||
+                        'Active',
+
+                    admissionDate:
+                        new Date()
+                            .toISOString()
+                            .split('T')[0],
+
+                    bloodGroup:
+                        studentData.bloodGroup ||
+                        'Not specified',
+
+                    allergies:
+                        studentData.allergies ||
+                        'None',
+
+                    medicalConditions:
+                        studentData.medicalConditions ||
+                        'None',
+
+                    createdAt:
+                        new Date().toISOString(),
+
+                    updatedAt:
+                        new Date().toISOString()
+                };
+
+                this.students.unshift(
+                    newStudent
+                );
+
+                this.currentPage = 1;
+
+                this.saveToLocalStorage();
+
+                this.renderStudentTable();
+
                 form.reset();
-                
-                // Show success message
-                this.showNotification('Student added successfully!', 'success');
+
+                this.closeModal(
+                    'add-student-modal'
+                );
+
+                this.showNotification(
+                    'Student added successfully!',
+                    'success'
+                );
             }
-            
+
         } catch (error) {
-            console.error(`Error ${isEditMode ? 'updating' : 'adding'} student:`, error);
+
+            console.error(
+                '[STUDENTS] Error saving student:',
+                error
+            );
+
             this.showNotification(
-                `Error ${isEditMode ? 'updating' : 'adding'} student. Please try again.`,
+                `Error ${
+                    isEditMode
+                        ? 'updating'
+                        : 'adding'
+                } student. Please try again.`,
                 'error'
             );
+
         } finally {
-            // Re-enable the submit button
+
             if (submitButton) {
+
                 submitButton.disabled = false;
-                submitButton.textContent = isEditMode ? 'Update Student' : 'Save Student';
+
+                submitButton.textContent =
+                    isEditMode
+                        ? 'Update Student'
+                        : 'Save Student';
             }
         }
     }
 
+    // ============================================================
+    // EDIT STUDENT
+    // ============================================================
 
-    showNotification(message, type = 'info') {
-        const notificationContainer = document.getElementById('notification-container');
-        
-        if (notificationContainer) {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <span class="notification-message">${message}</span>
-                <button class="notification-close">&times;</button>
-            `;
-            
-            notificationContainer.appendChild(notification);
-            
-            // Auto-remove notification after 5 seconds
-            setTimeout(() => {
-                notification.classList.add('fade-out');
-                setTimeout(() => notification.remove(), 300);
-            }, 5000);
-            
-            // Close button
-            const closeBtn = notification.querySelector('.notification-close');
-            if (closeBtn) {
-                closeBtn.onclick = () => {
-                    notification.classList.add('fade-out');
-                    setTimeout(() => notification.remove(), 300);
+    editStudent(studentId) {
+
+        const student =
+            this.students.find(
+                student =>
+                    String(student.id) ===
+                    String(studentId)
+            );
+
+        if (!student) {
+
+            console.error(
+                '[STUDENTS] Student not found:',
+                studentId
+            );
+
+            this.showNotification(
+                'Student not found.',
+                'error'
+            );
+
+            return;
+        }
+
+        this.showAddStudentModal(
+            student
+        );
+    }
+
+    // ============================================================
+    // VIEW STUDENT DETAILS
+    // ============================================================
+
+    viewStudentDetails(studentId) {
+
+        try {
+
+            const student =
+                this.students.find(
+                    student =>
+                        String(student.id) ===
+                        String(studentId)
+                );
+
+            if (!student) {
+
+                this.showNotification(
+                    'Student not found.',
+                    'error'
+                );
+
+                return;
+            }
+
+            const modal =
+                document.getElementById(
+                    'student-details-modal'
+                );
+
+            if (!modal) {
+
+                console.error(
+                    '[STUDENTS] Student details modal not found'
+                );
+
+                return;
+            }
+
+            const setText =
+                (elementId, value) => {
+
+                    const element =
+                        document.getElementById(
+                            elementId
+                        );
+
+                    if (element) {
+                        element.textContent =
+                            value !== undefined &&
+                            value !== null &&
+                            value !== ''
+                                ? value
+                                : 'N/A';
+                    }
                 };
+
+            const formatDate =
+                dateString => {
+
+                    if (!dateString) {
+                        return 'N/A';
+                    }
+
+                    const date =
+                        new Date(dateString);
+
+                    if (
+                        Number.isNaN(
+                            date.getTime()
+                        )
+                    ) {
+                        return dateString;
+                    }
+
+                    return date.toLocaleDateString(
+                        'en-US',
+                        {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        }
+                    );
+                };
+
+            // Basic information
+            setText(
+                'student-details-name',
+                student.fullName
+            );
+
+            setText(
+                'student-details-admission',
+                student.admissionNumber
+            );
+
+            setText(
+                'student-details-class',
+                student.className
+            );
+
+            setText(
+                'student-details-gender',
+                student.gender
+            );
+
+            setText(
+                'student-details-dob',
+                formatDate(student.dateOfBirth)
+            );
+
+            // Parent information
+            setText(
+                'student-details-parent',
+                student.parentName
+            );
+
+            setText(
+                'student-details-phone',
+                student.parentPhone
+            );
+
+            setText(
+                'student-details-email',
+                student.parentEmail
+            );
+
+            setText(
+                'student-details-address',
+                student.address
+            );
+
+            // Academic information
+            setText(
+                'student-details-status',
+                student.status
+            );
+
+            setText(
+                'student-details-admission-date',
+                formatDate(student.admissionDate)
+            );
+
+            setText(
+                'student-details-updated',
+                formatDate(
+                    student.updatedAt ||
+                    student.createdAt
+                )
+            );
+
+            // Medical information
+            setText(
+                'student-details-blood-group',
+                student.bloodGroup
+            );
+
+            setText(
+                'student-details-allergies',
+                student.allergies
+            );
+
+            setText(
+                'student-details-conditions',
+                student.medicalConditions
+            );
+
+            modal.style.display = 'block';
+
+            this.setupModalClose(modal);
+
+        } catch (error) {
+
+            console.error(
+                '[STUDENTS] Error showing student details:',
+                error
+            );
+
+            this.showNotification(
+                'Error showing student details.',
+                'error'
+            );
+        }
+    }
+
+    // ============================================================
+    // DELETE STUDENT
+    // ============================================================
+
+    async deleteStudent(studentId) {
+
+        try {
+
+            const student =
+                this.students.find(
+                    student =>
+                        String(student.id) ===
+                        String(studentId)
+                );
+
+            if (!student) {
+
+                this.showNotification(
+                    'Student not found.',
+                    'error'
+                );
+
+                return;
             }
-        } else {
-            // Fallback to alert if no notification container found
-            alert(`${type.toUpperCase()}: ${message}`);
+
+            const confirmed =
+                confirm(
+                    `Are you sure you want to delete ${
+                        student.fullName
+                    } (${
+                        student.admissionNumber
+                    })?\n\nThis action cannot be undone.`
+                );
+
+            if (!confirmed) {
+                return;
+            }
+
+            const originalLength =
+                this.students.length;
+
+            this.students =
+                this.students.filter(
+                    item =>
+                        String(item.id) !==
+                        String(studentId)
+                );
+
+            if (
+                this.students.length ===
+                originalLength
+            ) {
+                throw new Error(
+                    'Student could not be deleted'
+                );
+            }
+
+            // Prevent invalid pagination
+            const totalPages =
+                Math.ceil(
+                    this.students.length /
+                    this.itemsPerPage
+                );
+
+            if (
+                this.currentPage >
+                Math.max(totalPages, 1)
+            ) {
+                this.currentPage =
+                    Math.max(totalPages, 1);
+            }
+
+            this.saveToLocalStorage();
+
+            this.renderStudentTable();
+
+            this.showNotification(
+                'Student deleted successfully!',
+                'success'
+            );
+
+        } catch (error) {
+
+            console.error(
+                '[STUDENTS] Delete error:',
+                error
+            );
+
+            this.showNotification(
+                'Error deleting student. Please try again.',
+                'error'
+            );
         }
     }
 
-
-    setupEventListeners() {
-        // Add Student button
-        const addStudentBtn = document.getElementById('add-student-btn');
-        if (addStudentBtn) {
-            // Remove any existing event listeners to prevent duplicates
-            const newAddStudentBtn = addStudentBtn.cloneNode(true);
-            addStudentBtn.parentNode.replaceChild(newAddStudentBtn, addStudentBtn);
-            newAddStudentBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.showAddStudentModal();
-            });
-        }
-        
-        // Add Student form submission
-        const addStudentForm = document.getElementById('add-student-form');
-        if (addStudentForm) {
-            // Remove any existing form to prevent duplicate submissions
-            const newForm = addStudentForm.cloneNode(true);
-            addStudentForm.parentNode.replaceChild(newForm, addStudentForm);
-            
-            // Add new submit handler
-            newForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleAddStudent(e);
-            });
-        }
-        
-        // Search functionality
-        const searchInput = document.getElementById('student-search');
-        if (searchInput) {
-            // Remove any existing event listeners
-            const newSearchInput = searchInput.cloneNode(true);
-            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-            newSearchInput.addEventListener('input', (e) => {
-                this.searchStudents(e.target.value);
-            });
-        }
-        
-        // Class filter
-        const classFilter = document.getElementById('class-filter');
-        if (classFilter) {
-            // Remove any existing event listeners
-            const newClassFilter = classFilter.cloneNode(true);
-            classFilter.parentNode.replaceChild(newClassFilter, classFilter);
-            newClassFilter.addEventListener('change', (e) => {
-                this.filterByClass(e.target.value);
-            });
-        }
-        
-        // Status filter
-        const statusFilter = document.getElementById('status-filter');
-        if (statusFilter) {
-            statusFilter.addEventListener('change', (e) => {
-                this.filterByStatus(e.target.value);
-            });
-        }
-        
-        // Select all checkbox
-        const selectAllCheckbox = document.getElementById('select-all');
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', (e) => {
-                const checkboxes = document.querySelectorAll('.student-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = e.target.checked;
-                });
-            });
-        }
-    }
-
+    // ============================================================
+    // SEARCH
+    // ============================================================
 
     searchStudents(query) {
-        if (!query) {
+
+        const searchTerm =
+            String(query || '')
+                .trim()
+                .toLowerCase();
+
+        if (!searchTerm) {
+            this.currentPage = 1;
             this.renderStudentTable();
             return;
         }
-        
-        const searchTerm = query.toLowerCase();
-        const filteredStudents = this.students.filter(student => 
-            student.fullName.toLowerCase().includes(searchTerm) ||
-            student.admissionNumber.toLowerCase().includes(searchTerm) ||
-            student.className.toLowerCase().includes(searchTerm) ||
-            student.parentName.toLowerCase().includes(searchTerm) ||
-            student.parentPhone.includes(searchTerm)
+
+        const filteredStudents =
+            this.students.filter(student => {
+
+                return (
+
+                    String(
+                        student.fullName || ''
+                    )
+                        .toLowerCase()
+                        .includes(searchTerm)
+
+                    ||
+
+                    String(
+                        student.admissionNumber || ''
+                    )
+                        .toLowerCase()
+                        .includes(searchTerm)
+
+                    ||
+
+                    String(
+                        student.className || ''
+                    )
+                        .toLowerCase()
+                        .includes(searchTerm)
+
+                    ||
+
+                    String(
+                        student.parentName || ''
+                    )
+                        .toLowerCase()
+                        .includes(searchTerm)
+
+                    ||
+
+                    String(
+                        student.parentPhone || ''
+                    )
+                        .toLowerCase()
+                        .includes(searchTerm)
+                );
+            });
+
+        this.renderFilteredStudents(
+            filteredStudents
         );
-        
-        this.renderFilteredStudents(filteredStudents);
     }
 
+    // ============================================================
+    // FILTER BY CLASS
+    // ============================================================
 
-    renderFilteredStudents(filteredStudents) {
-        const tableBody = document.getElementById('student-table-body');
-        if (!tableBody) return;
+    filterByClass(className) {
+
+        if (!className) {
+            this.currentPage = 1;
+            this.renderStudentTable();
+            return;
+        }
+
+        const filteredStudents =
+            this.students.filter(
+                student =>
+                    String(
+                        student.className || ''
+                    ) === String(className)
+            );
+
+        this.renderFilteredStudents(
+            filteredStudents
+        );
+    }
+
+    // ============================================================
+    // FILTER BY STATUS
+    // ============================================================
+
+    filterByStatus(status) {
+
+        if (!status) {
+            this.currentPage = 1;
+            this.renderStudentTable();
+            return;
+        }
+
+        const filteredStudents =
+            this.students.filter(
+                student =>
+                    String(
+                        student.status || ''
+                    ).toLowerCase() ===
+                    String(status).toLowerCase()
+            );
+
+        this.renderFilteredStudents(
+            filteredStudents
+        );
+    }
+
+    // ============================================================
+    // RENDER FILTERED STUDENTS
+    // ============================================================
+
+    renderFilteredStudents(
+        filteredStudents
+    ) {
+
+        const tableBody =
+            document.getElementById(
+                'student-table-body'
+            );
+
+        if (!tableBody) {
+            return;
+        }
 
         tableBody.innerHTML = '';
-        
+
+        if (
+            !filteredStudents ||
+            filteredStudents.length === 0
+        ) {
+
+            tableBody.innerHTML = `
+                <tr>
+                    <td
+                        colspan="9"
+                        class="text-center"
+                    >
+                        No students found
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
         filteredStudents.forEach(student => {
-            const row = document.createElement('tr');
-            // Format status with appropriate badge class
-            const status = student.status || 'inactive';
-            const statusDisplay = status.charAt(0).toUpperCase() + status.slice(1);
-            
+
+            const row =
+                document.createElement('tr');
+
+            const status =
+                student.status || 'Inactive';
+
+            const statusClass =
+                status
+                    .toLowerCase()
+                    .replace(/\s+/g, '-');
+
+            const statusDisplay =
+                this.capitalize(status);
+
             row.innerHTML = `
-                <td><input type="checkbox" class="student-checkbox" data-id="${student.id}"></td>
-                <td>${student.admissionNumber || 'N/A'}</td>
-                <td>${student.fullName || 'N/A'}</td>
-                <td>${student.className || 'N/A'}</td>
-                <td>${student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : 'N/A'}</td>
-                <td>${student.parentName || 'N/A'}</td>
-                <td>${student.parentPhone || 'N/A'}</td>
-                <td><span class="status status-${status.toLowerCase().replace(/\s+/g, '-')}">${statusDisplay}</span></td>
+                <td>
+                    <input
+                        type="checkbox"
+                        class="student-checkbox"
+                        data-id="${student.id}"
+                    >
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.admissionNumber || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.fullName || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.className || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        this.capitalize(
+                            student.gender || 'N/A'
+                        )
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.parentName || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    ${this.escapeHtml(
+                        student.parentPhone || 'N/A'
+                    )}
+                </td>
+
+                <td>
+                    <span
+                        class="status status-${statusClass}"
+                    >
+                        ${this.escapeHtml(
+                            statusDisplay
+                        )}
+                    </span>
+                </td>
+
                 <td class="actions">
-                    <button class="btn-action btn-view" data-id="${student.id}">View</button>
-                    <button class="btn-action btn-edit" data-id="${student.id}">Edit</button>
-                    <button class="btn-action btn-delete" data-id="${student.id}">Delete</button>
+
+                    <button
+                        type="button"
+                        class="btn-action btn-view"
+                        data-id="${student.id}"
+                    >
+                        View
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-action btn-edit"
+                        data-id="${student.id}"
+                    >
+                        Edit
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-action btn-delete"
+                        data-id="${student.id}"
+                    >
+                        Delete
+                    </button>
+
                 </td>
             `;
+
             tableBody.appendChild(row);
         });
     }
 
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
 
-    filterByClass(className) {
-        if (!className) {
-            this.renderStudentTable();
-            return;
-        }
-        
-        const filteredStudents = this.students.filter(student => 
-            student.className === className
-        );
-        
-        this.renderFilteredStudents(filteredStudents);
-    }
-    
-    filterByStatus(status) {
-        if (!status) {
-            this.renderStudentTable();
-            return;
-        }
-        
-        const filteredStudents = this.students.filter(student => 
-            student.status && student.status.toLowerCase() === status.toLowerCase()
-        );
-        
-        this.renderFilteredStudents(filteredStudents);
-    }
+    setupEventListeners() {
 
-    // Show the add student modal in edit mode
-    showAddStudentModal(student = null) {
-        const modal = document.getElementById('add-student-modal');
-        if (!modal) return;
+        // --------------------------------------------------------
+        // Add Student Button
+        // --------------------------------------------------------
 
-        const form = document.getElementById('add-student-form');
-        if (!form) return;
+        const addStudentBtn =
+            document.getElementById(
+                'add-student-btn'
+            );
 
-        // Reset form and clear any previous data
-        form.reset();
-        form.dataset.editMode = student ? 'true' : 'false';
-        form.dataset.studentId = student ? student.id : '';
+        if (addStudentBtn) {
 
-        // Set modal title
-        const modalTitle = modal.querySelector('h2');
-        if (modalTitle) {
-            modalTitle.textContent = student ? 'Edit Student' : 'Add New Student';
-        }
+            addStudentBtn.onclick = event => {
 
-        // If in edit mode, populate the form with student data
-        if (student) {
-            // Basic Information
-            if (form.fullName) form.fullName.value = student.fullName || '';
-            if (form.admissionNumber) form.admissionNumber.value = student.admissionNumber || '';
-            if (form.className) form.className.value = student.className || '';
-            if (form.gender) form.gender.value = student.gender || '';
-            if (form.dateOfBirth) form.dateOfBirth.value = student.dateOfBirth ? student.dateOfBirth.split('T')[0] : '';
-            
-            // Parent/Guardian Information
-            if (form.parentName) form.parentName.value = student.parentName || '';
-            if (form.parentPhone) form.parentPhone.value = student.parentPhone || '';
-            if (form.parentEmail) form.parentEmail.value = student.parentEmail || '';
-            if (form.address) form.address.value = student.address || '';
-            
-            // Additional Information
-            if (form.status) form.status.value = student.status || 'Active';
-            if (form.bloodGroup) form.bloodGroup.value = student.bloodGroup || '';
-            if (form.allergies) form.allergies.value = student.allergies || '';
-            if (form.medicalConditions) form.medicalConditions.value = student.medicalConditions || '';
-        }
+                event.preventDefault();
 
-        // Show the modal
-        modal.style.display = 'block';
-    }
-
-
-    editStudent(studentId) {
-        try {
-            // Convert studentId to number for comparison if it's a string
-            const id = typeof studentId === 'string' ? parseInt(studentId, 10) : studentId;
-            const student = this.students.find(s => s.id === id);
-            
-            if (!student) {
-                console.error('Student not found with ID:', studentId);
-                return;
-            }
-            
-            // Show the edit modal with student data
-            this.showAddStudentModal(student);
-            
-        } catch (error) {
-            console.error('Error preparing to edit student:', error);
-            alert('An error occurred while preparing to edit the student. Please try again.');
-        }
-    }
-
-    viewStudentDetails(studentId) {
-        try {
-            console.log('Viewing student details for ID:', studentId);
-            
-            // Find the student
-            const student = this.students.find(s => s.id == studentId);
-            if (!student) {
-                console.error('Student not found with ID:', studentId);
-                this.showNotification('Student not found.', 'error');
-                return;
-            }
-
-            // Get the modal element
-            const modal = document.getElementById('student-details-modal');
-            if (!modal) {
-                console.error('Student details modal not found');
-                return;
-            }
-
-            // Map student data to modal fields
-            const fieldMappings = {
-                'fullName': 'student-details-name',
-                'admissionNumber': 'student-details-admission',
-                'className': 'student-details-class',
-                'gender': 'student-details-gender',
-                'dateOfBirth': 'student-details-dob',
-                'parentName': 'student-details-parent',
-                'parentPhone': 'student-details-phone',
-                'parentEmail': 'student-details-email',
-                'address': 'student-details-address',
-                'status': 'student-details-status',
-                'admissionDate': 'student-details-admission-date',
-                'bloodGroup': 'student-details-blood-group',
-                'allergies': 'student-details-allergies',
-                'medicalConditions': 'student-details-conditions'
+                this.showAddStudentModal();
             };
+        }
 
-            // Populate the modal with student data
-            Object.entries(fieldMappings).forEach(([studentField, elementId]) => {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.textContent = student[studentField] || 'N/A';
-                } else {
-                    console.warn(`Element with ID ${elementId} not found`);
-                }
+        // --------------------------------------------------------
+        // Add/Edit Student Form
+        // --------------------------------------------------------
+
+        const addStudentForm =
+            document.getElementById(
+                'add-student-form'
+            );
+
+        if (addStudentForm) {
+
+            addStudentForm.onsubmit =
+                event => {
+
+                    this.handleAddStudent(
+                        event
+                    );
+                };
+        }
+
+        // --------------------------------------------------------
+        // Search
+        // --------------------------------------------------------
+
+        const searchInput =
+            document.getElementById(
+                'student-search'
+            );
+
+        if (searchInput) {
+
+            searchInput.oninput =
+                event => {
+
+                    this.searchStudents(
+                        event.target.value
+                    );
+                };
+        }
+
+        // --------------------------------------------------------
+        // Class Filter
+        // --------------------------------------------------------
+
+        const classFilter =
+            document.getElementById(
+                'class-filter'
+            );
+
+        if (classFilter) {
+
+            classFilter.onchange =
+                event => {
+
+                    this.filterByClass(
+                        event.target.value
+                    );
+                };
+        }
+
+        // --------------------------------------------------------
+        // Status Filter
+        // --------------------------------------------------------
+
+        const statusFilter =
+            document.getElementById(
+                'status-filter'
+            );
+
+        if (statusFilter) {
+
+            statusFilter.onchange =
+                event => {
+
+                    this.filterByStatus(
+                        event.target.value
+                    );
+                };
+        }
+
+        // --------------------------------------------------------
+        // Select All
+        // --------------------------------------------------------
+
+        const selectAll =
+            document.getElementById(
+                'select-all'
+            );
+
+        if (selectAll) {
+
+            selectAll.onchange =
+                event => {
+
+                    const checkboxes =
+                        document.querySelectorAll(
+                            '.student-checkbox'
+                        );
+
+                    checkboxes.forEach(
+                        checkbox => {
+                            checkbox.checked =
+                                event.target.checked;
+                        }
+                    );
+                };
+        }
+
+        // --------------------------------------------------------
+        // Class Selection
+        // --------------------------------------------------------
+
+        const classSelect =
+            document.getElementById(
+                'class-select'
+            );
+
+        if (classSelect) {
+
+            classSelect.onchange =
+                async () => {
+
+                    await this.loadStudents();
+                };
+        }
+
+        // --------------------------------------------------------
+        // Modal Close Buttons
+        // --------------------------------------------------------
+
+        document
+            .querySelectorAll('.modal .close')
+            .forEach(closeButton => {
+
+                closeButton.onclick = () => {
+
+                    const modal =
+                        closeButton.closest(
+                            '.modal'
+                        );
+
+                    if (modal) {
+                        modal.style.display =
+                            'none';
+                    }
+                };
             });
 
-            // Show the modal
-            modal.style.display = 'block';
-            console.log('Modal should be visible now');
+        // --------------------------------------------------------
+        // Close Modal When Clicking Outside
+        // --------------------------------------------------------
 
-            // Set up close button
-            const closeBtn = modal.querySelector('.close');
-            if (closeBtn) {
-                closeBtn.onclick = () => {
-                    console.log('Close button clicked');
-                    modal.style.display = 'none';
-                };
-            } else {
-                console.warn('Close button not found in modal');
-            }
+        window.addEventListener(
+            'click',
+            event => {
 
-            // Close when clicking outside
-            modal.onclick = (event) => {
-                if (event.target === modal) {
-                    console.log('Clicked outside modal, closing');
-                    modal.style.display = 'none';
+                if (
+                    event.target.classList &&
+                    event.target.classList.contains(
+                        'modal'
+                    )
+                ) {
+                    event.target.style.display =
+                        'none';
                 }
-            };
+            }
+        );
+    }
 
-        } catch (error) {
-            console.error('Error showing student details:', error);
-            this.showNotification('Error showing student details: ' + error.message, 'error');
+    // ============================================================
+    // MODAL HELPERS
+    // ============================================================
+
+    setupModalClose(modal) {
+
+        const closeButton =
+            modal.querySelector('.close');
+
+        if (closeButton) {
+
+            closeButton.onclick = () => {
+
+                modal.style.display =
+                    'none';
+            };
+        }
+
+        modal.onclick = event => {
+
+            if (
+                event.target === modal
+            ) {
+                modal.style.display =
+                    'none';
+            }
+        };
+    }
+
+    closeModal(modalId) {
+
+        const modal =
+            document.getElementById(
+                modalId
+            );
+
+        if (modal) {
+            modal.style.display =
+                'none';
         }
     }
 
-    async deleteStudent(studentId) {
-        try {
-            // Convert studentId to number for comparison if it's a string
-            const id = typeof studentId === 'string' ? parseInt(studentId, 10) : studentId;
-            
-            // Find the student to get their name for the confirmation message
-            const student = this.students.find(s => s.id === id);
-            if (!student) {
-                console.error('Student not found with ID:', studentId);
-                this.showNotification('Student not found.', 'error');
-                return;
-            }
-            
-            // Ask for confirmation
-            const confirmDelete = confirm(`Are you sure you want to delete ${student.fullName} (${student.admissionNumber})? This action cannot be undone.`);
-            
-            if (!confirmDelete) {
-                return; // User cancelled the deletion
-            }
-            
-            // Remove the student from the array
-            const initialLength = this.students.length;
-            this.students = this.students.filter(s => s.id !== id);
-            
-            if (this.students.length === initialLength) {
-                // No student was removed (shouldn't happen due to previous check, but just in case)
-                throw new Error('Failed to delete student. Student not found.');
-            }
-            
-            // Save to localStorage
-            this.saveToLocalStorage();
-            
-            // Update the table
-            this.renderStudentTable();
-            
-            // Show success message
-            this.showNotification('Student deleted successfully!', 'success');
-            
-        } catch (error) {
-            console.error('Error deleting student:', error);
-            this.showNotification('Error deleting student. Please try again.', 'error');
+    // ============================================================
+    // FORM HELPER
+    // ============================================================
+
+    setFormValue(
+        form,
+        fieldName,
+        value
+    ) {
+
+        const field =
+            form.elements[fieldName];
+
+        if (field) {
+            field.value =
+                value ?? '';
         }
     }
 
-    viewStudentDetails(studentId) {
-        try {
-            // Convert studentId to number for comparison if it's a string
-            const id = typeof studentId === 'string' ? parseInt(studentId, 10) : studentId;
-            const student = this.students.find(s => s.id === id);
-            
-            if (!student) {
-                console.error('Student not found with ID:', studentId);
-                return;
-            }
+    // ============================================================
+    // NOTIFICATIONS
+    // ============================================================
 
-            // Show student details in a modal
-            const modal = document.getElementById('student-details-modal');
-            if (!modal) {
-                console.error('Modal element not found');
-                return;
-            }
+    showNotification(
+        message,
+        type = 'info'
+    ) {
 
+        const container =
+            document.getElementById(
+                'notification-container'
+            );
 
-            // Helper function to safely set text content
-            const setTextContent = (id, value) => {
-                const element = document.getElementById(id);
-                if (element) element.textContent = value !== undefined ? value : 'N/A';
-            };
+        if (!container) {
 
-            // Format dates if they exist
-            const formatDate = (dateString) => {
-                if (!dateString) return 'N/A';
-                try {
-                    const date = new Date(dateString);
-                    return date.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
-                } catch (e) {
-                    return dateString; // Return as is if date parsing fails
-                }
-            };
+            alert(
+                `${type.toUpperCase()}: ${message}`
+            );
 
-            // Basic Information
-            setTextContent('student-details-name', student.fullName);
-            setTextContent('student-details-admission', student.admissionNumber);
-            setTextContent('student-details-class', student.className);
-            setTextContent('student-details-gender', student.gender);
-            setTextContent('student-details-dob', formatDate(student.dateOfBirth));
-            
-            // Parent/Guardian Information
-            setTextContent('student-details-parent', student.parentName);
-            setTextContent('student-details-phone', student.parentPhone);
-            setTextContent('student-details-email', student.parentEmail);
-            setTextContent('student-details-address', student.address);
-            
-            // Academic Information
-            setTextContent('student-details-status', student.status);
-            setTextContent('student-details-admission-date', formatDate(student.admissionDate));
-            setTextContent('student-details-updated', formatDate(student.updatedAt || student.createdAt));
-            
-            // Additional Information
-            setTextContent('student-details-blood-group', student.bloodGroup);
-            setTextContent('student-details-allergies', student.allergies);
-            setTextContent('student-details-conditions', student.medicalConditions);
-
-            // Show the modal
-            modal.style.display = 'block';
-            
-            // Close modal when clicking outside the content
-            const closeModal = (event) => {
-                if (event.target === modal) {
-                    modal.style.display = 'none';
-                    window.removeEventListener('click', closeModal);
-                }
-            };
-            
-            // Add the event listener
-            window.addEventListener('click', closeModal);
-            
-            // Handle the close button inside the modal
-            const closeBtn = modal.querySelector('.close');
-            if (closeBtn) {
-                closeBtn.onclick = () => {
-                    modal.style.display = 'none';
-                    window.removeEventListener('click', closeModal);
-                };
-            }
-            
-        } catch (error) {
-            console.error('Error showing student details:', error);
-            alert('An error occurred while loading student details. Please try again.');
+            return;
         }
+
+        const notification =
+            document.createElement('div');
+
+        notification.className =
+            `notification ${type}`;
+
+        notification.innerHTML = `
+            <span class="notification-message">
+                ${this.escapeHtml(message)}
+            </span>
+
+            <button
+                type="button"
+                class="notification-close"
+            >
+                &times;
+            </button>
+        `;
+
+        container.appendChild(
+            notification
+        );
+
+        const removeNotification =
+            () => {
+
+                notification.classList.add(
+                    'fade-out'
+                );
+
+                setTimeout(() => {
+
+                    if (
+                        notification.parentNode
+                    ) {
+                        notification.remove();
+                    }
+
+                }, 300);
+            };
+
+        setTimeout(
+            removeNotification,
+            5000
+        );
+
+        const closeButton =
+            notification.querySelector(
+                '.notification-close'
+            );
+
+        if (closeButton) {
+
+            closeButton.onclick =
+                removeNotification;
+        }
+    }
+
+    // ============================================================
+    // UTILITY FUNCTIONS
+    // ============================================================
+
+    capitalize(value) {
+
+        if (!value) {
+            return '';
+        }
+
+        const stringValue =
+            String(value);
+
+        return (
+            stringValue
+                .charAt(0)
+                .toUpperCase() +
+            stringValue
+                .slice(1)
+        );
+    }
+
+    escapeHtml(value) {
+
+        if (
+            value === null ||
+            value === undefined
+        ) {
+            return '';
+        }
+
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 }
 
-// Initialize student manager when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM fully loaded, initializing student manager...');
-    
-    // Only initialize if not already initialized
-    if (!window.studentManager) {
-        console.log('Creating new StudentManagement instance...');
-        window.studentManager = new StudentManagement();
-        
-        // Check if methods exist
-        console.log('StudentManager methods:', {
-            initialize: typeof window.studentManager.initialize === 'function',
-            setupActionButtons: typeof window.studentManager.setupActionButtons === 'function',
-            viewStudentDetails: typeof window.studentManager.viewStudentDetails === 'function',
-            editStudent: typeof window.studentManager.editStudent === 'function',
-            deleteStudent: typeof window.studentManager.deleteStudent === 'function'
-        });
-        
-        try {
-            window.studentManager.initialize();
-            console.log('StudentManager initialized successfully');
-            
-            // Manually trigger setupActionButtons after a short delay to ensure DOM is ready
-            setTimeout(() => {
-                console.log('Manually triggering setupActionButtons...');
-                if (window.studentManager && typeof window.studentManager.setupActionButtons === 'function') {
-                    window.studentManager.setupActionButtons();
-                } else {
-                    console.error('studentManager or setupActionButtons not available');
-                }
-            }, 500);
-            
-        } catch (error) {
-            console.error('Error initializing StudentManager:', error);
+
+// ============================================================
+// INITIALIZE STUDENT MANAGEMENT
+// ============================================================
+
+document.addEventListener(
+    'DOMContentLoaded',
+    async () => {
+
+        console.log(
+            '[STUDENTS] DOM fully loaded'
+        );
+
+        // Prevent duplicate initialization
+        if (window.studentManager) {
+
+            console.log(
+                '[STUDENTS] StudentManager already initialized'
+            );
+
+            return;
         }
-        
-        // Save data before page unload
-        window.addEventListener('beforeunload', () => {
-            if (window.studentManager) {
-                console.log('Saving data before unload...');
-                window.studentManager.saveToLocalStorage();
-            }
-        });
-    } else {
-        console.log('StudentManager already initialized');
+
+        try {
+
+            window.studentManager =
+                new StudentManagement();
+
+            await window.studentManager.initialize();
+
+            // Debug reference
+            window.debugStudentManager =
+                window.studentManager;
+
+            console.log(
+                '[STUDENTS] StudentManager ready'
+            );
+
+        } catch (error) {
+
+            console.error(
+                '[STUDENTS] Initialization failed:',
+                error
+            );
+        }
     }
-    
-    // Add global reference for debugging
-    window.debugStudentManager = window.studentManager;
-    console.log('window.studentManager available for debugging');
-});
+);
