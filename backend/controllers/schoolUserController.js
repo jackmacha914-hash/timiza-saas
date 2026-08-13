@@ -47,10 +47,22 @@ exports.getAllUsers = async (req, res) => {
   try {
     const { search, role, status } = req.query;
 
-    let filter = {
+    // School MUST come from authenticated JWT
+    const filter = {
       school: req.user.school
     };
 
+    // Optional role filter
+    if (role) {
+      filter.role = role;
+    }
+
+    // Optional status filter
+    if (status) {
+      filter.status = status;
+    }
+
+    // Optional search
     if (search) {
       filter.$or = [
         {
@@ -74,17 +86,25 @@ exports.getAllUsers = async (req, res) => {
       ];
     }
 
-    if (role) {
-      filter.role = role;
-    }
-
-    if (status) {
-      filter.status = status;
-    }
-
-    const users = await SchoolUser.find(filter).sort({
-      createdAt: -1
+    console.log('[GET USERS] Query:', {
+      school: req.user.school,
+      role,
+      status,
+      search
     });
+
+    // IMPORTANT:
+    // Use User because students are stored in User
+    const users = await User.find(filter)
+      .select('-password')
+      .sort({
+        createdAt: -1
+      })
+      .lean();
+
+    console.log(
+      `[GET USERS] Found ${users.length} users for school ${req.user.school}`
+    );
 
     res.json({
       success: true,
