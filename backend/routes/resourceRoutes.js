@@ -121,16 +121,12 @@ router.post(
           req.user?.class ||
           "General";
 
-        console.log("[UPLOAD] AUTH USER:", req.user);
-console.log("[UPLOAD] USER ID:", req.user?._id);
-console.log("[UPLOAD] USER id:", req.user?.id);
-
         const resource = await Resource.create({
           school,
           name: req.file.originalname,
           path: req.file.filename,
           classAssigned: String(classAssigned).trim(),
-          uploadedBy: req.user._id,
+          uploadedBy: req.user.id,
         });
 
         return res.status(201).json({
@@ -189,7 +185,7 @@ router.get("/", async (req, res) => {
 
     const role = String(req.user.role || "").toLowerCase();
 
-    const userId = String(req.user._id);
+    const userId = String(req.user.id);
 
     const classFilter = req.query.class;
 
@@ -223,7 +219,7 @@ router.get("/", async (req, res) => {
     // =================================================
 
     else if (role === "teacher") {
-      query.uploadedBy = req.user._id;
+      query.uploadedBy = req.user.id;
 
       if (classFilter && classFilter !== "all") {
         query.classAssigned = String(classFilter).trim();
@@ -276,7 +272,7 @@ router.get("/", async (req, res) => {
     if (role === "teacher") {
       classes = await Resource.distinct("classAssigned", {
         school,
-        uploadedBy: req.user._id,
+        uploadedBy: req.user.id,
       });
     } else {
       classes = await Resource.distinct("classAssigned", {
@@ -349,7 +345,7 @@ router.delete(
       // Teachers can only delete their own resources.
       if (
         role === "teacher" &&
-        String(resource.uploadedBy) !== String(req.user._id)
+        String(resource.uploadedBy) !== String(req.user.id)
       ) {
         return res.status(403).json({
           success: false,
