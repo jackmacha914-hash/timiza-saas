@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formData = new FormData(createHomeworkForm);
                 
                 // Prepare the request
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/homeworks', {
+                const response = await fetch('https://timiza-saas.onrender.com/api/homeworks', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formData = new FormData(createAssignmentForm);
                 
                 // Prepare the request
-                const response = await fetch('https://luckyjuniorschool.onrender.com/api/assignments', {
+                const response = await fetch('https://timiza-saas.onrender.com/api/assignments', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <p><strong>Due Date:</strong> ${new Date(homework.dueDate).toLocaleDateString()}</p>
         <p><strong>Class:</strong> ${homework.classAssigned}</p>
         <p><strong>Created By:</strong> ${homework.teacher?.name || 'N/A'}</p>
-        ${homework.file ? `<p><strong>File:</strong> <a href="${window.API_CONFIG?.BASE_URL || 'https://luckyjuniorschool.onrender.com'}${homework.file}" target="_blank">Download</a></p>` : ''}
+        ${homework.file ? `<p><strong>File:</strong> <a href="${window.API_CONFIG?.BASE_URL || 'https://timiza-saas.onrender.com'}${homework.file}" target="_blank">Download</a></p>` : ''}
         <div class="homework-actions">
           <button class="edit-homework-btn" onclick="editHomework('${homework._id}')">Edit</button>
           <button class="delete-homework-btn" onclick="deleteHomework('${homework._id}')">Delete</button>
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const response = await fetch('https://luckyjuniorschool.onrender.com/api/homeworks', {
+      const response = await fetch('https://timiza-saas.onrender.com/api/homeworks', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const response = await fetch('https://luckyjuniorschool.onrender.com/api/assignments', {
+      const response = await fetch('https://timiza-saas.onrender.com/api/assignments', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(loadingModal);
 
       try {
-        const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/${homeworkId}`, {
+        const response = await fetch(`https://timiza-saas.onrender.com/api/homeworks/${homeworkId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -737,7 +737,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       console.log('Submitting grade:', { homeworkId, submissionId, grade, comments });
       
-      const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/grade/${homeworkId}/${submissionId}`, {
+      const response = await fetch(`https://timiza-saas.onrender.com/api/homeworks/grade/${homeworkId}/${submissionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -796,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/${homeworkId}`, {
+      const response = await fetch(`https://timiza-saas.onrender.com/api/homeworks/${homeworkId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -827,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/${homeworkId}`, {
+      const response = await fetch(`https://timiza-saas.onrender.com/api/homeworks/${homeworkId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -885,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const formData = new FormData(editForm);
           
           try {
-            const response = await fetch(`https://luckyjuniorschool.onrender.com/api/homeworks/${homeworkId}`, {
+            const response = await fetch(`https://timiza-saas.onrender.com/api/homeworks/${homeworkId}`, {
               method: 'PUT',
               headers: {
                 'Authorization': `Bearer ${token}`
