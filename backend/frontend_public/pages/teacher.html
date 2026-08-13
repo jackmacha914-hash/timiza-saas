@@ -3781,7 +3781,7 @@ window.fetch = async (input, init = {}) => {
       Upload or share study materials (PDF, DOC, DOCX only).
     </p>
 
-    <!-- Upload Resource Button -->
+    <!-- UPLOAD BUTTON -->
     <button
       id="upload-resource-btn"
       class="modern-btn"
@@ -3796,42 +3796,65 @@ window.fetch = async (input, init = {}) => {
 
     <div
       id="upload-form-container"
-      style="display: none;"
+      style="
+        display: none;
+        width: 100%;
+        margin-top: 15px;
+      "
     >
 
       <form
         id="upload-form"
-        style="margin-bottom: 15px;"
+        style="width: 100%;"
       >
 
-        <!-- ============================= -->
         <!-- FILE -->
-        <!-- ============================= -->
+        <div style="width: 100%; margin-bottom: 15px;">
 
-        <input
-          type="file"
-          id="resource-file"
-          name="resource"
-          accept=".pdf,.doc,.docx"
-          style="
-            margin-bottom: 10px;
-            display: block;
-          "
-          required
-        />
+          <label
+            for="resource-file"
+            style="
+              display: block;
+              margin-bottom: 6px;
+              font-weight: 600;
+            "
+          >
+            Select Resource File:
+          </label>
+
+          <input
+            type="file"
+            id="resource-file"
+            name="resource"
+            accept=".pdf,.doc,.docx"
+            required
+            style="
+              display: block;
+              width: 100%;
+              padding: 8px;
+            "
+          >
+
+        </div>
+
 
         <!-- ============================= -->
-        <!-- CLASS SELECTION -->
+        <!-- CLASS SELECTOR -->
         <!-- ============================= -->
 
         <div
           id="resource-class"
           style="
             display: block !important;
+            position: relative !important;
+            width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
             visibility: visible !important;
             opacity: 1 !important;
-            width: 100%;
-            margin-bottom: 15px;
+            margin: 0 0 15px 0 !important;
+            padding: 0 !important;
           "
         >
 
@@ -3839,8 +3862,12 @@ window.fetch = async (input, init = {}) => {
             for="class-select"
             style="
               display: block !important;
+              position: static !important;
+              width: 100% !important;
+              height: auto !important;
               visibility: visible !important;
-              margin-bottom: 6px;
+              opacity: 1 !important;
+              margin-bottom: 6px !important;
               font-weight: 600;
             "
           >
@@ -3853,15 +3880,23 @@ window.fetch = async (input, init = {}) => {
             class="form-control"
             style="
               display: block !important;
+              position: static !important;
+              width: 100% !important;
+              height: 42px !important;
+              min-height: 42px !important;
+              max-height: none !important;
               visibility: visible !important;
               opacity: 1 !important;
-              visibility: visible !important;
-              width: 100%;
-              min-height: 42px;
-              padding: 8px 12px;
-            "
+              pointer-events: auto !important;
+              overflow: visible !important;
+              padding: 8px 12px !important;
+              margin: 0 !important;
+              background: #ffffff !important;
+              color: #000000 !important;
+              border: 1px solid #ced4da !important;
+              border-radius: 6px !important;
+          "
           >
-
             <option value="">
               -- Select a class --
             </option>
@@ -3888,10 +3923,8 @@ window.fetch = async (input, init = {}) => {
 
         </div>
 
-        <!-- ============================= -->
-        <!-- UPLOAD STATUS -->
-        <!-- ============================= -->
 
+        <!-- UPLOAD STATUS -->
         <div
           id="upload-status"
           style="
@@ -3900,18 +3933,18 @@ window.fetch = async (input, init = {}) => {
           "
         ></div>
 
-        <!-- ============================= -->
-        <!-- FORM BUTTONS -->
-        <!-- ============================= -->
 
+        <!-- BUTTONS -->
         <div
           style="
             display: flex;
             gap: 10px;
+            margin-top: 15px;
           "
         >
 
           <button
+            id="submit-resource-btn"
             type="submit"
             class="modern-btn"
           >
@@ -3919,8 +3952,8 @@ window.fetch = async (input, init = {}) => {
           </button>
 
           <button
-            type="button"
             id="cancel-upload-btn"
+            type="button"
             class="modern-btn btn-cancel"
           >
             Cancel
@@ -3933,6 +3966,7 @@ window.fetch = async (input, init = {}) => {
     </div>
 
   </div>
+
 
   <!-- ============================= -->
   <!-- AVAILABLE RESOURCES -->
@@ -3948,9 +3982,9 @@ window.fetch = async (input, init = {}) => {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
         gap: 15px;
         flex-wrap: wrap;
+        margin-bottom: 15px;
       "
     >
 
@@ -3958,10 +3992,7 @@ window.fetch = async (input, init = {}) => {
         Available Resources
       </h3>
 
-      <!-- ============================= -->
       <!-- CLASS FILTER -->
-      <!-- ============================= -->
-
       <div
         id="resource-filter-container"
         style="
@@ -4015,107 +4046,6 @@ window.fetch = async (input, init = {}) => {
       </div>
 
     </div>
-
-    <!-- ============================= -->
-    <!-- RESOURCE LIST -->
-    <!-- ============================= -->
-
-    <ul
-      id="resource-list"
-      style="
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      "
-    ></ul>
-
-  </div>
-
-</section>
-
-  <!-- ============================= -->
-  <!-- AVAILABLE RESOURCES -->
-  <!-- ============================= -->
-
-  <div id="resources-list">
-
-    <div
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-        gap: 15px;
-        flex-wrap: wrap;
-      "
-    >
-
-      <h3 style="margin: 0;">
-        Available Resources
-      </h3>
-
-      <!-- ============================= -->
-      <!-- CLASS FILTER -->
-      <!-- ============================= -->
-
-      <div
-        id="resource-filter-container"
-        style="
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        "
-      >
-
-        <label
-          for="class-filter"
-          style="margin: 0;"
-        >
-          Filter by Class:
-        </label>
-
-        <select
-          id="class-filter"
-          class="form-control"
-          style="
-            width: auto;
-            min-width: 180px;
-          "
-        >
-
-          <option value="all">
-            All Classes
-          </option>
-
-          <optgroup label="Primary School">
-            <option value="Grade 1">Grade 1</option>
-            <option value="Grade 2">Grade 2</option>
-            <option value="Grade 3">Grade 3</option>
-            <option value="Grade 4">Grade 4</option>
-            <option value="Grade 5">Grade 5</option>
-            <option value="Grade 6">Grade 6</option>
-            <option value="Grade 7">Grade 7</option>
-            <option value="Grade 8">Grade 8</option>
-          </optgroup>
-
-          <optgroup label="Secondary School">
-            <option value="Form 1">Form 1</option>
-            <option value="Form 2">Form 2</option>
-            <option value="Form 3">Form 3</option>
-            <option value="Form 4">Form 4</option>
-          </optgroup>
-
-        </select>
-
-      </div>
-
-    </div>
-
-
-    <!-- ============================= -->
-    <!-- RESOURCE ITEMS -->
-    <!-- ============================= -->
 
     <ul
       id="resource-list"
