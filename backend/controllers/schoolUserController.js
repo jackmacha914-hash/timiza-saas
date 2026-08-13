@@ -42,87 +42,256 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// Get All Users
-exports.getAllUsers = async (req, res) => {
-  try {
-    const { search, role, status } = req.query;
-
-    // School MUST come from authenticated JWT
-    const filter = {
-      school: req.user.school
-    };
-
-    // Optional role filter
-    if (role) {
-      filter.role = role;
-    }
-
-    // Optional status filter
-    if (status) {
-      filter.status = status;
-    }
-
-    // Optional search
-    if (search) {
-      filter.$or = [
-        {
-          name: {
-            $regex: search,
-            $options: 'i'
-          }
-        },
-        {
-          email: {
-            $regex: search,
-            $options: 'i'
-          }
-        },
-        {
-          username: {
-            $regex: search,
-            $options: 'i'
-          }
-        }
-      ];
-    }
-
-    console.log('[GET USERS] Query:', {
-      school: req.user.school,
-      role,
-      status,
-      search
-    });
-
-    // IMPORTANT:
-    // Use User because students are stored in User
-    const users = await User.find(filter)
-      .select('-password')
-      .sort({
-        createdAt: -1
-      })
-      .lean();
-
-    console.log(
-      `[GET USERS] Found ${users.length} users for school ${req.user.school}`
-    );
-
-    res.json({
-      success: true,
-      count: users.length,
-      data: users
-    });
-
-  } catch (err) {
-    console.error('Error fetching users:', err);
-
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: err.message
-    });
-  }
-};
-
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+Getting assignments...
+Found assignments: 0
+[2026-08-13T13:53:01.304Z] GET /api/assignments -> ACAO: undefined
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[2026-08-13T13:53:01.309Z] GET /api/students -> ACAO: undefined
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+=================================
+GET /api/resources
+USER: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+QUERY: { class: 'Grade 1' }
+=================================
+RESOURCE QUERY: {
+  school: '6a67b27256c76faea1ef5a03',
+  uploadedBy: '6a67b31d56c76faea1ef5a45',
+  classAssigned: 'Grade 1'
+}
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[2026-08-13T13:53:01.410Z] GET /api/classes -> ACAO: undefined
+[2026-08-13T13:53:01.411Z] GET /api/announcements -> ACAO: undefined
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+Returning 2 resources
+[2026-08-13T13:53:01.412Z] GET /api/resources?class=Grade+1 -> ACAO: undefined
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+=================================
+GET /api/resources
+USER: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+QUERY: {}
+=================================
+RESOURCE QUERY: {
+  school: '6a67b27256c76faea1ef5a03',
+  uploadedBy: '6a67b31d56c76faea1ef5a45'
+}
+[2026-08-13T13:53:01.507Z] GET /favicon.ico -> ACAO: undefined
+[2026-08-13T13:53:01.510Z] GET /api/homeworks -> ACAO: undefined
+Returning 3 resources
+[2026-08-13T13:53:01.510Z] GET /api/resources -> ACAO: undefined
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[2026-08-13T13:53:01.604Z] GET /api/students -> ACAO: undefined
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+Getting assignments...
+Found assignments: 0
+[2026-08-13T13:53:01.608Z] GET /api/assignments -> ACAO: undefined
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[2026-08-13T13:53:11.508Z] GET /api/users?role=student -> ACAO: undefined
+Incoming host: timiza-saas.onrender.com
+Running in School Code mode.
+[AUTH] JWT decoded: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03',
+  iat: 1786629179,
+  exp: 1786632779
+}
+[AUTH] Authenticated user: {
+  id: '6a67b31d56c76faea1ef5a45',
+  role: 'teacher',
+  school: '6a67b27256c76faea1ef5a03'
+}
+[2026-08-13T13:53:13.638Z] GET /api/users?role=student -> ACAO: undefined
 // Create User
 exports.createUser = async (req, res) => {
   try {
