@@ -30,7 +30,16 @@ router.post(
   createClass
 );
 
-// Get classes belonging to the logged-in teacher
+// Get all classes for the logged-in teacher
+// Supports GET /api/classes
+router.get(
+  "/",
+  authorize("teacher"),
+  getTeacherClasses
+);
+
+// Backwards-compatible endpoint
+// Supports GET /api/classes/my-classes
 router.get(
   "/my-classes",
   authorize("teacher"),
