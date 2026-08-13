@@ -75,32 +75,94 @@ if (typeof API_BASE_URL === 'undefined') {
         }
     }
 
-    class UserManagement {
-    constructor() {
-        this.users = [];
-        this.userTableBody = document.getElementById('user-table-body');
-        this.loadUsers(); // Load users on page load
-    }
-
     // Fetch users from the backend
-    async loadUsers() {
-        try {
-            const response = await apiFetch('/users'); // your backend endpoint
-            if (response.success && Array.isArray(response.users)) {
-                this.users = response.users;
-                console.log('Users loaded:', this.users); // debug
-                this.renderUserTable();
-            } else {
-                this.users = [];
-                this.renderUserTable();
-                console.warn('No users found');
-            }
-        } catch (err) {
-            console.error('Failed to load users:', err);
-            this.users = [];
-            this.renderUserTable();
+   async loadStudents() {
+    try {
+        const classSelect = document.getElementById('class-select');
+
+        if (classSelect && !classSelect.value) {
+            console.log('No class selected, skipping student load');
+            this.students = [];
+            this.renderStudentTable();
+            return;
         }
+
+        const selectedClass = classSelect ? classSelect.value : '';
+
+        console.log('[STUDENTS] Loading students for class:', selectedClass);
+
+        // IMPORTANT:
+        // Do not use localStorage here because it can contain students
+        // from another school/class.
+        //
+        // The backend must be the source of truth.
+
+        if (typeof API_BASE_URL === 'undefined') {
+            window.API_BASE_URL = 'https://timiza-saas.onrender.com/api';
+        }
+
+        const url = selectedClass
+            ? `${API_BASE_URL}/students?class=${encodeURIComponent(selectedClass)}`
+            : `${API_BASE_URL}/students`;
+
+        console.log('[STUDENTS] Fetching:', url);
+
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? {
+                    'Authorization': `Bearer ${token}`
+                } : {})
+            },
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log('[STUDENTS] API response:', data);
+
+        // Support either:
+        // { students: [...] }
+        // { data: [...] }
+        // or [...]
+        let students = [];
+
+        if (Array.isArray(data)) {
+            students = data;
+        } else if (Array.isArray(data.students)) {
+            students = data.students;
+        } else if (Array.isArray(data.data)) {
+            students = data.data;
+        }
+
+        this.students = students;
+
+        console.log(
+            `[STUDENTS] Loaded ${this.students.length} students`
+        );
+
+        this.currentPage = 1;
+        this.renderStudentTable();
+
+    } catch (error) {
+        console.error('[STUDENTS] Error loading students:', error);
+
+        this.students = [];
+        this.renderStudentTable();
+
+        this.showNotification(
+            'Could not load students from the server.',
+            'error'
+        );
     }
+}
 
     // Render users into the table
     renderUserTable() {
