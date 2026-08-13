@@ -680,139 +680,141 @@ document.addEventListener('DOMContentLoaded', function() {
                     let response;
                     let lastError;
 
-                    // Try each auth method until one works
-                    for (const attempt of authAttempts) {
-                        console.log(`Trying auth method: ${attempt.name}`);
-                        
-                        const headers = { ...requestOptions.headers };
-                        if (attempt.header) {
-                            if (attempt.name === 'x-auth-token') {
-                                headers['x-auth-token'] = attempt.header;
-                            } else {
-                                headers['Authorization'] = attempt.header;
-                            }
-                        }
-                        
-                        try {
-                            const attemptResponse = await fetch(`${API_BASE_URL}/api/marks`, {
-                                ...requestOptions,
-                                headers
-                            });
-                            
-                            console.log(`Auth method ${attempt.name} status:`, attemptResponse.status);
-                            
-                            if (attemptResponse.ok) {
-                                response = attemptResponse;
-                                break; // Success!
-                            }
-                            
-                            const errorData = await attemptResponse.json().catch(() => ({}));
-                            lastError = errorData.msg || errorData.message || attemptResponse.statusText;
-                            console.warn(`Auth method ${attempt.name} failed:`, lastError);
-                            
-                        } catch (error) {
-                            console.error(`Error with auth method ${attempt.name}:`, error);
-                            lastError = error.message;
-                        }
-                    }
-                    
-                    if (!response) {
-                        throw new Error(lastError || 'All authentication methods failed');
-                    }
-                    
-                    console.log('Response status:', response.status, response.statusText);
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        const errorMessage = errorData.msg || errorData.message || 'Failed to save marks';
-                        console.error('API Error:', {
-                            status: response.status,
-                            statusText: response.statusText,
-                            error: errorData
-                        });
+// Try each auth method until one works
+for (const attempt of authAttempts) {
+    console.log(`Trying auth method: ${attempt.name}`);
 
-                        console.log(`Auth method ${attempt.name} status:`, attemptResponse.status);
+    const headers = { ...requestOptions.headers };
 
-                        if (attemptResponse.ok) {
-                            response = attemptResponse;
-                            break; // Success!
-                        }
-
-                        const errorData = await attemptResponse.json().catch(() => ({}));
-                        lastError = errorData.msg || errorData.message || attemptResponse.statusText;
-                        console.warn(`Auth method ${attempt.name} failed:`, lastError);
-
-                    } catch (error) {
-                        console.error(`Error with auth method ${attempt.name}:`, error);
-                        lastError = error.message;
-                    }
-                }
-
-                if (!response) {
-                    throw new Error(lastError || 'All authentication methods failed');
-                }
-
-                console.log('Response status:', response.status, response.statusText);
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMessage = errorData.msg || errorData.message || 'Failed to save marks';
-                    console.error('API Error:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        error: errorData
-                    });
-                    throw new Error(errorMessage);
-                }
-
-                // If we get here, the request was successful
-                const result = await response.json().catch(err => ({}));
-                console.log('Marks saved successfully:', result);
-
-                // Show success message
-                showError('Marks saved successfully!', 'success');
-
-                // Close the modal after a short delay
-                setTimeout(() => {
-                    const modals = [
-                        document.getElementById('studentSelectionModal'),
-                        document.getElementById('marksModal')
-                    ].filter(Boolean);
-                    
-                    modals.forEach(modal => {
-                        try {
-                            const modalInstance = bootstrap.Modal.getInstance(modal);
-                            if (modalInstance) {
-                                modalInstance.hide();
-                            } else {
-                                modal.style.display = 'none';
-                            }
-                        } catch (e) {
-                            console.error('Error closing modal:', e);
-                            modal.style.display = 'none';
-                        }
-                    });
-                }, 1500);
-
-                return result;
-
-            } catch (error) {
-                console.error('Error in form submission:', error);
-                showError(`Failed to save marks: ${error.message}`, 'error');
-                throw error;
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.textContent = originalButtonText;
-                }
-            }
-        });
+    if (attempt.header) {
+        if (attempt.name === 'x-auth-token') {
+            headers['x-auth-token'] = attempt.header;
+        } else {
+            headers['Authorization'] = attempt.header;
+        }
     }
-    
-    // Close when clicking outside
-    window.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            closeModal();
+
+    try {
+        const attemptResponse = await fetch(
+            `${API_BASE_URL}/api/marks`,
+            {
+                ...requestOptions,
+                headers
+            }
+        );
+
+        console.log(
+            `Auth method ${attempt.name} status:`,
+            attemptResponse.status
+        );
+
+        // Successful request
+        if (attemptResponse.ok) {
+            response = attemptResponse;
+            break;
+        }
+
+        // Request failed
+        const errorData = await attemptResponse
+            .json()
+            .catch(() => ({}));
+
+        lastError =
+            errorData.msg ||
+            errorData.message ||
+            attemptResponse.statusText;
+
+        console.warn(
+            `Auth method ${attempt.name} failed:`,
+            lastError
+        );
+
+    } catch (error) {
+        console.error(
+            `Error with auth method ${attempt.name}:`,
+            error
+        );
+
+        lastError = error.message;
+    }
+}
+
+// No authentication method worked
+if (!response) {
+    throw new Error(
+        lastError || 'All authentication methods failed'
+    );
+}
+
+console.log(
+    'Response status:',
+    response.status,
+    response.statusText
+);
+
+// Handle unsuccessful response
+if (!response.ok) {
+    const errorData = await response
+        .json()
+        .catch(() => ({}));
+
+    const errorMessage =
+        errorData.msg ||
+        errorData.message ||
+        'Failed to save marks';
+
+    console.error('API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+    });
+
+    throw new Error(errorMessage);
+}
+
+// Successful request
+const result = await response
+    .json()
+    .catch(() => ({}));
+
+console.log(
+    'Marks saved successfully:',
+    result
+);
+
+// Show success message
+showError(
+    'Marks saved successfully!',
+    'success'
+);
+
+// Close the modal after a short delay
+setTimeout(() => {
+    const modals = [
+        document.getElementById('studentSelectionModal'),
+        document.getElementById('marksModal')
+    ].filter(Boolean);
+
+    modals.forEach(modal => {
+        try {
+            const modalInstance =
+                bootstrap.Modal.getInstance(modal);
+
+            if (modalInstance) {
+                modalInstance.hide();
+            } else {
+                modal.style.display = 'none';
+            }
+
+        } catch (e) {
+            console.error(
+                'Error closing modal:',
+                e
+            );
+
+            modal.style.display = 'none';
         }
     });
-});
+}, 1500);
+
+return result;
