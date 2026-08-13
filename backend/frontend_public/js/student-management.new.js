@@ -209,153 +209,181 @@ class StudentManagement {
     }
 
     // ============================================================
-    // RENDER STUDENT TABLE
-    // ============================================================
+// RENDER STUDENT TABLE
+// ============================================================
 
-    renderStudentTable() {
-        console.log('[STUDENTS] Rendering student table...');
+renderStudentTable() {
+    console.log('[STUDENTS] Rendering student table...');
 
-        const tableBody = document.getElementById(
-            'student-table-body'
+    const tableBody = document.getElementById('student-table-body');
+
+    // Student table is not present on this page
+    if (!tableBody) {
+        console.warn(
+            '[STUDENTS] #student-table-body was not found in the DOM.'
         );
-
-        if (!tableBody) {
-            console.error(
-                '[STUDENTS] Student table body not found!'
-            );
-            return;
-        }
-
-        tableBody.innerHTML = '';
-
-        if (!this.students || this.students.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="9" class="text-center">
-                        No students found
-                    </td>
-                </tr>
-            `;
-
-            this.updatePagination();
-            return;
-        }
-
-        const startIndex =
-            (this.currentPage - 1) * this.itemsPerPage;
-
-        const endIndex =
-            startIndex + this.itemsPerPage;
-
-        const paginatedStudents =
-            this.students.slice(startIndex, endIndex);
-
-        paginatedStudents.forEach(student => {
-            const row = document.createElement('tr');
-
-            const status =
-                student.status || 'Inactive';
-
-            const statusClass =
-                status
-                    .toLowerCase()
-                    .replace(/\s+/g, '-');
-
-            const statusDisplay =
-                status.charAt(0).toUpperCase() +
-                status.slice(1);
-
-            row.innerHTML = `
-                <td>
-                    <input
-                        type="checkbox"
-                        class="student-checkbox"
-                        data-id="${student.id || ''}"
-                    >
-                </td>
-
-                <td>
-                    ${this.escapeHtml(
-                        student.admissionNumber || 'N/A'
-                    )}
-                </td>
-
-                <td>
-                    ${this.escapeHtml(
-                        student.fullName || 'N/A'
-                    )}
-                </td>
-
-                <td>
-                    ${this.escapeHtml(
-                        student.className || 'N/A'
-                    )}
-                </td>
-
-                <td>
-                    ${this.escapeHtml(
-                        this.capitalize(
-                            student.gender || 'N/A'
-                        )
-                    )}
-                </td>
-
-                <td>
-                    ${this.escapeHtml(
-                        student.parentName || 'N/A'
-                    )}
-                </td>
-
-                <td>
-                    ${this.escapeHtml(
-                        student.parentPhone || 'N/A'
-                    )}
-                </td>
-
-                <td>
-                    <span
-                        class="status status-${statusClass}"
-                    >
-                        ${this.escapeHtml(statusDisplay)}
-                    </span>
-                </td>
-
-                <td class="actions">
-
-                    <button
-                        type="button"
-                        class="btn-action btn-view"
-                        data-id="${student.id}"
-                    >
-                        View
-                    </button>
-
-                    <button
-                        type="button"
-                        class="btn-action btn-edit"
-                        data-id="${student.id}"
-                    >
-                        Edit
-                    </button>
-
-                    <button
-                        type="button"
-                        class="btn-action btn-delete"
-                        data-id="${student.id}"
-                    >
-                        Delete
-                    </button>
-
-                </td>
-            `;
-
-            tableBody.appendChild(row);
-        });
-
-        this.setupActionButtons();
-        this.updatePagination();
+        return;
     }
 
+    // Always clear the table first
+    tableBody.innerHTML = '';
+
+    // Make sure students is an array
+    if (!Array.isArray(this.students)) {
+        this.students = [];
+    }
+
+    // No students
+    if (this.students.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="9" class="text-center">
+                    No students found
+                </td>
+            </tr>
+        `;
+
+        this.updatePagination();
+        return;
+    }
+
+    // ========================================================
+    // PAGINATION
+    // ========================================================
+
+    const startIndex =
+        (this.currentPage - 1) * this.itemsPerPage;
+
+    const endIndex =
+        startIndex + this.itemsPerPage;
+
+    const paginatedStudents =
+        this.students.slice(startIndex, endIndex);
+
+    // ========================================================
+    // RENDER STUDENTS
+    // ========================================================
+
+    paginatedStudents.forEach(student => {
+
+        const row = document.createElement('tr');
+
+        const status =
+            student.status || 'Inactive';
+
+        const statusClass =
+            String(status)
+                .toLowerCase()
+                .replace(/\s+/g, '-');
+
+        const statusDisplay =
+            String(status).charAt(0).toUpperCase() +
+            String(status).slice(1);
+
+        row.innerHTML = `
+            <td>
+                <input
+                    type="checkbox"
+                    class="student-checkbox"
+                    data-id="${this.escapeHtml(
+                        String(student.id || '')
+                    )}"
+                >
+            </td>
+
+            <td>
+                ${this.escapeHtml(
+                    student.admissionNumber || 'N/A'
+                )}
+            </td>
+
+            <td>
+                ${this.escapeHtml(
+                    student.fullName || 'N/A'
+                )}
+            </td>
+
+            <td>
+                ${this.escapeHtml(
+                    student.className || 'N/A'
+                )}
+            </td>
+
+            <td>
+                ${this.escapeHtml(
+                    this.capitalize(
+                        student.gender || 'N/A'
+                    )
+                )}
+            </td>
+
+            <td>
+                ${this.escapeHtml(
+                    student.parentName || 'N/A'
+                )}
+            </td>
+
+            <td>
+                ${this.escapeHtml(
+                    student.parentPhone || 'N/A'
+                )}
+            </td>
+
+            <td>
+                <span class="status status-${statusClass}">
+                    ${this.escapeHtml(statusDisplay)}
+                </span>
+            </td>
+
+            <td class="actions">
+
+                <button
+                    type="button"
+                    class="btn-action btn-view"
+                    data-id="${this.escapeHtml(
+                        String(student.id || '')
+                    )}"
+                >
+                    View
+                </button>
+
+                <button
+                    type="button"
+                    class="btn-action btn-edit"
+                    data-id="${this.escapeHtml(
+                        String(student.id || '')
+                    )}"
+                >
+                    Edit
+                </button>
+
+                <button
+                    type="button"
+                    class="btn-action btn-delete"
+                    data-id="${this.escapeHtml(
+                        String(student.id || '')
+                    )}"
+                >
+                    Delete
+                </button>
+
+            </td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+
+    // ========================================================
+    // UPDATE UI
+    // ========================================================
+
+    this.setupActionButtons();
+    this.updatePagination();
+
+    console.log(
+        `[STUDENTS] Rendered ${paginatedStudents.length} of ${this.students.length} students`
+    );
+}
     // ============================================================
     // ACTION BUTTONS
     // ============================================================
