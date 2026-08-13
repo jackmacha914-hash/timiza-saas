@@ -323,6 +323,10 @@ res.json({
 // ✅ Upload Profile Photo
 exports.uploadProfilePhoto = async (req, res) => {
     try {
+        // ==========================================
+        // CHECK FILE
+        // ==========================================
+
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -330,47 +334,80 @@ exports.uploadProfilePhoto = async (req, res) => {
             });
         }
 
-        const userId = req.user.id;
-        const filename = req.file.filename;
-        
-        // Store relative path in the database
-        const photoPath = `/uploads/profile-photos/${filename}`;
-        
-        // Get the base URL (e.g., http://localhost:5000)
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const fullPhotoUrl = `${baseUrl}${photoPath}`;
+        // ==========================================
+        // USER / SCHOOL
+        // ==========================================
 
-        // Update user's profile photo with both full URL and relative path
-        await User.findOneAndUpdate(
-    {
-        _id: userId,
-        school: req.user.school
-    },
-    {
-        $set: {
-            'profile.photo': fullPhotoUrl,
-            'profile.photoPath': photoPath,
-            'profile.originalFilename': req.file.originalname,
-            'profile.photoUploadedAt': new Date()
+        const userId = req.user.id;
+        const schoolId = req.user.school;
+        const filename = req.file.filename;
+
+        if (!schoolId) {
+            return res.status(400).json({
+                success: false,
+                message: 'School not found in authenticated user'
+            });
         }
-    }
-);
-        // Delete old profile photo if it exists and is different
-        const user = await User.findById(userId);
-        if (user?.profile?.photoPath && user.profile.photoPath !== photoPath) {
-            try {
-                const fs = require('fs');
-                const path = require('path');
-                const oldPhotoPath = path.join(__dirname, '..', user.profile.photoPath);
-                if (fs.existsSync(oldPhotoPath)) {
-                    fs.unlinkSync(oldPhotoPath);
-                    console.log(`Deleted old profile photo: ${oldPhotoPath}`);
+
+        // ==========================================
+        // PHOTO PATH
+        // ==========================================
+
+        const photoPath = `/uploads/profile-photos/${filename}`;
+
+        const baseUrl =
+            `${req.protocol}://${req.get('host')}`;
+
+        const fullPhotoUrl =
+            `${baseUrl}${photoPath}`;
+
+        // ==========================================
+        // UPDATE USER
+        // SCHOOL IS PART OF QUERY
+        // ==========================================
+
+        const updatedUser = await User.findOneAndUpdate(
+            {
+                _id: userId,
+                school: schoolId
+            },
+            {
+                $set: {
+                    'profile.photo': fullPhotoUrl,
+                    'profile.photoPath': photoPath,
+                    'profile.originalFilename': req.file.originalname,
+                    'profile.photoUploadedAt': new Date()
                 }
-            } catch (err) {
-                console.error('Error deleting old profile photo:', err);
-                // Don't fail the request if deletion fails
+            },
+            {
+                new: true
             }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found in this school'
+            });
         }
+
+        // ==========================================
+        // DELETE OLD PHOTO
+        // ==========================================
+
+        const oldPhotoPath =
+            updatedUser.profile?.photoPath;
+
+        // Since findOneAndUpdate already changed photoPath,
+        // we don't have the old path here.
+        // We therefore do not delete anything in this request.
+        //
+        // This avoids accidentally deleting another file/user's
+        // photo in a multi-school SaaS environment.
+
+        // ==========================================
+        // RESPONSE
+        // ==========================================
 
         res.json({
             success: true,
@@ -378,8 +415,13 @@ exports.uploadProfilePhoto = async (req, res) => {
             photoUrl: fullPhotoUrl,
             photoPath: photoPath
         });
+
     } catch (err) {
-        console.error('Error uploading profile photo:', err);
+        console.error(
+            'Error uploading profile photo:',
+            err
+        );
+
         res.status(500).json({
             success: false,
             message: 'Failed to upload profile photo',
