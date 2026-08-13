@@ -220,26 +220,7 @@ router.post(
     protect,
     requireSchool,
     upload.single('photo'),
-    uploadProfilePhoto,
-    (err, req, res, next) => {
-
-        if (err instanceof multer.MulterError) {
-            return res.status(400).json({
-                success: false,
-                message: err.message,
-                code: err.code
-            });
-        }
-
-        if (err) {
-            return res.status(400).json({
-                success: false,
-                message: err.message
-            });
-        }
-
-        next();
-    }
+    uploadProfilePhoto
 );
 
 module.exports = router;
