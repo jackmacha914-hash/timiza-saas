@@ -208,4 +208,123 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
+// Update/Edit a book
+// IMPORTANT: A user can only update books belonging to their own school.
+router.put('/:id', protect, async (req, res) => {
+    try {
+        // -------------------------------------------------
+        // Verify authenticated user has a school
+        // -------------------------------------------------
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message: 'User is not assigned to a school'
+            });
+        }
+
+        const {
+            title,
+            author,
+            year,
+            genre,
+            status,
+            className,
+            available
+        } = req.body;
+
+        // -------------------------------------------------
+        // Validate required fields
+        // -------------------------------------------------
+        if (!title || !author || !genre || !className) {
+            return res.status(400).json({
+                success: false,
+                message: 'Title, author, genre, and class are required'
+            });
+        }
+
+        // -------------------------------------------------
+        // IMPORTANT SCHOOL ISOLATION
+        //
+        // Only find the book if:
+        // 1. The ID matches
+        // 2. The book belongs to the logged-in user's school
+        // -------------------------------------------------
+        const book = await Book.findOne({
+            _id: req.params.id,
+            school: req.user.school
+        });
+
+        // This also prevents a user from discovering
+        // whether another school's book exists.
+        if (!book) {
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found'
+            });
+        }
+
+        // -------------------------------------------------
+        // Update book
+        // -------------------------------------------------
+        book.title = title.trim();
+        book.author = author.trim();
+        book.genre = genre.trim();
+        book.className = className.trim();
+
+        book.year = year
+            ? parseInt(year)
+            : book.year;
+
+        if (status) {
+            book.status = status;
+        }
+
+        // Only change available when explicitly provided.
+        if (available !== undefined) {
+            const availableCopies = parseInt(available);
+
+            if (Number.isNaN(availableCopies) || availableCopies < 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Available copies must be a valid number greater than or equal to 0'
+                });
+            }
+
+            book.available = availableCopies;
+        }
+
+        const updatedBook = await book.save();
+
+        console.log('[BOOKS] Book updated successfully:', {
+            bookId: updatedBook._id,
+            school: req.user.school,
+            title: updatedBook.title
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Book updated successfully',
+            data: updatedBook
+        });
+
+    } catch (err) {
+        console.error('[BOOKS] Error updating book:', {
+            message: err.message,
+            name: err.name,
+            code: err.code,
+            keyPattern: err.keyPattern,
+            keyValue: err.keyValue
+        });
+
+        return res.status(400).json({
+            success: false,
+            message: err.message,
+
+            ...(process.env.NODE_ENV === 'development' && {
+                stack: err.stack
+            })
+        });
+    }
+});
+
 module.exports = router;
