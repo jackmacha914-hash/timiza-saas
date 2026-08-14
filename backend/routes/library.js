@@ -150,6 +150,59 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/library/:id - get one book for editing
+router.get('/:id', protect, async (req, res) => {
+  try {
+    // Make sure the user is authenticated and belongs to a school
+    if (!req.user || !req.user.school) {
+      return res.status(403).json({
+        success: false,
+        message: 'User is not assigned to a school'
+      });
+    }
+
+    const bookId = req.params.id;
+
+    // Find the book AND make sure it belongs to the user's school
+    const book = await Book.findOne({
+      _id: bookId,
+      school: req.user.school
+    });
+
+    if (!book) {
+      return res.status(404).json({
+        success: false,
+        message: 'Book not found'
+      });
+    }
+
+    console.log(
+      `[BOOKS] Returning book ${book._id} for school ${req.user.school}`
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: book
+    });
+
+  } catch (err) {
+    console.error('[BOOKS] Error fetching single book:', err);
+
+    // Invalid MongoDB ObjectId
+    if (err.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid book ID'
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
 // PUT /api/library/:id - update a book
 // IMPORTANT: Users can only update books belonging to their own school
 router.put('/:id', protect, async (req, res) => {
