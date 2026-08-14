@@ -2058,23 +2058,129 @@ if (!response.ok) {
     </tr>`;
   }
 
-  async function handleReturnBook(e) {
-    e.preventDefault();
-    const btn = e.currentTarget;
-    const issueId = btn.getAttribute('data-id');
-    const fine = parseFloat(btn.getAttribute('data-fine')||0);
-    // find modal etc. For brevity show confirm then call API
-    if (!confirm(`Return book "${btn.getAttribute('data-book-title')}" for ${btn.getAttribute('data-borrower')}?`)) return;
-    try {
-      await apiFetch(`/api/library/return/${issueId}`, { method: 'POST', body: JSON.stringify({ finePaid: fine }) });
-      showNotification('Book returned', 'success');
-      await loadIssuedBooks();
-      await loadLibraryWithFilters();
-    } catch (err) {
-      console.error('Return error', err);
-      showNotification(err.message || 'Failed to return', 'error');
-    }
+async function handleReturnBook(e) {
+  e.preventDefault();
+
+  const btn = e.currentTarget;
+
+  // Borrowing record ID
+  const issueId =
+    btn.getAttribute('data-id');
+
+  // Actual book ID
+  const bookId =
+    btn.getAttribute('data-book-id');
+
+  const fine =
+    parseFloat(
+      btn.getAttribute('data-fine') || '0'
+    );
+
+  const bookTitle =
+    btn.getAttribute('data-book-title') ||
+    'this book';
+
+  const borrower =
+    btn.getAttribute('data-borrower') ||
+    'this borrower';
+
+  // ----------------------------------------------------------
+  // Validate IDs
+  // ----------------------------------------------------------
+  console.log('[LIBRARY RETURN] Request data:', {
+    issueId,
+    bookId,
+    finePaid: fine
+  });
+
+  if (!issueId) {
+    showNotification(
+      'Borrowing ID is missing',
+      'error'
+    );
+    return;
   }
+
+  if (!bookId) {
+    showNotification(
+      'Book ID is missing',
+      'error'
+    );
+    return;
+  }
+
+  // ----------------------------------------------------------
+  // Confirm return
+  // ----------------------------------------------------------
+  if (
+    !confirm(
+      `Return book "${bookTitle}" for ${borrower}?`
+    )
+  ) {
+    return;
+  }
+
+  try {
+
+    // --------------------------------------------------------
+    // Backend expects:
+    //
+    // POST /api/library/return/:borrowingId
+    //
+    // Body:
+    // {
+    //   bookId: "...",
+    //   finePaid: 0
+    // }
+    // --------------------------------------------------------
+    const response =
+      await apiFetch(
+        `/api/library/return/${issueId}`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body: JSON.stringify({
+            bookId: bookId,
+            finePaid: fine
+          })
+        }
+      );
+
+    console.log(
+      '[LIBRARY RETURN] Success:',
+      response
+    );
+
+    showNotification(
+      'Book returned successfully',
+      'success'
+    );
+
+    // Refresh issued books
+    await loadIssuedBooks();
+
+    // Refresh available copies/status
+    await loadLibraryWithFilters();
+
+  } catch (err) {
+
+    console.error(
+      '[LIBRARY RETURN] Error:',
+      err
+    );
+
+    showNotification(
+      err.message ||
+      'Failed to return book',
+      'error'
+    );
+  }
+}
 
   // -------------------------
   // Init functions
