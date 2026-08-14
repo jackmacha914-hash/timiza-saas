@@ -7,7 +7,7 @@
 // API Configuration
 // -------------------------------
 const API_BASE_URL =
-    'https://luckyjuniorschool.onrender.com/api';
+    'https://timiza-saas.onrender.com/api';
 
 // MAKE GLOBAL
 window.API_BASE_URL = API_BASE_URL;
