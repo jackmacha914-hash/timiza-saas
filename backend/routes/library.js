@@ -284,6 +284,266 @@ router.post('/', protect, async (req, res) => {
 });
 
 // ============================================================
+// GET /api/library/issued
+// Get issued books for ONLY the authenticated user's school
+// ============================================================
+router.get('/issued', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const {
+            returned,
+            groupByClass = 'true',
+            className
+        } = req.query;
+
+        const query = {
+            school: req.user.school
+        };
+
+        if (returned === 'true') {
+            query.returned = true;
+        } else if (returned === 'false') {
+            query.returned = false;
+        }
+
+        if (
+            className &&
+            className !== 'All'
+        ) {
+            query.className =
+                className;
+        }
+
+        // IMPORTANT:
+        // Borrowing records need to be connected
+        // to the school through the book.
+        const pipeline = [
+            {
+                $lookup: {
+                    from: 'books',
+                    localField: 'bookId',
+                    foreignField: '_id',
+                    as: 'bookDetails'
+                }
+            },
+
+            {
+                $unwind: '$bookDetails'
+            },
+
+            // IMPORTANT SCHOOL SECURITY:
+            // Only include borrowings where
+            // the related book belongs to this school.
+            {
+                $match: {
+                    'bookDetails.school':
+                        req.user.school,
+                    ...query
+                }
+            },
+
+            {
+                $addFields: {
+                    className: {
+                        $ifNull: [
+                            '$className',
+                            'Ungrouped'
+                        ]
+                    }
+                }
+            },
+
+            {
+                $group: {
+                    _id: {
+                        bookId: '$bookId',
+                        borrowerId:
+                            '$borrowerId',
+                        returned:
+                            '$returned',
+                        className:
+                            '$className'
+                    },
+
+                    doc: {
+                        $first: '$$ROOT'
+                    },
+
+                    dueDate: {
+                        $first: '$dueDate'
+                    },
+
+                    issueDate: {
+                        $first: '$issueDate'
+                    },
+
+                    className: {
+                        $first:
+                            '$className'
+                    },
+
+                    bookTitle: {
+                        $first:
+                            '$bookDetails.title'
+                    }
+                }
+            },
+
+            {
+                $replaceRoot: {
+                    newRoot: {
+                        $mergeObjects: [
+                            '$doc',
+                            {
+                                className:
+                                    '$className'
+                            }
+                        ]
+                    }
+                }
+            },
+
+            {
+                $sort: {
+                    className: 1,
+                    dueDate: 1
+                }
+            },
+
+            {
+                $project: {
+                    _id: 1,
+                    bookId: 1,
+                    title:
+                        '$bookTitle',
+                    className: 1,
+                    author:
+                        '$bookDetails.author',
+                    genre: 1,
+                    borrowerName: 1,
+                    borrowerId: 1,
+                    issueDate: 1,
+                    dueDate: 1,
+                    returnDate: 1,
+                    returned: 1,
+                    fine: {
+                        $ifNull: [
+                            '$fine',
+                            0
+                        ]
+                    },
+
+                    daysOverdue: {
+                        $cond: [
+                            {
+                                $and: [
+                                    {
+                                        $eq: [
+                                            '$returned',
+                                            false
+                                        ]
+                                    },
+                                    {
+                                        $lte: [
+                                            '$dueDate',
+                                            new Date()
+                                        ]
+                                    },
+                                    {
+                                        $ne: [
+                                            '$dueDate',
+                                            null
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                $floor: {
+                                    $divide: [
+                                        {
+                                            $subtract: [
+                                                new Date(),
+                                                '$dueDate'
+                                            ]
+                                        },
+                                        1000 *
+                                        60 *
+                                        60 *
+                                        24
+                                    ]
+                                }
+                            },
+                            0
+                        ]
+                    }
+                }
+            },
+
+            {
+                $sort: {
+                    dueDate: 1
+                }
+            }
+        ];
+
+        const issuedBooks =
+            await Borrowing.aggregate(
+                pipeline
+            );
+
+        // Update fines for overdue books.
+        await Promise.all(
+            issuedBooks.map(
+                async (book) => {
+                    if (
+                        !book.returned &&
+                        new Date(
+                            book.dueDate
+                        ) < new Date()
+                    ) {
+                        const fine =
+                            calculateFine(
+                                book.dueDate
+                            );
+
+                        await Borrowing.findByIdAndUpdate(
+                            book._id,
+                            {
+                                fine
+                            }
+                        );
+                    }
+                }
+            )
+        );
+
+        return res.json(
+            issuedBooks
+        );
+
+    } catch (err) {
+        console.error(
+            'Error fetching issued books:',
+            err
+        );
+
+        return res.status(500).json({
+            error:
+                err.message ||
+                'Failed to fetch issued books'
+        });
+    }
+});
+
+// ============================================================
 // GET /api/library/:id
 // Get ONE book for editing
 // IMPORTANT: Only the user's school can access it
@@ -779,265 +1039,6 @@ router.post('/:id/issue', protect, async (req, res) => {
     }
 });
 
-// ============================================================
-// GET /api/library/issued
-// Get issued books for ONLY the authenticated user's school
-// ============================================================
-router.get('/issued', protect, async (req, res) => {
-    try {
-
-        if (!req.user || !req.user.school) {
-            return res.status(403).json({
-                success: false,
-                message:
-                    'User is not assigned to a school'
-            });
-        }
-
-        const {
-            returned,
-            groupByClass = 'true',
-            className
-        } = req.query;
-
-        const query = {
-            school: req.user.school
-        };
-
-        if (returned === 'true') {
-            query.returned = true;
-        } else if (returned === 'false') {
-            query.returned = false;
-        }
-
-        if (
-            className &&
-            className !== 'All'
-        ) {
-            query.className =
-                className;
-        }
-
-        // IMPORTANT:
-        // Borrowing records need to be connected
-        // to the school through the book.
-        const pipeline = [
-            {
-                $lookup: {
-                    from: 'books',
-                    localField: 'bookId',
-                    foreignField: '_id',
-                    as: 'bookDetails'
-                }
-            },
-
-            {
-                $unwind: '$bookDetails'
-            },
-
-            // IMPORTANT SCHOOL SECURITY:
-            // Only include borrowings where
-            // the related book belongs to this school.
-            {
-                $match: {
-                    'bookDetails.school':
-                        req.user.school,
-                    ...query
-                }
-            },
-
-            {
-                $addFields: {
-                    className: {
-                        $ifNull: [
-                            '$className',
-                            'Ungrouped'
-                        ]
-                    }
-                }
-            },
-
-            {
-                $group: {
-                    _id: {
-                        bookId: '$bookId',
-                        borrowerId:
-                            '$borrowerId',
-                        returned:
-                            '$returned',
-                        className:
-                            '$className'
-                    },
-
-                    doc: {
-                        $first: '$$ROOT'
-                    },
-
-                    dueDate: {
-                        $first: '$dueDate'
-                    },
-
-                    issueDate: {
-                        $first: '$issueDate'
-                    },
-
-                    className: {
-                        $first:
-                            '$className'
-                    },
-
-                    bookTitle: {
-                        $first:
-                            '$bookDetails.title'
-                    }
-                }
-            },
-
-            {
-                $replaceRoot: {
-                    newRoot: {
-                        $mergeObjects: [
-                            '$doc',
-                            {
-                                className:
-                                    '$className'
-                            }
-                        ]
-                    }
-                }
-            },
-
-            {
-                $sort: {
-                    className: 1,
-                    dueDate: 1
-                }
-            },
-
-            {
-                $project: {
-                    _id: 1,
-                    bookId: 1,
-                    title:
-                        '$bookTitle',
-                    className: 1,
-                    author:
-                        '$bookDetails.author',
-                    genre: 1,
-                    borrowerName: 1,
-                    borrowerId: 1,
-                    issueDate: 1,
-                    dueDate: 1,
-                    returnDate: 1,
-                    returned: 1,
-                    fine: {
-                        $ifNull: [
-                            '$fine',
-                            0
-                        ]
-                    },
-
-                    daysOverdue: {
-                        $cond: [
-                            {
-                                $and: [
-                                    {
-                                        $eq: [
-                                            '$returned',
-                                            false
-                                        ]
-                                    },
-                                    {
-                                        $lte: [
-                                            '$dueDate',
-                                            new Date()
-                                        ]
-                                    },
-                                    {
-                                        $ne: [
-                                            '$dueDate',
-                                            null
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                $floor: {
-                                    $divide: [
-                                        {
-                                            $subtract: [
-                                                new Date(),
-                                                '$dueDate'
-                                            ]
-                                        },
-                                        1000 *
-                                        60 *
-                                        60 *
-                                        24
-                                    ]
-                                }
-                            },
-                            0
-                        ]
-                    }
-                }
-            },
-
-            {
-                $sort: {
-                    dueDate: 1
-                }
-            }
-        ];
-
-        const issuedBooks =
-            await Borrowing.aggregate(
-                pipeline
-            );
-
-        // Update fines for overdue books.
-        await Promise.all(
-            issuedBooks.map(
-                async (book) => {
-                    if (
-                        !book.returned &&
-                        new Date(
-                            book.dueDate
-                        ) < new Date()
-                    ) {
-                        const fine =
-                            calculateFine(
-                                book.dueDate
-                            );
-
-                        await Borrowing.findByIdAndUpdate(
-                            book._id,
-                            {
-                                fine
-                            }
-                        );
-                    }
-                }
-            )
-        );
-
-        return res.json(
-            issuedBooks
-        );
-
-    } catch (err) {
-        console.error(
-            'Error fetching issued books:',
-            err
-        );
-
-        return res.status(500).json({
-            error:
-                err.message ||
-                'Failed to fetch issued books'
-        });
-    }
-});
 
 // ============================================================
 // POST /api/library/return/:id
