@@ -1,53 +1,13 @@
 // ============================================================
 // STUDENT LIBRARY
-// Loads books currently issued to the logged-in student
 // ============================================================
 
 import { API_CONFIG } from './config.js';
 
-
-// ============================================================
-// INITIALIZE
-// ============================================================
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    console.log(
-        '[STUDENT LIBRARY] Student library module loaded'
-    );
-
-    // Attach click listener if the tab already exists.
-    const libraryTab =
-        document.querySelector(
-            '[data-tab="library-section"]'
-        );
-
-    if (libraryTab) {
-
-        libraryTab.addEventListener(
-            'click',
-            () => {
-                console.log(
-                    '[STUDENT LIBRARY] Library tab clicked'
-                );
-
-                fetchMyIssuedBooks();
-            }
-        );
-
-    } else {
-
-        console.warn(
-            '[STUDENT LIBRARY] Library tab not found during DOMContentLoaded'
-        );
-    }
-});
-
+console.log('[STUDENT LIBRARY] Module loaded');
 
 // ============================================================
 // FETCH MY ISSUED BOOKS
-// Backend:
-// GET /api/library/my-books
 // ============================================================
 
 async function fetchMyIssuedBooks() {
@@ -76,34 +36,34 @@ async function fetchMyIssuedBooks() {
         }
 
         console.log(
-            '[STUDENT LIBRARY] Token exists'
+            '[STUDENT LIBRARY] Token found'
         );
 
         const endpoint =
             `${API_CONFIG.BASE_URL}/api/library/my-books`;
 
         console.log(
-            '[STUDENT LIBRARY] Endpoint:',
+            '[STUDENT LIBRARY] Request:',
             endpoint
         );
 
         const response =
-            await fetch(
-                endpoint,
-                {
-                    method: 'GET',
+            await fetch(endpoint, {
+                method: 'GET',
 
-                    headers: {
-                        'Authorization':
-                            `Bearer ${token}`,
+                headers: {
+                    'Authorization':
+                        `Bearer ${token}`,
 
-                        'Accept':
-                            'application/json'
-                    },
+                    'Content-Type':
+                        'application/json',
 
-                    credentials: 'include'
-                }
-            );
+                    'Accept':
+                        'application/json'
+                },
+
+                credentials: 'include'
+            });
 
         console.log(
             '[STUDENT LIBRARY] Response status:',
@@ -111,100 +71,59 @@ async function fetchMyIssuedBooks() {
         );
 
         // ----------------------------------------------------
-        // Read response safely
+        // Read response
         // ----------------------------------------------------
 
-        const contentType =
-            response.headers.get(
-                'content-type'
-            ) || '';
+        let data = {};
 
-        let result;
+        try {
 
-        if (
-            contentType.includes(
-                'application/json'
-            )
-        ) {
-
-            result =
+            data =
                 await response.json();
 
-        } else {
-
-            const text =
-                await response.text();
+        } catch (jsonError) {
 
             console.error(
-                '[STUDENT LIBRARY] Non-JSON response:',
-                text
+                '[STUDENT LIBRARY] Invalid JSON response:',
+                jsonError
             );
 
             throw new Error(
-                `Server returned ${response.status}`
+                `Server returned HTTP ${response.status}`
             );
         }
 
         console.log(
-            '[STUDENT LIBRARY] Server response:',
-            result
+            '[STUDENT LIBRARY] Response data:',
+            data
         );
 
         // ----------------------------------------------------
-        // Handle errors
+        // Handle HTTP errors
         // ----------------------------------------------------
 
         if (!response.ok) {
 
             const message =
-                result?.message ||
-                result?.error ||
-                'Failed to fetch your books';
+                data?.message ||
+                data?.error ||
+                `Failed to fetch your books (HTTP ${response.status})`;
 
             throw new Error(message);
         }
 
         // ----------------------------------------------------
         // Normalize response
-        //
-        // Your current backend returns:
-        //
-        // [
-        //   {
-        //      id,
-        //      title,
-        //      author,
-        //      ...
-        //   }
-        // ]
-        //
-        // But this also supports:
-        //
-        // { data: [...] }
-        // { books: [...] }
         // ----------------------------------------------------
 
-        let books = [];
-
-        if (Array.isArray(result)) {
-
-            books = result;
-
-        } else if (
-            Array.isArray(result?.data)
-        ) {
-
-            books =
-                result.data;
-
-        } else if (
-            Array.isArray(result?.books)
-        ) {
-
-            books =
-                result.books;
-
-        }
+        const books =
+            Array.isArray(data)
+                ? data
+                : (
+                    data?.data ||
+                    data?.books ||
+                    []
+                );
 
         console.log(
             '[STUDENT LIBRARY] Books received:',
@@ -216,9 +135,11 @@ async function fetchMyIssuedBooks() {
             books.length
         );
 
-        displayMyBooks(books);
+        // ----------------------------------------------------
+        // Display
+        // ----------------------------------------------------
 
-        return books;
+        displayMyBooks(books);
 
     } catch (error) {
 
@@ -232,32 +153,12 @@ async function fetchMyIssuedBooks() {
             'Failed to load your books. Please try again.',
             'error'
         );
-
-        // Also show the error in the table.
-        const booksList =
-            document.getElementById(
-                'my-books-list'
-            );
-
-        if (booksList) {
-
-            booksList.innerHTML = `
-                <tr>
-                    <td
-                        colspan="5"
-                        class="text-center text-danger py-4"
-                    >
-                        Failed to load your issued books.
-                    </td>
-                </tr>
-            `;
-        }
     }
 }
 
 
 // ============================================================
-// DISPLAY MY BOOKS
+// DISPLAY BOOKS
 // ============================================================
 
 function displayMyBooks(books) {
@@ -281,13 +182,9 @@ function displayMyBooks(books) {
     // --------------------------------------------------------
 
     if (
-        !Array.isArray(books) ||
+        !books ||
         books.length === 0
     ) {
-
-        console.log(
-            '[STUDENT LIBRARY] No books currently issued'
-        );
 
         booksList.innerHTML = `
             <tr>
@@ -295,8 +192,14 @@ function displayMyBooks(books) {
                     colspan="5"
                     class="text-center text-muted py-4"
                 >
-                    <i class="fas fa-book-open me-2"></i>
-                    No books currently issued to you.
+                    <i
+                        class="bi bi-book"
+                        style="font-size: 2rem;"
+                    ></i>
+
+                    <div class="mt-2">
+                        No books currently issued to you.
+                    </div>
                 </td>
             </tr>
         `;
@@ -311,44 +214,35 @@ function displayMyBooks(books) {
     booksList.innerHTML =
         books.map(book => {
 
-            const issueDate =
-                formatDate(
-                    book.issueDate
-                );
-
             const dueDate =
-                formatDate(
-                    book.dueDate
-                );
-
-            const due =
                 book.dueDate
-                    ? new Date(
-                        book.dueDate
-                    )
+                    ? new Date(book.dueDate)
                     : null;
 
             const isOverdue =
-                due &&
-                due < new Date() &&
-                book.status !== 'Returned';
-
-            const fine =
-                Number(
-                    book.fine || 0
-                );
+                dueDate &&
+                dueDate < new Date() &&
+                !book.returned &&
+                String(book.status || '').toLowerCase()
+                    !== 'returned';
 
             const status =
                 book.status ||
                 (
-                    isOverdue
-                        ? 'Overdue'
-                        : 'Issued'
+                    book.returned
+                        ? 'Returned'
+                        : isOverdue
+                            ? 'Overdue'
+                            : 'Issued'
                 );
+
+            const fine =
+                Number(book.fine || 0);
 
             return `
                 <tr>
 
+                    <!-- BOOK TITLE -->
                     <td>
                         <div class="fw-semibold">
                             ${escapeHtml(
@@ -356,20 +250,9 @@ function displayMyBooks(books) {
                                 'N/A'
                             )}
                         </div>
-
-                        ${
-                            book.genre
-                                ? `
-                                    <small class="text-muted">
-                                        ${escapeHtml(
-                                            book.genre
-                                        )}
-                                    </small>
-                                  `
-                                : ''
-                        }
                     </td>
 
+                    <!-- AUTHOR -->
                     <td>
                         ${escapeHtml(
                             book.author ||
@@ -377,47 +260,58 @@ function displayMyBooks(books) {
                         )}
                     </td>
 
+                    <!-- ISSUE DATE -->
                     <td>
-                        ${issueDate}
+                        ${formatDate(
+                            book.issueDate
+                        )}
                     </td>
 
-                    <td class="${
-                        isOverdue
-                            ? 'text-danger fw-bold'
-                            : ''
-                    }">
-
-                        ${dueDate}
+                    <!-- DUE DATE -->
+                    <td
+                        class="${
+                            isOverdue
+                                ? 'text-danger fw-bold'
+                                : ''
+                        }"
+                    >
+                        ${formatDate(
+                            book.dueDate
+                        )}
 
                         ${
                             isOverdue
                                 ? `
                                     <div>
-                                        <small class="text-danger">
+                                        <small
+                                            class="text-danger"
+                                        >
                                             Overdue
                                         </small>
                                     </div>
                                   `
                                 : ''
                         }
-
                     </td>
 
+                    <!-- STATUS -->
                     <td>
 
                         <span
-                            class="badge ${
-                                getStatusBadgeClass(
-                                    status
-                                )
-                            }"
+                            class="badge ${getStatusBadgeClass(
+                                status
+                            )}"
                         >
                             ${escapeHtml(status)}
 
                             ${
                                 fine > 0
                                     ? `
-                                        — KES ${fine.toFixed(2)}
+                                        <br>
+                                        <small>
+                                            KES
+                                            ${fine.toFixed(2)}
+                                        </small>
                                       `
                                     : ''
                             }
@@ -429,10 +323,6 @@ function displayMyBooks(books) {
             `;
 
         }).join('');
-
-    console.log(
-        `[STUDENT LIBRARY] Displayed ${books.length} books`
-    );
 }
 
 
@@ -449,11 +339,7 @@ function formatDate(dateString) {
     const date =
         new Date(dateString);
 
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
+    if (Number.isNaN(date.getTime())) {
         return 'N/A';
     }
 
@@ -508,26 +394,11 @@ function escapeHtml(value) {
     }
 
     return String(value)
-        .replace(
-            /&/g,
-            '&amp;'
-        )
-        .replace(
-            /</g,
-            '&lt;'
-        )
-        .replace(
-            />/g,
-            '&gt;'
-        )
-        .replace(
-            /"/g,
-            '&quot;'
-        )
-        .replace(
-            /'/g,
-            '&#039;'
-        );
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 
@@ -541,31 +412,34 @@ function showMessage(
 ) {
 
     const messageEl =
-        document.getElementById(
-            'message'
-        );
+        document.getElementById('message');
 
     if (!messageEl) {
-
         console.warn(
-            '[STUDENT LIBRARY] #message not found:',
+            '[STUDENT LIBRARY] Message element not found:',
             message
         );
-
         return;
     }
 
-    let alertType = type;
+    const messageText =
+        document.getElementById(
+            'message-text'
+        );
 
-    if (type === 'error') {
-        alertType = 'danger';
+    if (messageText) {
+
+        messageText.textContent =
+            message;
+
+    } else {
+
+        messageEl.textContent =
+            message;
     }
 
-    messageEl.textContent =
-        message;
-
     messageEl.className =
-        `alert alert-${alertType} alert-dismissible fade show`;
+        `alert alert-${type} alert-dismissible fade show`;
 
     messageEl.style.display =
         'block';
@@ -573,7 +447,8 @@ function showMessage(
 
 
 // ============================================================
-// GLOBAL ACCESS
+// MAKE FUNCTION GLOBAL
+// IMPORTANT FOR student.js
 // ============================================================
 
 window.fetchMyIssuedBooks =
@@ -584,9 +459,73 @@ window.displayMyBooks =
 
 
 // ============================================================
+// INITIALIZE AFTER DOM
+// ============================================================
+
+document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+
+        console.log(
+            '[STUDENT LIBRARY] DOM ready'
+        );
+
+        const libraryTab =
+            document.querySelector(
+                '[data-tab="library-section"]'
+            );
+
+        if (!libraryTab) {
+
+            console.warn(
+                '[STUDENT LIBRARY] Library tab not found'
+            );
+
+            return;
+        }
+
+        console.log(
+            '[STUDENT LIBRARY] Library tab found'
+        );
+
+        // ----------------------------------------------------
+        // Do NOT rely only on student.js.
+        // Register our own click handler.
+        // ----------------------------------------------------
+
+        libraryTab.addEventListener(
+            'click',
+            () => {
+
+                console.log(
+                    '[STUDENT LIBRARY] Library tab clicked'
+                );
+
+                // Small delay allows student.js
+                // to finish switching sections.
+                setTimeout(
+                    () => {
+
+                        fetchMyIssuedBooks();
+
+                    },
+                    100
+                );
+            }
+        );
+
+        console.log(
+            '[STUDENT LIBRARY] Library handler attached'
+        );
+    }
+);
+
+
+// ============================================================
 // MODULE LOADED
 // ============================================================
 
 console.log(
-    '[STUDENT LIBRARY] Module ready'
+    '[STUDENT LIBRARY] fetchMyIssuedBooks available:',
+    typeof window.fetchMyIssuedBooks
 );
