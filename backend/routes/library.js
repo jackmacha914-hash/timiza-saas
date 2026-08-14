@@ -151,48 +151,152 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/library/:id - update a book
-router.put('/:id', async (req, res) => {
+// IMPORTANT: Users can only update books belonging to their own school
+router.put('/:id', protect, async (req, res) => {
   try {
-    const { title, author, year, className, genre, status, copies } = req.body;
-    
+    // --------------------------------------------------
+    // 1. Make sure the authenticated user has a school
+    // --------------------------------------------------
+    if (!req.user || !req.user.school) {
+      return res.status(403).json({
+        success: false,
+        message: 'User is not assigned to a school'
+      });
+    }
+
+    const {
+      title,
+      author,
+      year,
+      className,
+      genre,
+      status,
+      copies
+    } = req.body;
+
+    // --------------------------------------------------
+    // 2. Validate required fields
+    // --------------------------------------------------
     if (!title || !author || !className) {
-      return res.status(400).json({ error: 'Title, author, and class are required.' });
+      return res.status(400).json({
+        success: false,
+        error: 'Title, author, and class are required.'
+      });
     }
-    
-    const book = await Book.findById(req.params.id);
+
+    // --------------------------------------------------
+    // 3. Find the book ONLY inside the user's school
+    // --------------------------------------------------
+    const book = await Book.findOne({
+      _id: req.params.id,
+      school: req.user.school
+    });
+
+    // If the book belongs to another school, it will
+    // behave as if it does not exist.
     if (!book) {
-      return res.status(404).json({ error: 'Book not found' });
+      return res.status(404).json({
+        success: false,
+        error: 'Book not found'
+      });
     }
-    
-    // Calculate available copies based on status
+
+    // --------------------------------------------------
+    // 4. Calculate available copies
+    // --------------------------------------------------
     let available = book.available;
+
     if (status && status !== book.status) {
       if (status === 'available') {
-        available = parseInt(copies) || book.copies;
+        available = parseInt(copies) || book.available || 1;
       } else {
         available = 0;
       }
     }
-    
-    const updatedBook = await Book.findByIdAndUpdate(
-      req.params.id,
+
+    // --------------------------------------------------
+    // 5. Update ONLY this school's book
+    // --------------------------------------------------
+    const updatedBook = await Book.findOneAndUpdate(
       {
-        title,
-        author,
-        year: year || book.year,
-        className,
-        genre: genre || book.genre || 'General',
+        _id: req.params.id,
+        school: req.user.school
+      },
+      {
+        title: title.trim(),
+        author: author.trim(),
+        year: year
+          ? parseInt(year)
+          : book.year,
+        className: className.trim(),
+        genre: genre
+          ? genre.trim()
+          : book.genre || 'General',
         status: status || book.status,
-        copies: parseInt(copies) || book.copies,
         available
       },
-      { new: true }
+      {
+        new: true,
+        runValidators: true
+      }
     );
-    
-    res.json({ msg: 'Book updated!', book: updatedBook });
+
+    // Extra safety check
+    if (!updatedBook) {
+      return res.status(404).json({
+        success: false,
+        error: 'Book not found'
+      });
+    }
+
+    console.log('[BOOK UPDATE] Successful:', {
+      bookId: updatedBook._id,
+      bookTitle: updatedBook.title,
+      school: req.user.school,
+      userId: req.user.id
+    });
+
+    // --------------------------------------------------
+    // 6. Return updated book
+    // --------------------------------------------------
+    return res.status(200).json({
+      success: true,
+      message: 'Book updated successfully',
+      book: updatedBook
+    });
+
   } catch (err) {
-    console.error('Error updating book:', err);
-    res.status(500).json({ error: err.message });
+    console.error('[BOOK UPDATE] Error:', {
+      message: err.message,
+      name: err.name,
+      code: err.code
+    });
+
+    // Invalid MongoDB ObjectId
+    if (err.name === 'CastError') {
+      return res.status(404).json({
+        success: false,
+        error: 'Book not found'
+      });
+    }
+
+    // Mongoose validation error
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors)
+        .map(val => val.message);
+
+      return res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        details: messages
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update book',
+      details: err.message
+    });
   }
 });
 
