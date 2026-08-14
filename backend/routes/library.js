@@ -290,6 +290,9 @@ router.post('/', protect, async (req, res) => {
 router.get('/issued', protect, async (req, res) => {
     try {
 
+        // --------------------------------------------------------
+        // SECURITY: User must belong to a school
+        // --------------------------------------------------------
         if (!req.user || !req.user.school) {
             return res.status(403).json({
                 success: false,
@@ -300,244 +303,255 @@ router.get('/issued', protect, async (req, res) => {
 
         const {
             returned,
-            groupByClass = 'true',
             className
         } = req.query;
 
+        // --------------------------------------------------------
+        // Build borrowing query
+        //
+        // IMPORTANT:
+        // The issue endpoint saves the school directly on the
+        // Borrowing document, so we can safely query Borrowing
+        // directly instead of relying on an aggregation lookup.
+        // --------------------------------------------------------
         const query = {
             school: req.user.school
         };
 
+        // Filter returned status when requested
         if (returned === 'true') {
             query.returned = true;
         } else if (returned === 'false') {
             query.returned = false;
         }
 
+        // Filter by class when requested
         if (
             className &&
             className !== 'All'
         ) {
-            query.className =
-                className;
+            query.className = className;
         }
 
-        // IMPORTANT:
-        // Borrowing records need to be connected
-        // to the school through the book.
-        const pipeline = [
-            {
-                $lookup: {
-                    from: 'books',
-                    localField: 'bookId',
-                    foreignField: '_id',
-                    as: 'bookDetails'
-                }
-            },
+        console.log(
+            '[ISSUED] ========================================'
+        );
 
-            {
-                $unwind: '$bookDetails'
-            },
+        console.log(
+            '[ISSUED] User ID:',
+            req.user.id
+        );
 
-            // IMPORTANT SCHOOL SECURITY:
-            // Only include borrowings where
-            // the related book belongs to this school.
-            {
-                $match: {
-                    'bookDetails.school':
-                        req.user.school,
-                    ...query
-                }
-            },
+        console.log(
+            '[ISSUED] School:',
+            req.user.school
+        );
 
-            {
-                $addFields: {
-                    className: {
-                        $ifNull: [
-                            '$className',
-                            'Ungrouped'
-                        ]
-                    }
-                }
-            },
+        console.log(
+            '[ISSUED] Query:',
+            query
+        );
 
-            {
-                $group: {
-                    _id: {
-                        bookId: '$bookId',
-                        borrowerId:
-                            '$borrowerId',
-                        returned:
-                            '$returned',
-                        className:
-                            '$className'
-                    },
-
-                    doc: {
-                        $first: '$$ROOT'
-                    },
-
-                    dueDate: {
-                        $first: '$dueDate'
-                    },
-
-                    issueDate: {
-                        $first: '$issueDate'
-                    },
-
-                    className: {
-                        $first:
-                            '$className'
-                    },
-
-                    bookTitle: {
-                        $first:
-                            '$bookDetails.title'
-                    }
-                }
-            },
-
-            {
-                $replaceRoot: {
-                    newRoot: {
-                        $mergeObjects: [
-                            '$doc',
-                            {
-                                className:
-                                    '$className'
-                            }
-                        ]
-                    }
-                }
-            },
-
-            {
-                $sort: {
+        // --------------------------------------------------------
+        // Get borrowing records
+        // --------------------------------------------------------
+        const borrowings =
+            await Borrowing
+                .find(query)
+                .sort({
                     className: 1,
                     dueDate: 1
-                }
-            },
+                })
+                .lean();
 
-            {
-                $project: {
-                    _id: 1,
-                    bookId: 1,
-                    title:
-                        '$bookTitle',
-                    className: 1,
-                    author:
-                        '$bookDetails.author',
-                    genre: 1,
-                    borrowerName: 1,
-                    borrowerId: 1,
-                    issueDate: 1,
-                    dueDate: 1,
-                    returnDate: 1,
-                    returned: 1,
-                    fine: {
-                        $ifNull: [
-                            '$fine',
-                            0
-                        ]
-                    },
+        console.log(
+            '[ISSUED] Borrowing records found:',
+            borrowings.length
+        );
 
-                    daysOverdue: {
-                        $cond: [
+        // --------------------------------------------------------
+        // Get the related book for each borrowing
+        // --------------------------------------------------------
+        const issuedBooks =
+            await Promise.all(
+                borrowings.map(
+                    async (borrowing) => {
+
+                        console.log(
+                            '[ISSUED] Processing borrowing:',
                             {
-                                $and: [
-                                    {
-                                        $eq: [
-                                            '$returned',
-                                            false
-                                        ]
-                                    },
-                                    {
-                                        $lte: [
-                                            '$dueDate',
-                                            new Date()
-                                        ]
-                                    },
-                                    {
-                                        $ne: [
-                                            '$dueDate',
-                                            null
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                $floor: {
-                                    $divide: [
-                                        {
-                                            $subtract: [
-                                                new Date(),
-                                                '$dueDate'
-                                            ]
-                                        },
+                                borrowingId:
+                                    borrowing._id,
+
+                                bookId:
+                                    borrowing.bookId,
+
+                                borrowerId:
+                                    borrowing.borrowerId,
+
+                                borrowerName:
+                                    borrowing.borrowerName,
+
+                                school:
+                                    borrowing.school,
+
+                                returned:
+                                    borrowing.returned
+                            }
+                        );
+
+                        // ----------------------------------------
+                        // Find the actual book
+                        // ----------------------------------------
+                        const book =
+                            await Book.findById(
+                                borrowing.bookId
+                            ).lean();
+
+                        // ----------------------------------------
+                        // If book was deleted, don't crash the
+                        // entire issued-books request.
+                        // ----------------------------------------
+                        if (!book) {
+
+                            console.warn(
+                                '[ISSUED] Book not found:',
+                                {
+                                    borrowingId:
+                                        borrowing._id,
+
+                                    bookId:
+                                        borrowing.bookId
+                                }
+                            );
+
+                            return null;
+                        }
+
+                        // ----------------------------------------
+                        // Calculate overdue information
+                        // ----------------------------------------
+                        const isOverdue =
+                            !borrowing.returned &&
+                            borrowing.dueDate &&
+                            new Date(
+                                borrowing.dueDate
+                            ) < new Date();
+
+                        const daysOverdue =
+                            isOverdue
+                                ? Math.ceil(
+                                    (
+                                        new Date() -
+                                        new Date(
+                                            borrowing.dueDate
+                                        )
+                                    ) /
+                                    (
                                         1000 *
                                         60 *
                                         60 *
                                         24
-                                    ]
-                                }
-                            },
-                            0
-                        ]
+                                    )
+                                )
+                                : 0;
+
+                        // ----------------------------------------
+                        // Calculate current fine
+                        // ----------------------------------------
+                        const fine =
+                            isOverdue
+                                ? calculateFine(
+                                    borrowing.dueDate
+                                )
+                                : Number(
+                                    borrowing.fine || 0
+                                );
+
+                        // ----------------------------------------
+                        // Return the format expected by frontend
+                        // ----------------------------------------
+                        return {
+                            _id:
+                                borrowing._id,
+
+                            bookId:
+                                book._id,
+
+                            title:
+                                book.title,
+
+                            author:
+                                book.author,
+
+                            genre:
+                                borrowing.genre ||
+                                book.genre ||
+                                'General',
+
+                            className:
+                                borrowing.className ||
+                                book.className ||
+                                'Ungrouped',
+
+                            borrowerName:
+                                borrowing.borrowerName,
+
+                            borrowerId:
+                                borrowing.borrowerId,
+
+                            borrowerEmail:
+                                borrowing.borrowerEmail ||
+                                '',
+
+                            issueDate:
+                                borrowing.issueDate,
+
+                            dueDate:
+                                borrowing.dueDate,
+
+                            returnDate:
+                                borrowing.returnDate ||
+                                null,
+
+                            returned:
+                                borrowing.returned,
+
+                            fine:
+
+                                fine,
+
+                            daysOverdue:
+
+                                daysOverdue
+                        };
                     }
-                }
-            },
-
-            {
-                $sort: {
-                    dueDate: 1
-                }
-            }
-        ];
-        const debugBorrowings = await Borrowing.find({
-    school: req.user.school
-}).lean();
-
-console.log(
-    '[ISSUED DEBUG] Borrowings for school:',
-    debugBorrowings.map(b => ({
-        id: b._id,
-        bookId: b.bookId,
-        bookIdType: typeof b.bookId,
-        borrowerId: b.borrowerId,
-        returned: b.returned,
-        school: b.school
-    }))
-);
-
-const debugBooks = await Book.find({
-    school: req.user.school
-}).select('_id title school').lean();
-
-console.log(
-    '[ISSUED DEBUG] Books for school:',
-    debugBooks.map(b => ({
-        id: b._id,
-        idString: String(b._id),
-        title: b.title,
-        school: b.school
-    }))
-);
-
-        const issuedBooks =
-            await Borrowing.aggregate(
-                pipeline
+                )
             );
 
-        // Update fines for overdue books.
+        // --------------------------------------------------------
+        // Remove borrowings whose book no longer exists
+        // --------------------------------------------------------
+        const validBooks =
+            issuedBooks.filter(
+                book => book !== null
+            );
+
+        // --------------------------------------------------------
+        // Update fines for overdue books
+        // --------------------------------------------------------
         await Promise.all(
-            issuedBooks.map(
+            validBooks.map(
                 async (book) => {
+
                     if (
                         !book.returned &&
+                        book.dueDate &&
                         new Date(
                             book.dueDate
                         ) < new Date()
                     ) {
+
                         const fine =
                             calculateFine(
                                 book.dueDate
@@ -554,17 +568,31 @@ console.log(
             )
         );
 
-        return res.json(
-            issuedBooks
+        console.log(
+            '[ISSUED] Valid issued books:',
+            validBooks.length
+        );
+
+        console.log(
+            '[ISSUED] ========================================'
+        );
+
+        // --------------------------------------------------------
+        // Return issued books
+        // --------------------------------------------------------
+        return res.status(200).json(
+            validBooks
         );
 
     } catch (err) {
+
         console.error(
-            'Error fetching issued books:',
+            '[ISSUED] Error fetching issued books:',
             err
         );
 
         return res.status(500).json({
+            success: false,
             error:
                 err.message ||
                 'Failed to fetch issued books'
