@@ -28,151 +28,225 @@ const calculateFine = (dueDate) => {
 
 // ============================================================
 // GET /api/library/my-books
-// Get books currently issued to current student
+// Get books currently issued to the authenticated student
 // ============================================================
 router.get('/my-books', protect, async (req, res) => {
     try {
+        console.log('==============================================');
+        console.log('[MY BOOKS] Fetching books for student');
+        console.log('[MY BOOKS] req.user:', {
+            id: req.user?.id,
+            _id: req.user?._id,
+            name: req.user?.name,
+            email: req.user?.email,
+            role: req.user?.role
+        });
+        console.log('==============================================');
 
-        const userId =
-            req.user?.id ||
-            req.user?._id;
-
-        console.log('======================================');
-        console.log('[STUDENT LIBRARY] MY BOOKS');
-        console.log('[STUDENT LIBRARY] req.user:', req.user);
-        console.log('[STUDENT LIBRARY] userId:', String(userId));
-        console.log('======================================');
-
-        if (!userId) {
-            return res.status(400).json({
+        if (!req.user) {
+            return res.status(401).json({
                 success: false,
-                message: 'Student ID not found'
+                error: 'Authentication required'
             });
         }
 
-        // Find ALL borrowings for this student first.
-        // Do NOT filter returned yet so we can diagnose the data.
-        const allBorrowings = await Borrowing.find({
-            borrowerId: userId
+        // ----------------------------------------------------
+        // Get authenticated user ID
+        // ----------------------------------------------------
+        const authenticatedUserId =
+            req.user.id ||
+            req.user._id;
+
+        if (!authenticatedUserId) {
+            console.error(
+                '[MY BOOKS] No authenticated user ID found'
+            );
+
+            return res.status(401).json({
+                success: false,
+                error: 'Unable to identify authenticated student'
+            });
+        }
+
+        const studentId = String(authenticatedUserId);
+
+        console.log(
+            '[MY BOOKS] Authenticated student ID:',
+            studentId
+        );
+
+        // ----------------------------------------------------
+        // Find active borrowing records
+        //
+        // borrowerId may have been stored as:
+        // - ObjectId
+        // - string
+        //
+        // Using $in allows us to match both.
+        // ----------------------------------------------------
+        let borrowerIds = [studentId];
+
+        // Add ObjectId version if valid
+        if (mongoose.Types.ObjectId.isValid(studentId)) {
+            borrowerIds.push(
+                new mongoose.Types.ObjectId(studentId)
+            );
+        }
+
+        console.log(
+            '[MY BOOKS] Searching borrower IDs:',
+            borrowerIds
+        );
+
+        const borrowings = await Borrowing.find({
+            borrowerId: {
+                $in: borrowerIds
+            },
+            returned: false
         })
-        .sort({ issueDate: -1 })
+        .sort({
+            dueDate: 1
+        })
         .lean();
 
         console.log(
-            '[STUDENT LIBRARY] All borrowings:',
-            allBorrowings.map(b => ({
-                id: String(b._id),
-                borrowerId: String(b.borrowerId),
-                bookId: String(b.bookId),
-                borrowerName: b.borrowerName,
-                returned: b.returned,
-                issueDate: b.issueDate,
-                dueDate: b.dueDate
-            }))
-        );
-
-        // Only currently issued books
-        const borrowings =
-            allBorrowings.filter(
-                b => b.returned !== true
-            );
-
-        console.log(
-            '[STUDENT LIBRARY] Active borrowings:',
+            '[MY BOOKS] Active borrowings found:',
             borrowings.length
         );
 
-        const books = [];
+        // ----------------------------------------------------
+        // DEBUG: show what was actually found
+        // ----------------------------------------------------
+        borrowings.forEach((borrowing, index) => {
+            console.log(
+                `[MY BOOKS] Borrowing ${index + 1}:`,
+                {
+                    id: borrowing._id,
+                    bookId: borrowing.bookId,
+                    borrowerId: borrowing.borrowerId,
+                    borrowerName: borrowing.borrowerName,
+                    returned: borrowing.returned,
+                    issueDate: borrowing.issueDate,
+                    dueDate: borrowing.dueDate
+                }
+            );
+        });
 
-        for (const borrowing of borrowings) {
+        // ----------------------------------------------------
+        // Load corresponding books
+        // ----------------------------------------------------
+        const books = await Promise.all(
+            borrowings.map(async (borrowing) => {
 
-            const book =
-                await Book.findById(
+                if (!borrowing.bookId) {
+                    console.warn(
+                        '[MY BOOKS] Borrowing has no bookId:',
+                        borrowing._id
+                    );
+
+                    return null;
+                }
+
+                const book = await Book.findById(
                     borrowing.bookId
                 ).lean();
 
-            if (!book) {
-                console.warn(
-                    '[STUDENT LIBRARY] Book not found:',
-                    String(borrowing.bookId)
-                );
-                continue;
-            }
+                if (!book) {
+                    console.warn(
+                        '[MY BOOKS] Book not found:',
+                        borrowing.bookId
+                    );
 
-            const dueDate =
-                borrowing.dueDate
+                    return null;
+                }
+
+                const dueDate = borrowing.dueDate
                     ? new Date(borrowing.dueDate)
                     : null;
 
-            const isOverdue =
-                dueDate &&
-                !Number.isNaN(dueDate.getTime()) &&
-                new Date() > dueDate;
+                const isOverdue =
+                    dueDate &&
+                    new Date() > dueDate &&
+                    !borrowing.returned;
 
-            const fine =
-                borrowing.fine != null
-                    ? Number(borrowing.fine)
-                    : (
-                        dueDate
-                            ? calculateFine(dueDate)
-                            : 0
-                    );
+                const fine = dueDate
+                    ? calculateFine(dueDate)
+                    : 0;
 
-            books.push({
+                return {
+                    id: book._id,
+                    bookId: book._id,
 
-                id: book._id,
-                bookId: book._id,
+                    title:
+                        book.title || 'Unknown',
 
-                issueId: borrowing._id,
+                    author:
+                        book.author || 'Unknown',
 
-                title:
-                    book.title || 'Unknown',
+                    genre:
+                        book.genre || '',
 
-                author:
-                    book.author || 'Unknown',
+                    issueDate:
+                        borrowing.issueDate || null,
 
-                genre:
-                    book.genre || '',
+                    dueDate:
+                        borrowing.dueDate || null,
 
-                issueDate:
-                    borrowing.issueDate,
+                    status:
+                        isOverdue
+                            ? 'Overdue'
+                            : 'Issued',
 
-                dueDate:
-                    borrowing.dueDate,
+                    fine:
+                        Number(fine) || 0
+                };
+            })
+        );
 
-                returned:
-                    borrowing.returned,
+        const validBooks =
+            books.filter(Boolean);
 
-                status:
-                    isOverdue
-                        ? 'Overdue'
-                        : 'Issued',
+        console.log(
+            '[MY BOOKS] Returning books:',
+            validBooks.length
+        );
 
-                fine:
-                    fine || 0
+        console.log(
+            '[MY BOOKS] Books:',
+            validBooks
+        );
+
+        return res.json(validBooks);
+
+    } catch (err) {
+
+        console.error(
+            '=============================================='
+        );
+
+        console.error(
+            '[MY BOOKS] ERROR:',
+            err
+        );
+
+        console.error(
+            '=============================================='
+        );
+
+        if (
+            err.name === 'JsonWebTokenError'
+        ) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid token'
             });
         }
 
-        console.log(
-            '[STUDENT LIBRARY] Returning:',
-            books.length,
-            'books'
-        );
-
-        return res.json(books);
-
-    } catch (error) {
-
-        console.error(
-            '[STUDENT LIBRARY] ERROR:',
-            error
-        );
-
         return res.status(500).json({
             success: false,
-            message:
-                error.message ||
-                'Failed to fetch student books'
+            error:
+                err.message ||
+                'Server error'
         });
     }
 });
