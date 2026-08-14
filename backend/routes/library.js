@@ -31,18 +31,19 @@ const calculateFine = (dueDate) => {
 // Get books currently issued to the authenticated student
 // ============================================================
 router.get('/my-books', protect, async (req, res) => {
-
-    if (
-        String(req.user?.role || '').toLowerCase() !== 'student'
-    ) {
-        return res.status(403).json({
-            success: false,
-            error: 'Only students can view their issued books'
-        });
-    }
-
-    // existing code...
-});
+    try {
+        // ----------------------------------------------------
+        // STUDENTS ONLY
+        // ----------------------------------------------------
+        if (
+            String(req.user?.role || '').toLowerCase().trim() !==
+            'student'
+        ) {
+            return res.status(403).json({
+                success: false,
+                error: 'Only students can view their issued books'
+            });
+        }
 
         // ----------------------------------------------------
         // AUTHENTICATED STUDENT ID
@@ -92,10 +93,7 @@ router.get('/my-books', protect, async (req, res) => {
         );
 
         // ----------------------------------------------------
-        // FIRST: FIND ALL BORROWINGS FOR THIS STUDENT
-        // WITHOUT returned FILTER
-        //
-        // This is important for debugging.
+        // FIND ALL BORROWINGS FOR THIS STUDENT
         // ----------------------------------------------------
         const allStudentBorrowings =
             await Borrowing.find({
@@ -115,41 +113,123 @@ router.get('/my-books', protect, async (req, res) => {
 
         allStudentBorrowings.forEach(
             (borrowing, index) => {
-
                 console.log(
                     `[MY BOOKS] Borrowing ${index + 1}:`,
                     {
-                        id: String(
-                            borrowing._id
-                        ),
-
-                        borrowerId:
-                            borrowing.borrowerId,
-
-                        borrowerName:
-                            borrowing.borrowerName,
-
-                        bookId:
-                            borrowing.bookId,
-
-                        bookTitle:
-                            borrowing.bookTitle,
-
-                        returned:
-                            borrowing.returned,
-
-                        issueDate:
-                            borrowing.issueDate,
-
-                        dueDate:
-                            borrowing.dueDate,
-
-                        school:
-                            borrowing.school
+                        id: String(borrowing._id),
+                        borrowerId: borrowing.borrowerId,
+                        borrowerName: borrowing.borrowerName,
+                        bookId: borrowing.bookId,
+                        bookTitle: borrowing.bookTitle,
+                        returned: borrowing.returned,
+                        issueDate: borrowing.issueDate,
+                        dueDate: borrowing.dueDate,
+                        school: borrowing.school
                     }
                 );
             }
         );
+
+        // ----------------------------------------------------
+        // ONLY ACTIVE BORROWINGS
+        // ----------------------------------------------------
+        const activeBorrowings =
+            allStudentBorrowings.filter(
+                borrowing =>
+                    borrowing.returned !== true
+            );
+
+        console.log(
+            '[MY BOOKS] ACTIVE borrowings:',
+            activeBorrowings.length
+        );
+
+        // ----------------------------------------------------
+        // LOAD BOOKS
+        // ----------------------------------------------------
+        const books = await Promise.all(
+            activeBorrowings.map(
+                async (borrowing) => {
+
+                    if (!borrowing.bookId) {
+                        return null;
+                    }
+
+                    const book =
+                        await Book.findById(
+                            borrowing.bookId
+                        ).lean();
+
+                    if (!book) {
+                        console.warn(
+                            '[MY BOOKS] Book not found:',
+                            borrowing.bookId
+                        );
+
+                        return null;
+                    }
+
+                    const dueDate =
+                        borrowing.dueDate
+                            ? new Date(borrowing.dueDate)
+                            : null;
+
+                    const isOverdue =
+                        dueDate &&
+                        new Date() > dueDate;
+
+                    let fine = 0;
+
+                    if (dueDate) {
+                        fine = calculateFine(dueDate);
+                    }
+
+                    return {
+                        id: book._id,
+                        bookId: book._id,
+                        title: book.title || 'Unknown',
+                        author: book.author || 'Unknown',
+                        genre: book.genre || '',
+                        issueDate:
+                            borrowing.issueDate || null,
+                        dueDate:
+                            borrowing.dueDate || null,
+                        status:
+                            isOverdue
+                                ? 'Overdue'
+                                : 'Issued',
+                        fine:
+                            Number(fine) || 0
+                    };
+                }
+            )
+        );
+
+        const validBooks =
+            books.filter(Boolean);
+
+        console.log(
+            '[MY BOOKS] Returning:',
+            validBooks.length,
+            'books'
+        );
+
+        return res.status(200).json(validBooks);
+
+    } catch (err) {
+        console.error(
+            '[MY BOOKS] ERROR:',
+            err
+        );
+
+        return res.status(500).json({
+            success: false,
+            error:
+                err.message ||
+                'Server error'
+        });
+    }
+});
 
         // ----------------------------------------------------
         // ACTIVE BORROWINGS ONLY
