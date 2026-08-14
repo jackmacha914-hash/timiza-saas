@@ -1,760 +1,1807 @@
-// API base URL - update this to your actual API URL
-if (typeof API_BASE_URL === 'undefined') {
-    window.API_BASE_URL = 'https://timiza-saas.onrender.com';
+// =====================================================
+// RESOURCES.JS
+// =====================================================
+
+// =====================================================
+// API BASE URL
+// =====================================================
+
+if (typeof window.API_BASE_URL === "undefined") {
+  window.API_BASE_URL = "https://timiza-saas.onrender.com";
 }
 
-// Initialize the resources page
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('Resources page loaded');
-  
-  // Get user profile to determine role
-  const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-  const isStudent = userProfile.role === 'student';
-  
-  // Set up event listeners for the upload form
-  const uploadForm = document.getElementById('upload-form');
-  if (uploadForm) {
-    uploadForm.addEventListener('submit', handleFileUpload);
-    
-    // Set default class if user has a class assigned
-    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-    if (userProfile.class) {
-      const classSelect = document.getElementById('class-select');
-      if (classSelect) {
-        // Find and select the user's class
-        for (let i = 0; i < classSelect.options.length; i++) {
-          if (classSelect.options[i].value === userProfile.class) {
-            classSelect.selectedIndex = i;
-            break;
-          }
-        }
-      }
+const API_BASE_URL = window.API_BASE_URL;
+
+// =====================================================
+// GLOBAL VARIABLES
+// =====================================================
+
+let availableClasses = [];
+let userClass = null;
+
+// =====================================================
+// HELPERS
+// =====================================================
+
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function getUserProfile() {
+  try {
+    return JSON.parse(
+      localStorage.getItem("userProfile") || "{}"
+    );
+  } catch (error) {
+    console.error(
+      "[RESOURCES] Failed to parse userProfile:",
+      error
+    );
+
+    return {};
+  }
+}
+
+function getUserRole() {
+  const profile = getUserProfile();
+
+  // Prefer stored profile
+  if (profile.role) {
+    return String(profile.role).toLowerCase();
+  }
+
+  // Fallback to JWT
+  const token = getToken();
+
+  if (!token) {
+    return "student";
+  }
+
+  try {
+    const parts = token.split(".");
+
+    if (parts.length === 3) {
+      const payload = JSON.parse(
+        atob(parts[1])
+      );
+
+      return String(
+        payload.role || "student"
+      ).toLowerCase();
+    }
+  } catch (error) {
+    console.error(
+      "[RESOURCES] Failed to decode token:",
+      error
+    );
+  }
+
+  return "student";
+}
+
+// =====================================================
+// IMPORTANT:
+// NORMALIZE RESOURCE FILE PATH
+// =====================================================
+//
+// Handles all of these:
+//
+// filename.docx
+// /filename.docx
+// uploads/resources/filename.docx
+// /uploads/resources/filename.docx
+//
+// Final result:
+//
+// https://timiza-saas.onrender.com/uploads/resources/filename.docx
+// =====================================================
+
+function getResourceUrl(resourcePath) {
+  if (!resourcePath) {
+    return "#";
+  }
+
+  let cleanPath = String(resourcePath).trim();
+
+  // Remove full API domain if accidentally stored
+  cleanPath = cleanPath.replace(
+    /^https?:\/\/[^/]+/i,
+    ""
+  );
+
+  // Decode repeatedly if necessary
+  try {
+    cleanPath = decodeURIComponent(cleanPath);
+  } catch (error) {
+    // Ignore invalid URI encoding
+  }
+
+  // Remove leading slash
+  cleanPath = cleanPath.replace(/^\/+/, "");
+
+  // Remove duplicate uploads/resources prefixes
+  cleanPath = cleanPath.replace(
+    /^(?:uploads\/resources\/)+/i,
+    ""
+  );
+
+  // Final URL
+  return `${API_BASE_URL}/uploads/resources/${cleanPath}`;
+}
+
+// =====================================================
+// ESCAPE HTML
+// =====================================================
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// =====================================================
+// INLINE MESSAGE
+// =====================================================
+
+function showInlineMessage(
+  message,
+  type = "error"
+) {
+  let element =
+    document.getElementById("resource-upload-msg");
+
+  if (!element) {
+    element = document.createElement("div");
+    element.id = "resource-upload-msg";
+
+    const container =
+      document.getElementById(
+        "upload-form-container"
+      );
+
+    if (container) {
+      container.appendChild(element);
+    } else {
+      document.body.appendChild(element);
     }
   }
-  
+
+  element.textContent = message;
+
+  element.style.display = "block";
+  element.style.marginTop = "10px";
+  element.style.padding = "10px";
+  element.style.borderRadius = "5px";
+
+  if (type === "success") {
+    element.style.color = "#2e7d32";
+    element.style.backgroundColor = "#e8f5e9";
+  } else {
+    element.style.color = "#d32f2f";
+    element.style.backgroundColor = "#ffebee";
+  }
+
+  clearTimeout(
+    element._hideTimer
+  );
+
+  element._hideTimer = setTimeout(() => {
+    element.style.display = "none";
+  }, 5000);
+}
+
+function showInlineError(message) {
+  showInlineMessage(message, "error");
+}
+
+function showInlineSuccess(message) {
+  showInlineMessage(message, "success");
+}
+
+// =====================================================
+// AUTH CHECK
+// =====================================================
+
+function requireAuthentication() {
+  const token = getToken();
+
+  if (!token) {
+    console.warn(
+      "[RESOURCES] No authentication token"
+    );
+
+    window.location.href = "/login.html";
+
+    return false;
+  }
+
+  return true;
+}
+
 // =====================================================
 // RESOURCE UPLOAD BUTTON
 // =====================================================
 
-const uploadBtn = document.getElementById('upload-resource-btn');
-const uploadContainer = document.getElementById('upload-form-container');
-const classSelector = document.getElementById('resource-class');
-const classSelect = document.getElementById('class-select');
+function initializeUploadButton() {
+  const uploadBtn =
+    document.getElementById(
+      "upload-resource-btn"
+    );
 
-if (uploadBtn) {
+  const uploadContainer =
+    document.getElementById(
+      "upload-form-container"
+    );
 
-    // Always show Upload Resource button
-    uploadBtn.style.display = 'block';
-    uploadBtn.style.visibility = 'visible';
+  const classSelector =
+    document.getElementById(
+      "resource-class"
+    );
 
-    uploadBtn.addEventListener('click', function (e) {
+  const classSelect =
+    document.getElementById(
+      "class-select"
+    );
 
-        e.preventDefault();
+  if (!uploadBtn) {
+    console.warn(
+      "[RESOURCES] upload-resource-btn not found"
+    );
 
-        console.log('[RESOURCES] Upload Resource clicked');
+    return;
+  }
 
-        // ---------------------------------------------
-        // SHOW UPLOAD FORM
-        // ---------------------------------------------
+  uploadBtn.style.display = "block";
+  uploadBtn.style.visibility = "visible";
 
-        if (uploadContainer) {
+  uploadBtn.addEventListener(
+    "click",
+    function (event) {
+      event.preventDefault();
 
-            uploadContainer.style.display = 'block';
-            uploadContainer.style.visibility = 'visible';
-            uploadContainer.style.opacity = '1';
+      console.log(
+        "[RESOURCES] Upload Resource clicked"
+      );
 
-            console.log('[RESOURCES] Upload form shown');
+      if (uploadContainer) {
+        uploadContainer.style.display = "block";
+        uploadContainer.style.visibility = "visible";
+        uploadContainer.style.opacity = "1";
+      }
+
+      if (classSelector) {
+        classSelector.style.display = "block";
+        classSelector.style.visibility = "visible";
+        classSelector.style.opacity = "1";
+      }
+
+      if (classSelect) {
+        classSelect.style.display = "block";
+        classSelect.style.visibility = "visible";
+        classSelect.style.opacity = "1";
+        classSelect.style.pointerEvents = "auto";
+      }
+    }
+  );
+}
+
+// =====================================================
+// CANCEL UPLOAD
+// =====================================================
+
+function initializeCancelButton() {
+  const cancelBtn =
+    document.getElementById(
+      "cancel-upload-btn"
+    );
+
+  if (!cancelBtn) {
+    return;
+  }
+
+  cancelBtn.addEventListener(
+    "click",
+    function (event) {
+      event.preventDefault();
+
+      const container =
+        document.getElementById(
+          "upload-form-container"
+        );
+
+      const form =
+        document.getElementById(
+          "upload-form"
+        );
+
+      if (container) {
+        container.style.display = "none";
+      }
+
+      if (form) {
+        form.reset();
+      }
+
+      const status =
+        document.getElementById(
+          "upload-status"
+        );
+
+      if (status) {
+        status.style.display = "none";
+      }
+
+      const message =
+        document.getElementById(
+          "resource-upload-msg"
+        );
+
+      if (message) {
+        message.style.display = "none";
+      }
+    }
+  );
+}
+
+// =====================================================
+// HANDLE FILE UPLOAD
+// =====================================================
+
+async function handleFileUpload(event) {
+  event.preventDefault();
+
+  console.log(
+    "[RESOURCES] File upload started"
+  );
+
+  const form =
+    document.getElementById(
+      "upload-form"
+    );
+
+  if (!form) {
+    console.error(
+      "[RESOURCES] Upload form not found"
+    );
+
+    return;
+  }
+
+  const fileInput =
+    document.getElementById(
+      "resource-file"
+    ) ||
+    form.querySelector(
+      'input[type="file"]'
+    );
+
+  const classSelect =
+    document.getElementById(
+      "class-select"
+    ) ||
+    form.querySelector(
+      "select"
+    );
+
+  const uploadBtn =
+    document.getElementById(
+      "submit-resource-btn"
+    ) ||
+    form.querySelector(
+      'button[type="submit"]'
+    );
+
+  console.log(
+    "[RESOURCES] Form elements:",
+    {
+      fileInput:
+        fileInput
+          ? "found"
+          : "not found",
+
+      classSelect:
+        classSelect
+          ? "found"
+          : "not found",
+
+      uploadBtn:
+        uploadBtn
+          ? "found"
+          : "not found",
+
+      class:
+        classSelect
+          ? classSelect.value
+          : null
+    }
+  );
+
+  try {
+    // -------------------------------------------------
+    // AUTHENTICATION
+    // -------------------------------------------------
+
+    const token = getToken();
+
+    if (!token) {
+      alert(
+        "Please log in to upload resources."
+      );
+
+      window.location.href =
+        "/login.html";
+
+      return;
+    }
+
+    // -------------------------------------------------
+    // FILE VALIDATION
+    // -------------------------------------------------
+
+    if (
+      !fileInput ||
+      !fileInput.files ||
+      !fileInput.files.length
+    ) {
+      throw new Error(
+        "Please select a file to upload."
+      );
+    }
+
+    const file =
+      fileInput.files[0];
+
+    console.log(
+      "[RESOURCES] Selected file:",
+      {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      }
+    );
+
+    // -------------------------------------------------
+    // CLASS VALIDATION
+    // -------------------------------------------------
+
+    if (!classSelect) {
+      throw new Error(
+        "Class selector was not found."
+      );
+    }
+
+    const classAssigned =
+      String(
+        classSelect.value || ""
+      ).trim();
+
+    if (!classAssigned) {
+      throw new Error(
+        "Please select a class."
+      );
+    }
+
+    // -------------------------------------------------
+    // FILE SIZE
+    // -------------------------------------------------
+
+    const maxSize =
+      10 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      throw new Error(
+        "File is too large. Maximum size is 10 MB."
+      );
+    }
+
+    // -------------------------------------------------
+    // ALLOWED EXTENSIONS
+    // -------------------------------------------------
+
+    const extension =
+      file.name
+        .split(".")
+        .pop()
+        .toLowerCase();
+
+    const allowedExtensions = [
+      "pdf",
+      "doc",
+      "docx"
+    ];
+
+    if (
+      !allowedExtensions.includes(
+        extension
+      )
+    ) {
+      throw new Error(
+        "Only PDF, DOC and DOCX files are allowed."
+      );
+    }
+
+    // -------------------------------------------------
+    // DISABLE BUTTON
+    // -------------------------------------------------
+
+    if (uploadBtn) {
+      uploadBtn.disabled = true;
+      uploadBtn.textContent =
+        "Uploading...";
+    }
+
+    const statusElement =
+      document.getElementById(
+        "upload-status"
+      );
+
+    if (statusElement) {
+      statusElement.textContent =
+        "Uploading...";
+      statusElement.style.color =
+        "blue";
+      statusElement.style.display =
+        "block";
+    }
+
+    // -------------------------------------------------
+    // FORM DATA
+    // -------------------------------------------------
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      "resource",
+      file
+    );
+
+    formData.append(
+      "classAssigned",
+      classAssigned
+    );
+
+    console.log(
+      "[RESOURCES] Uploading to:",
+      `${API_BASE_URL}/api/resources/upload`
+    );
+
+    console.log(
+      "[RESOURCES] Class:",
+      classAssigned
+    );
+
+    // -------------------------------------------------
+    // UPLOAD
+    // -------------------------------------------------
+
+    const response =
+      await fetch(
+        `${API_BASE_URL}/api/resources/upload`,
+        {
+          method: "POST",
+
+          headers: {
+            Authorization:
+              `Bearer ${token}`
+          },
+
+          body: formData
         }
+      );
 
-        // ---------------------------------------------
-        // ALWAYS SHOW CLASS SELECTOR
-        // ---------------------------------------------
+    let result = {};
 
-        if (classSelector) {
+    try {
+      result =
+        await response.json();
+    } catch (error) {
+      console.warn(
+        "[RESOURCES] Server returned non-JSON response"
+      );
+    }
 
-            classSelector.style.display = 'block';
-            classSelector.style.visibility = 'visible';
-            classSelector.style.opacity = '1';
+    console.log(
+      "[RESOURCES] Upload response:",
+      response.status,
+      result
+    );
 
-            console.log('[RESOURCES] Class selector shown');
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+        `Upload failed (HTTP ${response.status})`
+      );
+    }
+
+    // -------------------------------------------------
+    // SUCCESS
+    // -------------------------------------------------
+
+    console.log(
+      "[RESOURCES] Upload successful:",
+      result
+    );
+
+    showInlineSuccess(
+      "Resource uploaded successfully."
+    );
+
+    if (statusElement) {
+      statusElement.textContent =
+        "Upload successful!";
+      statusElement.style.color =
+        "green";
+      statusElement.style.display =
+        "block";
+    }
+
+    // Reset form
+    form.reset();
+
+    // Hide upload form
+    const uploadContainer =
+      document.getElementById(
+        "upload-form-container"
+      );
+
+    if (uploadContainer) {
+      uploadContainer.style.display =
+        "none";
+    }
+
+    // Reload resources
+    await loadResources();
+
+  } catch (error) {
+    console.error(
+      "[RESOURCES] Upload error:",
+      error
+    );
+
+    showInlineError(
+      error.message ||
+      "Failed to upload resource."
+    );
+
+    const statusElement =
+      document.getElementById(
+        "upload-status"
+      );
+
+    if (statusElement) {
+      statusElement.textContent =
+        `Error: ${
+          error.message ||
+          "Upload failed"
+        }`;
+
+      statusElement.style.color =
+        "red";
+
+      statusElement.style.display =
+        "block";
+    }
+
+  } finally {
+
+    const uploadBtn =
+      document.getElementById(
+        "submit-resource-btn"
+      );
+
+    if (uploadBtn) {
+      uploadBtn.disabled = false;
+      uploadBtn.textContent =
+        "Upload Resource";
+    }
+  }
+}
+
+// =====================================================
+// INITIALIZE UPLOAD FORM
+// =====================================================
+
+function initializeUploadForm() {
+  const form =
+    document.getElementById(
+      "upload-form"
+    );
+
+  if (!form) {
+    console.warn(
+      "[RESOURCES] Upload form not found"
+    );
+
+    return;
+  }
+
+  // IMPORTANT:
+  // Only ONE submit listener.
+  form.addEventListener(
+    "submit",
+    handleFileUpload
+  );
+
+  console.log(
+    "[RESOURCES] Upload form initialized"
+  );
+}
+
+// =====================================================
+// LOAD RESOURCES
+// =====================================================
+
+async function loadResources(
+  selectedClass = null
+) {
+  if (!requireAuthentication()) {
+    return;
+  }
+
+  const token = getToken();
+  const role = getUserRole();
+  const userProfile =
+    getUserProfile();
+
+  console.log(
+    "[RESOURCES] Loading resources",
+    {
+      role,
+      selectedClass
+    }
+  );
+
+  const url =
+    new URL(
+      `${API_BASE_URL}/api/resources`
+    );
+
+  // -------------------------------------------------
+  // STUDENT
+  // -------------------------------------------------
+
+  if (role === "student") {
+
+    let studentClass =
+      userProfile.class ||
+      userProfile.profile?.class ||
+      userProfile.classAssigned ||
+      null;
+
+    if (!studentClass) {
+      console.warn(
+        "[RESOURCES] Student class missing from localStorage"
+      );
+
+      // Backend will resolve the actual class.
+      // Do not force an incorrect query parameter.
+    } else {
+      studentClass =
+        String(
+          studentClass
+        ).trim();
+
+      url.searchParams.set(
+        "class",
+        studentClass
+      );
+
+      userClass =
+        studentClass;
+    }
+
+    // Hide class filter
+    const classFilter =
+      document.getElementById(
+        "class-filter"
+      );
+
+    if (classFilter) {
+      classFilter.style.display =
+        "none";
+
+      const label =
+        classFilter.previousElementSibling;
+
+      if (
+        label &&
+        label.tagName === "LABEL"
+      ) {
+        label.style.display =
+          "none";
+      }
+    }
+
+  }
+
+  // -------------------------------------------------
+  // TEACHER / ADMIN
+  // -------------------------------------------------
+
+  else {
+
+    if (
+      selectedClass &&
+      selectedClass !== "all"
+    ) {
+      url.searchParams.set(
+        "class",
+        String(
+          selectedClass
+        ).trim()
+      );
+    }
+  }
+
+  console.log(
+    "[RESOURCES] Fetching:",
+    url.toString()
+  );
+
+  try {
+
+    const response =
+      await fetch(
+        url.toString(),
+        {
+          method: "GET",
+
+          headers: {
+            Authorization:
+              `Bearer ${token}`
+          }
         }
+      );
 
-        // ---------------------------------------------
-        // ALWAYS SHOW CLASS DROPDOWN
-        // ---------------------------------------------
+    let data = {};
 
-        if (classSelect) {
+    try {
+      data =
+        await response.json();
+    } catch (error) {
+      throw new Error(
+        "Server returned an invalid response."
+      );
+    }
 
-            classSelect.style.display = 'block';
-            classSelect.style.visibility = 'visible';
-            classSelect.style.opacity = '1';
-            classSelect.style.pointerEvents = 'auto';
+    console.log(
+      "[RESOURCES] Response:",
+      response.status,
+      data
+    );
 
-            console.log('[RESOURCES] Class dropdown shown');
-        }
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+        `Failed to load resources (HTTP ${response.status})`
+      );
+    }
 
-    });
+    // -------------------------------------------------
+    // STORE CLASSES
+    // -------------------------------------------------
 
-} else {
+    availableClasses =
+      Array.isArray(data.classes)
+        ? data.classes
+        : [];
+
+    if (data.userClass) {
+      userClass =
+        data.userClass;
+    }
+
+    // -------------------------------------------------
+    // UPDATE FILTER
+    // -------------------------------------------------
+
+    if (
+      role === "teacher" ||
+      role === "admin" ||
+      role === "superadmin"
+    ) {
+      updateClassFilter();
+    }
+
+    // -------------------------------------------------
+    // DISPLAY
+    // -------------------------------------------------
+
+    renderResources(
+      data.resources || []
+    );
+
+  } catch (error) {
 
     console.error(
-        '[RESOURCES] upload-resource-btn was not found'
+      "[RESOURCES] Load error:",
+      error
     );
-}
-  
-  // Set up event listener for the cancel button
-  const cancelBtn = document.getElementById('cancel-upload-btn');
-  if (cancelBtn) {
-    cancelBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const container = document.getElementById('upload-form-container');
-      const form = document.getElementById('upload-form');
-      if (container) container.style.display = 'none';
-      if (form) form.reset();
-    });
-  }
-  
-  // Set up event listener for class filter
-  const classFilter = document.getElementById('class-filter');
-  if (classFilter) {
-    classFilter.style.display = isStudent ? 'none' : 'inline-block';
-    classFilter.addEventListener('change', (e) => {
-      const selectedClass = e.target.value === 'all' ? null : e.target.value;
-      loadResources(selectedClass);
-    });
-  }
-  
-  // Load resources for the appropriate class
-  if (isStudent && userProfile.class) {
-    // For students, only show resources for their class
-    loadResources(userProfile.class);
-  } else {
-    // For teachers/admins, show all resources
-    loadResources();
-  }
-});
 
-// Global variables
-let availableClasses = [];
-let userClass = null;
+    const resourceList =
+      document.getElementById(
+        "resource-list"
+      );
 
-// Cancel the upload process
-const cancelBtn = document.getElementById('cancel-upload-btn');
-if (cancelBtn) {
-  cancelBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    const container = document.getElementById('upload-form-container');
-    const form = document.getElementById('upload-form');
-    if (container) container.style.display = 'none';
-    if (form) form.reset();
-  });
-}
-
-// Handle file upload
-async function handleFileUpload(e) {
-  e.preventDefault();
-  
-  // Get fresh references to the form elements when the form is submitted
-  const form = e.target;
-  const fileInput = form.querySelector('input[type="file"]');
-  const classSelect = form.querySelector('select');
-  const uploadBtn = form.querySelector('button[type="submit"]');
-  
-  console.log('[DEBUG] File upload handler started');
-  
-  // Log the current state of the form
-  console.log('[DEBUG] Form elements:', { 
-    fileInput: fileInput ? 'found' : 'not found',
-    classSelect: classSelect ? 'found' : 'not found',
-    uploadBtn: uploadBtn ? 'found' : 'not found',
-    classSelectValue: classSelect ? classSelect.value : 'no class select found'
-  });
-  
-  try {
-    // Basic validation
-    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-      const errorMsg = 'No file selected';
-      console.error(errorMsg);
-      alert(errorMsg);
-      throw new Error(errorMsg);
-    }
-    
-    // Get the class select value
-    const classSelectValue = classSelect ? classSelect.value : null;
-    console.log('[DEBUG] Class select value:', classSelectValue);
-    
-    if (!classSelectValue) {
-      const errorMsg = 'Please select a class from the dropdown';
-      console.error(errorMsg);
-      alert(errorMsg);
-      if (classSelect) classSelect.focus();
-      throw new Error(errorMsg);
-    }
-    
-    const file = fileInput.files[0];
-    const classAssigned = classSelect.value;
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      console.error('No authentication token found');
-      alert('Please log in to upload files');
-      window.location.href = '/login.html';
-      return;
-    }
-    
-    // Disable button during upload
-    if (uploadBtn) uploadBtn.disabled = true;
-    
-    // Show upload status
-    const statusElement = document.getElementById('upload-status');
-    if (statusElement) {
-      statusElement.textContent = 'Uploading...';
-      statusElement.style.color = 'blue';
-      statusElement.style.display = 'block';
-    }
-    
-    // Create form data
-    const formData = new FormData();
-    formData.append('resource', file);
-    formData.append('classAssigned', classAssigned);
-    
-    // Log form data (for debugging)
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ': ', pair[1]);
-    }
-    
-    // Make the upload request
-    const response = await fetch(`${window.API_BASE_URL}/api/resources/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.message || 'Upload failed. Please try again.');
-    }
-    
-    console.log('Upload successful:', result);
-    
-    // Show success message
-    if (statusElement) {
-      statusElement.textContent = 'Upload successful! Refreshing resources...';
-      statusElement.style.color = 'green';
-    }
-    
-    // Reset form
-    const uploadForm = document.getElementById('upload-form');
-    if (uploadForm) uploadForm.reset();
-    
-    const uploadFormContainer = document.getElementById('upload-form-container');
-    if (uploadFormContainer) uploadFormContainer.style.display = 'none';
-    
-    // Reload resources after a short delay
-    setTimeout(() => {
-      loadResources();
-      if (statusElement) {
-        statusElement.style.display = 'none';
-      }
-    }, 1500);
-    
-  } catch (error) {
-    console.error('Upload error:', error);
-    
-    // Show error message
-    const statusElement = document.getElementById('upload-status');
-    if (statusElement) {
-      statusElement.textContent = `Error: ${error.message}`;
-      statusElement.style.color = 'red';
-      statusElement.style.display = 'block';
-      
-      // Auto-hide error after 5 seconds
-      setTimeout(() => {
-        statusElement.style.display = 'none';
-      }, 5000);
-    } else {
-      alert(`Upload failed: ${error.message}`);
-    }
-  } finally {
-    // Re-enable button
-    const uploadBtn = document.querySelector('#upload-form button[type="submit"]');
-    if (uploadBtn) uploadBtn.disabled = false;
-  }
-}
-
-// Set up the file upload form submission
-const uploadForm = document.getElementById('upload-form');
-if (uploadForm) {
-  uploadForm.addEventListener('submit', handleFileUpload);
-}
-
-// Inline error/success display
-function showInlineError(msg, elementId = 'error-message') {
-  const el = document.getElementById(elementId) || document.getElementById('error-message');
-  if (!el) {
-    console.error('Error element not found:', elementId);
-    return;
-  }
-  el.textContent = msg;
-  el.style.color = '#d32f2f'; // Dark red for errors
-  el.style.backgroundColor = '#ffebee'; // Light red background
-  el.style.padding = '10px';
-  el.style.borderRadius = '4px';
-  el.style.margin = '10px 0';
-  el.style.display = 'block';
-  
-  // Auto-hide after 5 seconds
-  setTimeout(() => {
-    el.style.display = 'none';
-  }, 5000);
-}
-
-function showInlineSuccess(msg, elementId = 'error-message') {
-  const el = document.getElementById(elementId) || document.getElementById('error-message');
-  if (!el) {
-    console.error('Success element not found:', elementId);
-    return;
-  }
-  el.textContent = msg;
-  el.style.color = '#2e7d32'; // Dark green for success
-  el.style.backgroundColor = '#e8f5e9'; // Light green background
-  el.style.padding = '10px';
-  el.style.borderRadius = '4px';
-  el.style.margin = '10px 0';
-  el.style.display = 'block';
-  
-  // Auto-hide after 5 seconds
-  setTimeout(() => {
-    el.style.display = 'none';
-  }, 5000);
-}
-
-// Load and display available resources with class filtering
-async function loadResources(selectedClass = null) {
-  const url = new URL(`${window.API_BASE_URL}/api/resources`);
-  
-  // Get token and verify authentication
-  const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.href = '/login.html';
-    return;
-  }
-  
-  // Decode the JWT token to get user role
-  let userRole = 'student'; // Default to most restrictive
-  try {
-    const tokenParts = token.split('.');
-    if (tokenParts.length === 3) {
-      const payload = JSON.parse(atob(tokenParts[1]));
-      userRole = payload.role || 'student';
-    }
-  } catch (error) {
-    console.error('Error decoding token:', error);
-  }
-  
-  // Set up class filtering
-  if (selectedClass && selectedClass !== 'all') {
-    url.searchParams.set('class', selectedClass);
-  }
-  
-  // For students, always filter by their class
-  const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-  if (userRole === 'student') {
-    const studentClass = userProfile.class || (userProfile.profile && userProfile.profile.class);
-    if (studentClass) {
-      url.searchParams.set('class', String(studentClass).trim());
-      // Hide class filter for students
-      const classFilter = document.getElementById('class-filter');
-      if (classFilter) {
-        classFilter.style.display = 'none';
-        const label = classFilter.previousElementSibling;
-        if (label?.tagName === 'LABEL') label.style.display = 'none';
-      }
-    } else {
-      // Show error for students without a class
-      const resourceList = document.getElementById('resource-list');
-      if (resourceList) {
-        resourceList.innerHTML = `
-          <div class="error-message" style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 4px; margin: 10px 0;">
-            You are not assigned to any class. Please contact your administrator.
-          </div>`;
-      }
-      return;
-    }
-  }
-  
-  console.log('Fetching resources from:', url.toString());
-  
-  fetch(url, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-    },
-  })
-    .then(response => {
-      console.log('Response status:', response.status);
-      if (!response.ok) {
-        return response.json().then(err => {
-          console.error('Error response:', err);
-          throw new Error(err.message || 'Failed to load resources');
-        });
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('Resources received:', data);
-      // Store classes and user class for later use
-      if (data.classes) {
-        availableClasses = data.classes;
-      }
-      if (data.userClass) {
-        userClass = data.userClass;
-      }
-      
-      // Only show class filter for teachers/admins
-      const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-      const isStudent = userProfile.role === 'student';
-      
-      if (!isStudent) {
-        updateClassFilter();
-      } else {
-        // Hide the filter container for students
-        const filterContainer = document.querySelector('.filter-container');
-        if (filterContainer) {
-          filterContainer.style.display = 'none';
-        }
-      }
-      
-      const resourceList = document.getElementById('resource-list');
-      resourceList.innerHTML = '';  // Clear existing resources
-      resourceList.innerHTML = '<div class="loading">Loading resources...</div>';
-      
-      if (data.resources && data.resources.length > 0) {
-        // Group resources by class
-        const resourcesByClass = {};
-        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-        const isTeacher = userProfile.role === 'teacher';
-        
-        // Sort resources by class name
-        const sortedResources = [...data.resources].sort((a, b) => {
-          return a.classAssigned.localeCompare(b.classAssigned);
-        });
-        
-        // Group by class
-        sortedResources.forEach(resource => {
-          if (!resourcesByClass[resource.classAssigned]) {
-            resourcesByClass[resource.classAssigned] = [];
-          }
-          resourcesByClass[resource.classAssigned].push(resource);
-        });
-        
-        // Sort classes
-        const sortedClasses = Object.keys(resourcesByClass).sort();
-        
-        // Clear the loading message
-        resourceList.innerHTML = '';
-        
-        // Render resources by class
-        sortedClasses.forEach(className => {
-          const resources = resourcesByClass[className];
-          
-          // Create class section
-          const classSection = document.createElement('div');
-          classSection.className = 'resource-class-section';
-          
-          // Add class header with count
-          const classHeader = document.createElement('div');
-          classHeader.className = 'resource-class-header';
-          classHeader.innerHTML = `
-            <h3>${className}</h3>
-            <span class="resource-count">${resources.length} ${resources.length === 1 ? 'resource' : 'resources'}</span>
-          `;
-          classSection.appendChild(classHeader);
-          
-          // Create resources container
-          const resourcesContainer = document.createElement('div');
-          resourcesContainer.className = 'resources-grid';
-          
-          // Add resources for this class
-          resources.forEach(resource => {
-            const resourceCard = document.createElement('div');
-            resourceCard.className = 'resource-card';
-            
-            const ext = resource.name.split('.').pop().toLowerCase();
-            let icon = '📄';
-            let type = 'Document';
-            
-            if (ext === 'pdf') {
-              icon = '📄';
-              type = 'PDF';
-            } else if (['doc', 'docx'].includes(ext)) {
-              icon = '📝';
-              type = 'Word';
-            } else if (['xls', 'xlsx'].includes(ext)) {
-              icon = '📊';
-              type = 'Excel';
-            } else if (['ppt', 'pptx'].includes(ext)) {
-              icon = '📑';
-              type = 'PowerPoint';
-            } else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
-              icon = '🖼️';
-              type = 'Image';
-            }
-                
-            // Format upload date
-            const uploadDate = new Date(resource.createdAt).toLocaleDateString();
-            
-            // Show uploader name for teachers/admins
-            const uploaderInfo = resource.uploadedBy && resource.uploadedBy.name 
-              ? `<div class="resource-meta">Uploaded by ${resource.uploadedBy.name} on ${uploadDate}</div>` 
-              : `<div class="resource-meta">Uploaded on ${uploadDate}</div>`;
-            
-            resourceCard.innerHTML = `
-              <div class="resource-icon">${icon}</div>
-              <div class="resource-content">
-                <div class="resource-name" title="${resource.name}">
-                  <a href="${window.API_BASE_URL}/uploads/resources/${resource.path}" target="_blank">
-                    ${resource.name}
-                  </a>
-                </div>
-                <div class="resource-type">${type} • ${(resource.size / 1024).toFixed(1)} KB</div>
-                ${uploaderInfo}
-              </div>
-              <div class="resource-actions">
-                <a href="${window.API_BASE_URL}/uploads/resources/${resource.path}" download class="download-btn" title="Download">
-                  <i class="fas fa-download"></i>
-                </a>
-                ${resource.canDelete ? `
-                  <button class="delete-btn" data-id="${resource._id}" title="Delete">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                ` : ''}
-              </div>
-            `;
-            
-            // Add the resource card to the grid
-            resourcesContainer.appendChild(resourceCard);
-          });
-          
-          // Add resources container to the class section
-          classSection.appendChild(resourcesContainer);
-          
-          // Add the class section to the resource list
-          resourceList.appendChild(classSection);
-        });
-        
-        // Add event delegation for delete buttons
-        resourceList.addEventListener('click', (e) => {
-          const deleteBtn = e.target.closest('.delete-btn');
-          if (deleteBtn) {
-            e.preventDefault();
-            const resourceId = deleteBtn.dataset.id;
-            if (resourceId && confirm('Are you sure you want to delete this resource?')) {
-              deleteResource(resourceId);
-            }
-          }
-        });
-      } else {
-        resourceList.innerHTML = '<li>No resources available for the selected class.</li>';
-      }
-    })
-    .catch(error => {
-      console.error('Error loading resources:', error);
-    });
-}
-
-// Delete a resource
-function deleteResource(resourceId) {
-  if (!resourceId) {
-    console.error('No resource ID provided for deletion');
-    showInlineError('Error: No resource ID provided');
-    return;
-  }
-
-  console.log('Deleting resource with ID:', resourceId);
-  
-  // Ensure the resource ID is a string and trim any whitespace
-  const cleanResourceId = String(resourceId).trim();
-  
-  fetch(`${window.API_BASE_URL}/api/resources/${cleanResourceId}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      'Content-Type': 'application/json',
-    },
-  })
-    .then(async response => {
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.message || `Failed to delete resource (HTTP ${response.status})`);
-      }
-      return data;
-    })
-    .then(data => {
-      console.log('Delete successful:', data);
-      showInlineSuccess('Resource deleted successfully');
-      // Reload resources after a short delay to show the success message
-      setTimeout(() => loadResources(), 1000);
-    })
-    .catch(error => {
-      console.error('Error deleting resource:', error);
-      showInlineError(error.message || 'Failed to delete resource');
-    });
-}
-
-// Add progress bar and message container
-window.addEventListener('DOMContentLoaded', () => {
-  if (!document.getElementById('upload-progress')) {
-    const progress = document.createElement('progress');
-    progress.id = 'upload-progress';
-    progress.max = 100;
-    progress.value = 0;
-    progress.style.display = 'none';
-    document.getElementById('upload-form-container').appendChild(progress);
-  }
-  if (!document.getElementById('resource-upload-msg')) {
-    const msg = document.createElement('div');
-    msg.id = 'resource-upload-msg';
-    msg.style.display = 'none';
-    msg.style.marginTop = '8px';
-    document.getElementById('upload-form-container').appendChild(msg);
-  }
-});
-
-// Update class filter dropdown (for teachers/admins only)
-function updateClassFilter() {
-  const classFilter = document.getElementById('class-filter');
-  if (!classFilter) return;
-
-  // Get token from localStorage
-  const token = localStorage.getItem('token');
-  if (!token) return;
-
-  // Get user role from token
-  let userRole = 'student';
-  try {
-    const tokenParts = token.split('.');
-    if (tokenParts.length === 3) {
-      const payload = JSON.parse(atob(tokenParts[1]));
-      userRole = payload.role || 'student';
-    }
-  } catch (error) {
-    console.error('Error decoding token:', error);
-    return;
-  }
-
-  // Only show filter for teachers/admins
-  if (userRole === 'student') {
-    classFilter.style.display = 'none';
-    const label = classFilter.previousElementSibling;
-    if (label?.tagName === 'LABEL') label.style.display = 'none';
-    return;
-  }
-
-  // For teachers/admins, show the filter
-  classFilter.style.display = 'block';
-  const label = classFilter.previousElementSibling;
-  if (label?.tagName === 'LABEL') label.style.display = 'block';
-
-  // Clear existing options
-  classFilter.innerHTML = '';
-  
-  // Add default 'All Classes' option
-  const defaultOption = document.createElement('option');
-  defaultOption.value = 'all';
-  defaultOption.textContent = 'All Classes';
-  classFilter.appendChild(defaultOption);
-
-  // Add class options
-  if (availableClasses?.length) {
-    availableClasses.forEach(className => {
-      if (className) {
-        const option = document.createElement('option');
-        option.value = className;
-        option.textContent = className.startsWith('Grade') || className.startsWith('Form') 
-          ? className 
-          : `Class ${className}`;
-        classFilter.appendChild(option);
-      }
-    });
-  }
-
-  // Add change event listener
-  classFilter.onchange = (e) => {
-    loadResources(e.target.value === 'all' ? null : e.target.value);
-  };
-}
-
-// Initialize the resources page
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('Resources page loaded');
-  
-  // Check authentication
-  const token = localStorage.getItem('token');
-  if (!token) {
-    console.log('No token found, redirecting to login');
-    window.location.href = '/login.html';
-    return;
-  }
-
-  // Initialize resources
-  loadResources().catch(error => {
-    console.error('Error loading resources:', error);
-    const resourceList = document.getElementById('resource-list');
     if (resourceList) {
       resourceList.innerHTML = `
-        <div class="error-message" style="color: #d32f2f; padding: 15px; background: #ffebee; border-radius: 4px; margin: 10px 0;">
-          Error loading resources. Please try again later.
-        </div>`;
+        <div
+          class="error-message"
+          style="
+            color:#d32f2f;
+            padding:15px;
+            background:#ffebee;
+            border-radius:4px;
+            margin:10px 0;
+          "
+        >
+          ${escapeHtml(
+            error.message ||
+            "Failed to load resources."
+          )}
+        </div>
+      `;
     }
-  });
+  }
+}
 
-  // Set up file upload form
-  const uploadForm = document.getElementById('upload-form');
-  const submitBtn = document.getElementById('submit-resource-btn');
-  
-  console.log('Upload form element:', uploadForm);
-  console.log('Submit button element:', submitBtn);
-  
-  // Add direct click handler to the submit button
-  if (submitBtn) {
-    submitBtn.onclick = async (e) => {
-      console.log('Submit button clicked');
-      e.preventDefault();
-      
-      // Manually trigger form validation
-      const fileInput = document.getElementById('resource-file');
-      if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-        alert('Please select a file to upload');
+// =====================================================
+// RENDER RESOURCES
+// =====================================================
+
+function renderResources(
+  resources
+) {
+  const resourceList =
+    document.getElementById(
+      "resource-list"
+    );
+
+  if (!resourceList) {
+    console.error(
+      "[RESOURCES] resource-list not found"
+    );
+
+    return;
+  }
+
+  resourceList.innerHTML = "";
+
+  if (
+    !Array.isArray(resources) ||
+    resources.length === 0
+  ) {
+    resourceList.innerHTML = `
+      <li>
+        No resources available.
+      </li>
+    `;
+
+    return;
+  }
+
+  // -------------------------------------------------
+  // GROUP BY CLASS
+  // -------------------------------------------------
+
+  const resourcesByClass = {};
+
+  resources.forEach(
+    resource => {
+
+      const className =
+        String(
+          resource.classAssigned ||
+          "General"
+        ).trim();
+
+      if (
+        !resourcesByClass[className]
+      ) {
+        resourcesByClass[className] =
+          [];
+      }
+
+      resourcesByClass[className]
+        .push(resource);
+    }
+  );
+
+  // -------------------------------------------------
+  // SORT CLASSES
+  // -------------------------------------------------
+
+  const sortedClasses =
+    Object.keys(
+      resourcesByClass
+    ).sort(
+      (a, b) =>
+        a.localeCompare(b)
+    );
+
+  // -------------------------------------------------
+  // RENDER
+  // -------------------------------------------------
+
+  sortedClasses.forEach(
+    className => {
+
+      const classResources =
+        resourcesByClass[
+          className
+        ];
+
+      const classSection =
+        document.createElement(
+          "div"
+        );
+
+      classSection.className =
+        "resource-class-section";
+
+      // Header
+      const classHeader =
+        document.createElement(
+          "div"
+        );
+
+      classHeader.className =
+        "resource-class-header";
+
+      classHeader.innerHTML = `
+        <h3>
+          ${escapeHtml(
+            className
+          )}
+        </h3>
+
+        <span class="resource-count">
+          ${
+            classResources.length
+          }
+          ${
+            classResources.length === 1
+              ? "resource"
+              : "resources"
+          }
+        </span>
+      `;
+
+      classSection.appendChild(
+        classHeader
+      );
+
+      // Grid
+      const resourcesContainer =
+        document.createElement(
+          "div"
+        );
+
+      resourcesContainer.className =
+        "resources-grid";
+
+      // Sort resources
+      classResources.sort(
+        (a, b) => {
+
+          const dateA =
+            new Date(
+              a.createdAt || 0
+            );
+
+          const dateB =
+            new Date(
+              b.createdAt || 0
+            );
+
+          return dateB - dateA;
+        }
+      );
+
+      classResources.forEach(
+        resource => {
+
+          const resourceCard =
+            createResourceCard(
+              resource
+            );
+
+          resourcesContainer.appendChild(
+            resourceCard
+          );
+        }
+      );
+
+      classSection.appendChild(
+        resourcesContainer
+      );
+
+      resourceList.appendChild(
+        classSection
+      );
+    }
+  );
+}
+
+// =====================================================
+// CREATE RESOURCE CARD
+// =====================================================
+
+function createResourceCard(
+  resource
+) {
+  const card =
+    document.createElement(
+      "div"
+    );
+
+  card.className =
+    "resource-card";
+
+  const name =
+    String(
+      resource.name ||
+      "Unnamed resource"
+    );
+
+  const ext =
+    name
+      .split(".")
+      .pop()
+      .toLowerCase();
+
+  let icon = "📄";
+  let type = "Document";
+
+  if (ext === "pdf") {
+    icon = "📄";
+    type = "PDF";
+  } else if (
+    ext === "doc" ||
+    ext === "docx"
+  ) {
+    icon = "📝";
+    type = "Word";
+  } else if (
+    ext === "xls" ||
+    ext === "xlsx"
+  ) {
+    icon = "📊";
+    type = "Excel";
+  } else if (
+    ext === "ppt" ||
+    ext === "pptx"
+  ) {
+    icon = "📑";
+    type = "PowerPoint";
+  } else if (
+    [
+      "jpg",
+      "jpeg",
+      "png",
+      "gif"
+    ].includes(ext)
+  ) {
+    icon = "🖼️";
+    type = "Image";
+  }
+
+  // -------------------------------------------------
+  // FIX FILE URL
+  // -------------------------------------------------
+
+  const fileUrl =
+    getResourceUrl(
+      resource.path
+    );
+
+  console.log(
+    "[RESOURCES] File URL:",
+    {
+      name,
+      storedPath:
+        resource.path,
+      finalUrl:
+        fileUrl
+    }
+  );
+
+  // -------------------------------------------------
+  // DATE
+  // -------------------------------------------------
+
+  let uploadDate =
+    "";
+
+  if (resource.createdAt) {
+    const date =
+      new Date(
+        resource.createdAt
+      );
+
+    if (
+      !Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      uploadDate =
+        date.toLocaleDateString();
+    }
+  }
+
+  // -------------------------------------------------
+  // SIZE
+  // -------------------------------------------------
+
+  let sizeText = "";
+
+  if (
+    resource.size &&
+    Number(resource.size) > 0
+  ) {
+    sizeText =
+      `${(
+        Number(resource.size) /
+        1024
+      ).toFixed(1)} KB`;
+  }
+
+  const resourceType =
+    sizeText
+      ? `${type} • ${sizeText}`
+      : type;
+
+  // -------------------------------------------------
+  // UPLOADER
+  // -------------------------------------------------
+
+  let uploaderInfo =
+    `Uploaded on ${uploadDate}`;
+
+  if (
+    resource.uploadedBy &&
+    resource.uploadedBy.name
+  ) {
+    uploaderInfo =
+      `Uploaded by ${
+        escapeHtml(
+          resource.uploadedBy.name
+        )
+      } on ${uploadDate}`;
+  }
+
+  // -------------------------------------------------
+  // CARD
+  // -------------------------------------------------
+
+  card.innerHTML = `
+    <div class="resource-icon">
+      ${icon}
+    </div>
+
+    <div class="resource-content">
+
+      <div
+        class="resource-name"
+        title="${escapeHtml(
+          name
+        )}"
+      >
+        <a
+          href="${fileUrl}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          ${escapeHtml(
+            name
+          )}
+        </a>
+      </div>
+
+      <div class="resource-type">
+        ${resourceType}
+      </div>
+
+      <div class="resource-meta">
+        ${uploaderInfo}
+      </div>
+
+    </div>
+
+    <div class="resource-actions">
+
+      <a
+        href="${fileUrl}"
+        download="${escapeHtml(
+          name
+        )}"
+        class="download-btn"
+        title="Download"
+      >
+        <i class="fas fa-download"></i>
+      </a>
+
+      ${
+        resource.canDelete
+          ? `
+            <button
+              type="button"
+              class="delete-btn"
+              data-id="${escapeHtml(
+                resource._id
+              )}"
+              title="Delete"
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          `
+          : ""
+      }
+
+    </div>
+  `;
+
+  return card;
+}
+
+// =====================================================
+// DELETE RESOURCE
+// =====================================================
+
+async function deleteResource(
+  resourceId
+) {
+  if (!resourceId) {
+    showInlineError(
+      "No resource ID provided."
+    );
+
+    return;
+  }
+
+  const token =
+    getToken();
+
+  if (!token) {
+    showInlineError(
+      "Authentication required."
+    );
+
+    return;
+  }
+
+  const cleanId =
+    String(
+      resourceId
+    ).trim();
+
+  if (
+    !/^[0-9a-fA-F]{24}$/.test(
+      cleanId
+    )
+  ) {
+    showInlineError(
+      "Invalid resource ID."
+    );
+
+    return;
+  }
+
+  try {
+
+    console.log(
+      "[RESOURCES] Deleting:",
+      cleanId
+    );
+
+    const response =
+      await fetch(
+        `${API_BASE_URL}/api/resources/${cleanId}`,
+        {
+          method: "DELETE",
+
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+
+            "Content-Type":
+              "application/json"
+          }
+        }
+      );
+
+    let data = {};
+
+    try {
+      data =
+        await response.json();
+    } catch (error) {
+      // Empty response is okay
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.message ||
+        `Failed to delete resource (HTTP ${response.status})`
+      );
+    }
+
+    console.log(
+      "[RESOURCES] Delete successful:",
+      data
+    );
+
+    showInlineSuccess(
+      "Resource deleted successfully."
+    );
+
+    await loadResources();
+
+  } catch (error) {
+
+    console.error(
+      "[RESOURCES] Delete error:",
+      error
+    );
+
+    showInlineError(
+      error.message ||
+      "Failed to delete resource."
+    );
+  }
+}
+
+// =====================================================
+// DELETE EVENT DELEGATION
+// =====================================================
+
+function initializeResourceList() {
+  const resourceList =
+    document.getElementById(
+      "resource-list"
+    );
+
+  if (!resourceList) {
+    return;
+  }
+
+  resourceList.addEventListener(
+    "click",
+    function (event) {
+
+      const deleteButton =
+        event.target.closest(
+          ".delete-btn"
+        );
+
+      if (!deleteButton) {
         return;
       }
-      
-      // Call the upload function directly
-      try {
-        await handleFileUpload(e);
-      } catch (error) {
-        console.error('Upload failed:', error);
-        alert('Upload failed: ' + (error.message || 'Unknown error'));
+
+      event.preventDefault();
+
+      const resourceId =
+        deleteButton.dataset.id;
+
+      if (!resourceId) {
+        return;
       }
-    };
+
+      const confirmed =
+        confirm(
+          "Are you sure you want to delete this resource?"
+        );
+
+      if (confirmed) {
+        deleteResource(
+          resourceId
+        );
+      }
+    }
+  );
+}
+
+// =====================================================
+// CLASS FILTER
+// =====================================================
+
+function updateClassFilter() {
+  const classFilter =
+    document.getElementById(
+      "class-filter"
+    );
+
+  if (!classFilter) {
+    return;
   }
 
-  // Also handle form submission for good measure
-  if (uploadForm) {
-    uploadForm.onsubmit = (e) => {
-      console.log('Form submission intercepted');
-      e.preventDefault();
-      if (submitBtn) {
-        submitBtn.click();
-      }
-    };
+  const role =
+    getUserRole();
+
+  // -------------------------------------------------
+  // STUDENT
+  // -------------------------------------------------
+
+  if (role === "student") {
+
+    classFilter.style.display =
+      "none";
+
+    const label =
+      classFilter.previousElementSibling;
+
+    if (
+      label &&
+      label.tagName === "LABEL"
+    ) {
+      label.style.display =
+        "none";
+    }
+
+    return;
   }
 
-  // Update class filter based on user role
-  updateClassFilter();
-  
-  console.log('Resources page initialization complete');
-});
+  // -------------------------------------------------
+  // TEACHER / ADMIN
+  // -------------------------------------------------
+
+  classFilter.style.display =
+    "inline-block";
+
+  const label =
+    classFilter.previousElementSibling;
+
+  if (
+    label &&
+    label.tagName === "LABEL"
+  ) {
+    label.style.display =
+      "inline-block";
+  }
+
+  classFilter.innerHTML = "";
+
+  // All Classes
+  const allOption =
+    document.createElement(
+      "option"
+    );
+
+  allOption.value =
+    "all";
+
+  allOption.textContent =
+    "All Classes";
+
+  classFilter.appendChild(
+    allOption
+  );
+
+  // Classes
+  if (
+    Array.isArray(
+      availableClasses
+    )
+  ) {
+
+    availableClasses
+      .filter(Boolean)
+      .sort()
+      .forEach(
+        className => {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+          option.value =
+            className;
+
+          option.textContent =
+            className;
+
+          classFilter.appendChild(
+            option
+          );
+        }
+      );
+  }
+
+  // Filter change
+  classFilter.onchange =
+    function (event) {
+
+      const value =
+        event.target.value;
+
+      loadResources(
+        value === "all"
+          ? null
+          : value
+      );
+    };
+}
+
+// =====================================================
+// UPLOAD PROGRESS ELEMENTS
+// =====================================================
+
+function initializeUploadStatus() {
+  const container =
+    document.getElementById(
+      "upload-form-container"
+    );
+
+  if (!container) {
+    return;
+  }
+
+  // Progress
+  if (
+    !document.getElementById(
+      "upload-progress"
+    )
+  ) {
+
+    const progress =
+      document.createElement(
+        "progress"
+      );
+
+    progress.id =
+      "upload-progress";
+
+    progress.max = 100;
+    progress.value = 0;
+
+    progress.style.display =
+      "none";
+
+    container.appendChild(
+      progress
+    );
+  }
+
+  // Message
+  if (
+    !document.getElementById(
+      "resource-upload-msg"
+    )
+  ) {
+
+    const message =
+      document.createElement(
+        "div"
+      );
+
+    message.id =
+      "resource-upload-msg";
+
+    message.style.display =
+      "none";
+
+    message.style.marginTop =
+      "8px";
+
+    container.appendChild(
+      message
+    );
+  }
+}
+
+// =====================================================
+// INITIALIZE PAGE
+// =====================================================
+
+document.addEventListener(
+  "DOMContentLoaded",
+  async function () {
+
+    console.log(
+      "================================="
+    );
+
+    console.log(
+      "[RESOURCES] Page loaded"
+    );
+
+    console.log(
+      "================================="
+    );
+
+    // -------------------------------------------------
+    // AUTH
+    // -------------------------------------------------
+
+    if (
+      !requireAuthentication()
+    ) {
+      return;
+    }
+
+    // -------------------------------------------------
+    // INITIALIZE UI
+    // -------------------------------------------------
+
+    initializeUploadButton();
+
+    initializeCancelButton();
+
+    initializeUploadForm();
+
+    initializeResourceList();
+
+    initializeUploadStatus();
+
+    // -------------------------------------------------
+    // LOAD USER CLASS INTO SELECT
+    // -------------------------------------------------
+
+    const userProfile =
+      getUserProfile();
+
+    const classSelect =
+      document.getElementById(
+        "class-select"
+      );
+
+    if (
+      classSelect &&
+      userProfile.class
+    ) {
+
+      const profileClass =
+        String(
+          userProfile.class
+        ).trim();
+
+      for (
+        let i = 0;
+        i <
+        classSelect.options.length;
+        i++
+      ) {
+
+        if (
+          String(
+            classSelect.options[i].value
+          ).trim() ===
+          profileClass
+        ) {
+
+          classSelect.selectedIndex =
+            i;
+
+          break;
+        }
+      }
+    }
+
+    // -------------------------------------------------
+    // INITIAL LOAD
+    // -------------------------------------------------
+
+    await loadResources();
+
+    console.log(
+      "================================="
+    );
+
+    console.log(
+      "[RESOURCES] Initialization complete"
+    );
+
+    console.log(
+      "================================="
+    );
+  }
+);
