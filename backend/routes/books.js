@@ -8,27 +8,99 @@ const Book = mongoose.models.Book || require('../models/Book');
 const { protect } = require('../middleware/auth');
 
 // Get all books with advanced filtering support
-router.get('/', async (req, res) => {
+// IMPORTANT: Only return books belonging to the authenticated user's school
+router.get('/', protect, async (req, res) => {
     try {
-        const { search, genre, author, year, status } = req.query;
-        let filter = {};
+        // Ensure the user is authenticated and assigned to a school
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message: 'User is not assigned to a school'
+            });
+        }
 
+        const {
+            search,
+            genre,
+            author,
+            year,
+            status
+        } = req.query;
+
+        // IMPORTANT:
+        // Always restrict the query to the authenticated user's school.
+        const filter = {
+            school: req.user.school
+        };
+
+        // Search by title, author, or description
         if (search) {
             filter.$or = [
-                { title: { $regex: search, $options: 'i' } },
-                { author: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } }
+                {
+                    title: {
+                        $regex: search,
+                        $options: 'i'
+                    }
+                },
+                {
+                    author: {
+                        $regex: search,
+                        $options: 'i'
+                    }
+                },
+                {
+                    description: {
+                        $regex: search,
+                        $options: 'i'
+                    }
+                }
             ];
         }
-        if (genre) filter.genre = genre;
-        if (author) filter.author = { $regex: author, $options: 'i' };
-        if (year) filter.year = year;
-        if (status) filter.status = status;
+
+        // Genre filter
+        if (genre) {
+            filter.genre = genre;
+        }
+
+        // Author filter
+        if (author) {
+            filter.author = {
+                $regex: author,
+                $options: 'i'
+            };
+        }
+
+        // Year filter
+        if (year) {
+            filter.year = year;
+        }
+
+        // Status filter
+        if (status) {
+            filter.status = status;
+        }
+
+        console.log('[BOOKS] School:', req.user.school);
+        console.log(
+            '[BOOKS] Query:',
+            JSON.stringify(filter, null, 2)
+        );
 
         const books = await Book.find(filter);
-        res.status(200).json(books);
+
+        console.log(
+            `[BOOKS] Returning ${books.length} books for school ${req.user.school}`
+        );
+
+        return res.status(200).json(books);
+
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('[BOOKS] Error fetching books:', err);
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
 });
 
