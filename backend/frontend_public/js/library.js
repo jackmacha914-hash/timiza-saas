@@ -2014,7 +2014,7 @@ if (!response.ok) {
     if (!table) return;
     table.innerHTML = `<tr><td colspan="8" class="text-center">Loading issued books...</td></tr>`;
     try {
-      const res = await apiFetch('/api/books/issued');
+      const res = await apiFetch('/api/library/issued')
       const books = Array.isArray(res) ? res : (res.data || []);
       issuedBooksData = books;
       if (!books.length) {
