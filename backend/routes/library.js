@@ -81,10 +81,12 @@ router.get('/my-books', protect, async (req, res) => {
 });
 
 // GET /api/library - list all books with optional filters
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
     const { search, genre, author, className } = req.query;
-    const query = {};
+   const query = {
+  school: req.user.school
+};
     
     // Add search filter
     if (search) {
@@ -195,48 +197,96 @@ router.put('/:id', async (req, res) => {
 });
 
 // POST /api/library/:id/issue - issue a book to a student
-router.post('/:id/issue', async (req, res) => {
+// IMPORTANT: Users can only issue books belonging to their own school
+router.post('/:id/issue', protect, async (req, res) => {
   try {
-    const { borrowerId, borrowerName, className, dueDate, genre } = req.body;
+    // --------------------------------------------------
+    // 1. Make sure the authenticated user has a school
+    // --------------------------------------------------
+    if (!req.user || !req.user.school) {
+      return res.status(403).json({
+        success: false,
+        message: 'User is not assigned to a school'
+      });
+    }
+
+    const {
+      borrowerId,
+      borrowerName,
+      className,
+      dueDate,
+      genre
+    } = req.body;
+
     const bookId = req.params.id;
-    
-    // Validate required fields
+
+    // --------------------------------------------------
+    // 2. Validate required fields
+    // --------------------------------------------------
     if (!borrowerId || !borrowerName || !className || !dueDate) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields'
+      });
     }
-    
-    // Check if book exists and is available
-    const book = await Book.findById(bookId);
+
+    // --------------------------------------------------
+    // 3. Find the book ONLY inside the user's school
+    // --------------------------------------------------
+    const book = await Book.findOne({
+      _id: bookId,
+      school: req.user.school
+    });
+
+    // IMPORTANT:
+    // If the book belongs to another school, it will not
+    // be found and cannot be issued.
     if (!book) {
-      return res.status(404).json({ error: 'Book not found' });
+      return res.status(404).json({
+        success: false,
+        error: 'Book not found'
+      });
     }
-    
-    // Ensure the book has a genre
+
+    // --------------------------------------------------
+    // 4. Ensure the book has a genre
+    // --------------------------------------------------
     if (!book.genre) {
       book.genre = genre || 'General';
-      await book.save();
     }
-    
+
+    // --------------------------------------------------
+    // 5. Check book availability
+    // --------------------------------------------------
     if (book.available <= 0) {
-      return res.status(400).json({ error: 'No available copies of this book' });
+      return res.status(400).json({
+        success: false,
+        error: 'No available copies of this book'
+      });
     }
-    
-    // Check if the book is already issued to the same borrower and not returned
+
+    // --------------------------------------------------
+    // 6. Check if this borrower already has this book
+    // --------------------------------------------------
     const existingBorrowing = await Borrowing.findOne({
-      bookId,
+      bookId: book._id,
       borrowerId,
       returned: false
     });
-    
+
     if (existingBorrowing) {
-      return res.status(400).json({ 
-        error: 'This book is already issued to the same borrower and not yet returned' 
+      return res.status(400).json({
+        success: false,
+        error:
+          'This book is already issued to the same borrower and not yet returned'
       });
     }
-    
-    // Create borrowing record with proper genre handling
+
+    // --------------------------------------------------
+    // 7. Create borrowing record
+    // --------------------------------------------------
     const borrowing = new Borrowing({
-      bookId,
+      bookId: book._id,
       bookTitle: book.title,
       borrowerId,
       borrowerName,
@@ -247,39 +297,70 @@ router.post('/:id/issue', async (req, res) => {
       fine: 0,
       issueDate: new Date()
     });
-    
-    // Update book availability
+
+    // --------------------------------------------------
+    // 8. Reduce available copies
+    // --------------------------------------------------
     book.available -= 1;
-    
-    // Save changes
+
+    // --------------------------------------------------
+    // 9. Save borrowing and book
+    // --------------------------------------------------
     await borrowing.save();
     await book.save();
-    
-    res.json({ 
-      message: 'Book issued successfully', 
+
+    console.log('[BOOK ISSUE] Successful:', {
+      bookId: book._id,
+      bookTitle: book.title,
+      borrowerId,
+      school: req.user.school,
+      availableCopies: book.available
+    });
+
+    // --------------------------------------------------
+    // 10. Return success response
+    // --------------------------------------------------
+    return res.status(200).json({
+      success: true,
+      message: 'Book issued successfully',
       borrowing,
       availableCopies: book.available
     });
-    
+
   } catch (err) {
-    console.error('Error issuing book:', err);
-    
-    // More detailed error handling
-    if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors).map(val => val.message);
-      return res.status(400).json({ 
-        error: 'Validation error',
-        details: messages 
+    console.error('[BOOK ISSUE] Error:', {
+      message: err.message,
+      name: err.name,
+      code: err.code
+    });
+
+    // Invalid MongoDB ObjectId
+    if (err.name === 'CastError') {
+      return res.status(404).json({
+        success: false,
+        error: 'Book not found'
       });
     }
-    
-    res.status(500).json({ 
+
+    // Mongoose validation error
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors)
+        .map(val => val.message);
+
+      return res.status(400).json({
+        success: false,
+        error: 'Validation error',
+        details: messages
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
       error: 'Failed to issue book',
-      details: err.message 
+      details: err.message
     });
   }
 });
-
 // DELETE /api/library/:id - delete a book
 router.delete('/:id', async (req, res) => {
   try {
@@ -325,7 +406,9 @@ router.get('/issued', async (req, res) => {
     const shouldGroupByClass = groupByClass === 'true';
     
     // Build query
-    const query = {};
+    const query = {
+  school: req.user.school
+};
     if (returned === 'true') {
       query.returned = true;
     } else if (returned === 'false') {
