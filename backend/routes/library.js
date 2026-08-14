@@ -493,6 +493,35 @@ router.get('/issued', protect, async (req, res) => {
                 }
             }
         ];
+        const debugBorrowings = await Borrowing.find({
+    school: req.user.school
+}).lean();
+
+console.log(
+    '[ISSUED DEBUG] Borrowings for school:',
+    debugBorrowings.map(b => ({
+        id: b._id,
+        bookId: b.bookId,
+        bookIdType: typeof b.bookId,
+        borrowerId: b.borrowerId,
+        returned: b.returned,
+        school: b.school
+    }))
+);
+
+const debugBooks = await Book.find({
+    school: req.user.school
+}).select('_id title school').lean();
+
+console.log(
+    '[ISSUED DEBUG] Books for school:',
+    debugBooks.map(b => ({
+        id: b._id,
+        idString: String(b._id),
+        title: b.title,
+        school: b.school
+    }))
+);
 
         const issuedBooks =
             await Borrowing.aggregate(
