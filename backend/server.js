@@ -47,61 +47,7 @@ app.use((req, res, next) => {
 // -------------------------
 // Serve uploaded files (resources, homeworks, etc.)
 // -------------------------
-// -------------------------
-// Serve uploaded files
-// -------------------------
-
-const uploadsPath = path.join(__dirname, 'uploads');
-
-console.log('📁 Uploads directory:', uploadsPath);
-console.log('📁 Uploads directory exists:', require('fs').existsSync(uploadsPath));
-
-app.use(
-  '/uploads',
-  express.static(uploadsPath, {
-    fallthrough: false,
-    index: false
-  })
-);
-
-app.get('/api/debug-upload/:filename', (req, res) => {
-  const fs = require('fs');
-
-  const filename = path.basename(req.params.filename);
-  const filePath = path.join(
-    __dirname,
-    'uploads',
-    'resources',
-    filename
-  );
-
-  console.log('=================================');
-  console.log('UPLOAD DEBUG');
-  console.log('Filename:', filename);
-  console.log('File path:', filePath);
-  console.log('Exists:', fs.existsSync(filePath));
-  console.log('=================================');
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({
-      success: false,
-      message: 'File does not exist on server',
-      filename,
-      filePath
-    });
-  }
-
-  const stats = fs.statSync(filePath);
-
-  res.json({
-    success: true,
-    filename,
-    filePath,
-    exists: true,
-    size: stats.size
-  });
-});
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // -------------------------
 // Static assets (frontend)
 const publicFrontendPath = path.join(__dirname, 'frontend_public');
