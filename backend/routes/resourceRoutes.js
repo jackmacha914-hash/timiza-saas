@@ -1,10 +1,16 @@
 const express = require("express");
+const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
 const { authorize } = require("../middleware/auth");
-const Resource = require("../models/Resource");
+
+const Resource =  require("../models/Resource");
+
+const User = mongoose.models.User || require("../models/User");
+
+
 
 const router = express.Router();
 
@@ -159,11 +165,16 @@ router.post(
 
 router.get("/", async (req, res) => {
   try {
+
     console.log("=================================");
     console.log("GET /api/resources");
     console.log("USER:", req.user);
     console.log("QUERY:", req.query);
     console.log("=================================");
+
+    // -------------------------------------------------
+    // Authentication
+    // -------------------------------------------------
 
     if (!req.user) {
       return res.status(401).json({
@@ -172,22 +183,42 @@ router.get("/", async (req, res) => {
       });
     }
 
+    // -------------------------------------------------
+    // School
+    // -------------------------------------------------
+
     const school = getUserSchool(req);
 
     if (!school) {
-      console.error("NO SCHOOL FOUND FOR USER");
+      console.error(
+        "[RESOURCES] NO SCHOOL FOUND FOR USER"
+      );
 
       return res.status(400).json({
         success: false,
-        message: "School information is missing.",
+        message:
+          "School information is missing.",
       });
     }
 
-    const role = String(req.user.role || "").toLowerCase();
+    // -------------------------------------------------
+    // Role
+    // -------------------------------------------------
 
-    const userId = String(req.user.id);
+    const role =
+      String(
+        req.user.role || ""
+      ).toLowerCase();
 
-    const classFilter = req.query.class;
+    const userId =
+      String(req.user.id);
+
+    const classFilter =
+      req.query.class;
+
+    // -------------------------------------------------
+    // Base query
+    // -------------------------------------------------
 
     const query = {
       school,
@@ -197,13 +228,88 @@ router.get("/", async (req, res) => {
     // STUDENT
     // =================================================
 
+    let resolvedUserClass = null;
+
     if (role === "student") {
-      const userClass =
+
+      // ------------------------------------------------
+      // First try authenticated user
+      // ------------------------------------------------
+
+      resolvedUserClass =
         req.user.class ||
         req.user.profile?.class ||
-        req.user.classAssigned;
+        req.user.classAssigned ||
+        null;
 
-      if (!userClass) {
+      // ------------------------------------------------
+      // If authentication object doesn't contain class,
+      // load the actual user from MongoDB.
+      // ------------------------------------------------
+
+      if (!resolvedUserClass) {
+
+        console.log(
+          "[RESOURCES] Class missing from req.user."
+        );
+
+        console.log(
+          "[RESOURCES] Loading user from database:",
+          req.user.id
+        );
+
+        const student =
+          await User.findById(
+            req.user.id
+          ).select(
+            "class profile classAssigned school role name email"
+          );
+
+        if (student) {
+
+          console.log(
+            "[RESOURCES] Database student:",
+            {
+              id: student._id,
+              name: student.name,
+              class: student.class,
+              profileClass:
+                student.profile?.class,
+              classAssigned:
+                student.classAssigned,
+              school:
+                student.school,
+            }
+          );
+
+          resolvedUserClass =
+            student.class ||
+            student.profile?.class ||
+            student.classAssigned ||
+            null;
+        }
+      }
+
+      // ------------------------------------------------
+      // Still no class
+      // ------------------------------------------------
+
+      if (!resolvedUserClass) {
+
+        console.error(
+          "[RESOURCES] Student has NO class."
+        );
+
+        console.error({
+          userId: req.user.id,
+          class:
+            req.user.class,
+          profileClass:
+            req.user.profile?.class,
+          classAssigned:
+            req.user.classAssigned,
+        });
+
         return res.status(400).json({
           success: false,
           message:
@@ -211,7 +317,28 @@ router.get("/", async (req, res) => {
         });
       }
 
-      query.classAssigned = String(userClass).trim();
+      // ------------------------------------------------
+      // Normalize class
+      // ------------------------------------------------
+
+      resolvedUserClass =
+        String(
+          resolvedUserClass
+        ).trim();
+
+      console.log(
+        "[RESOURCES] Resolved student class:",
+        resolvedUserClass
+      );
+
+      // ------------------------------------------------
+      // IMPORTANT:
+      // Ignore ?class= from the student.
+      // Always use the authenticated student's class.
+      // ------------------------------------------------
+
+      query.classAssigned =
+        resolvedUserClass;
     }
 
     // =================================================
@@ -219,10 +346,19 @@ router.get("/", async (req, res) => {
     // =================================================
 
     else if (role === "teacher") {
-      query.uploadedBy = req.user.id;
 
-      if (classFilter && classFilter !== "all") {
-        query.classAssigned = String(classFilter).trim();
+      query.uploadedBy =
+        req.user.id;
+
+      if (
+        classFilter &&
+        classFilter !== "all"
+      ) {
+
+        query.classAssigned =
+          String(
+            classFilter
+          ).trim();
       }
     }
 
@@ -230,9 +366,20 @@ router.get("/", async (req, res) => {
     // ADMIN
     // =================================================
 
-    else if (role === "admin" || role === "superadmin") {
-      if (classFilter && classFilter !== "all") {
-        query.classAssigned = String(classFilter).trim();
+    else if (
+      role === "admin" ||
+      role === "superadmin"
+    ) {
+
+      if (
+        classFilter &&
+        classFilter !== "all"
+      ) {
+
+        query.classAssigned =
+          String(
+            classFilter
+          ).trim();
       }
     }
 
@@ -241,27 +388,59 @@ router.get("/", async (req, res) => {
     // =================================================
 
     else {
+
       return res.status(403).json({
         success: false,
-        message: "You are not authorized to view resources.",
+        message:
+          "You are not authorized to view resources.",
       });
     }
 
-    console.log("RESOURCE QUERY:", query);
+    // -------------------------------------------------
+    // Debug final query
+    // -------------------------------------------------
 
-    const resources = await Resource.find(query)
-      .populate("uploadedBy", "name email")
-      .sort({ createdAt: -1 })
-      .lean();
+    console.log(
+      "[RESOURCES] FINAL QUERY:",
+      query
+    );
 
-    const resourcesWithDelete = resources.map((resource) => ({
-      ...resource,
+    // -------------------------------------------------
+    // Find resources
+    // -------------------------------------------------
 
-      canDelete:
-        role === "admin" ||
-        role === "superadmin" ||
-        String(resource.uploadedBy?._id) === userId,
-    }));
+    const resources =
+      await Resource.find(query)
+        .populate(
+          "uploadedBy",
+          "name email"
+        )
+        .sort({
+          createdAt: -1,
+        })
+        .lean();
+
+    console.log(
+      `[RESOURCES] Found ${resources.length} resources`
+    );
+
+    // -------------------------------------------------
+    // Add delete permission
+    // -------------------------------------------------
+
+    const resourcesWithDelete =
+      resources.map(
+        (resource) => ({
+          ...resource,
+
+          canDelete:
+            role === "admin" ||
+            role === "superadmin" ||
+            String(
+              resource.uploadedBy?._id
+            ) === userId,
+        })
+      );
 
     // =================================================
     // CLASSES
@@ -270,113 +449,81 @@ router.get("/", async (req, res) => {
     let classes = [];
 
     if (role === "teacher") {
-      classes = await Resource.distinct("classAssigned", {
-        school,
-        uploadedBy: req.user.id,
-      });
+
+      classes =
+        await Resource.distinct(
+          "classAssigned",
+          {
+            school,
+            uploadedBy:
+              req.user.id,
+          }
+        );
+
     } else {
-      classes = await Resource.distinct("classAssigned", {
-        school,
-      });
+
+      classes =
+        await Resource.distinct(
+          "classAssigned",
+          {
+            school,
+          }
+        );
     }
 
+    // -------------------------------------------------
+    // Response
+    // -------------------------------------------------
+
     console.log(
-      `Returning ${resourcesWithDelete.length} resources`
+      "[RESOURCES] Returning:",
+      {
+        resources:
+          resourcesWithDelete.length,
+        classes,
+        userClass:
+          resolvedUserClass,
+      }
     );
 
     return res.json({
       success: true,
-      resources: resourcesWithDelete,
+
+      resources:
+        resourcesWithDelete,
+
       classes,
+
       userClass:
         role === "student"
-          ? req.user.class ||
-            req.user.profile?.class ||
-            req.user.classAssigned ||
-            null
+          ? resolvedUserClass
           : null,
     });
+
   } catch (error) {
-    console.error("=================================");
-    console.error("RESOURCE GET ERROR");
+
+    console.error(
+      "================================="
+    );
+
+    console.error(
+      "RESOURCE GET ERROR"
+    );
+
     console.error(error);
-    console.error("=================================");
+
+    console.error(
+      "================================="
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Failed to load resources",
-      error: error.message,
+      message:
+        "Failed to load resources",
+      error:
+        error.message,
     });
   }
 });
-
-// =====================================================
-// DELETE RESOURCE
-// =====================================================
-
-router.delete(
-  "/:resourceId",
-  authorize("teacher"),
-  async (req, res) => {
-    try {
-      const school = getUserSchool(req);
-
-      if (!school) {
-        return res.status(400).json({
-          success: false,
-          message: "School information is missing.",
-        });
-      }
-
-      const resource = await Resource.findOne({
-        _id: req.params.resourceId,
-        school,
-      });
-
-      if (!resource) {
-        return res.status(404).json({
-          success: false,
-          message: "Resource not found.",
-        });
-      }
-
-      const role = String(req.user.role || "").toLowerCase();
-
-      // Teachers can only delete their own resources.
-      if (
-        role === "teacher" &&
-        String(resource.uploadedBy) !== String(req.user.id)
-      ) {
-        return res.status(403).json({
-          success: false,
-          message: "You can only delete resources that you uploaded.",
-        });
-      }
-
-      const filePath = path.join(uploadDir, resource.path);
-
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-
-      await Resource.deleteOne({
-        _id: resource._id,
-      });
-
-      return res.json({
-        success: true,
-        message: "Resource deleted successfully",
-      });
-    } catch (error) {
-      console.error("RESOURCE DELETE ERROR:", error);
-
-      return res.status(500).json({
-        success: false,
-        message: "Failed to delete resource",
-        error: error.message,
-      });
-    }
-  }
-);
 
 module.exports = router;
