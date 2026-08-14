@@ -1,4 +1,5 @@
 const express = require('express');
+
 const {
   authenticateUser,
   authorizeRoles
@@ -12,7 +13,14 @@ const fs = require('fs');
 
 
 // ============================================================
-// UPLOAD DIRECTORY
+// ROUTER
+// ============================================================
+
+const router = express.Router();
+
+
+// ============================================================
+// HOMEWORK UPLOAD DIRECTORY
 // ============================================================
 
 const homeworkUploadDir = path.join(
@@ -34,6 +42,7 @@ if (!fs.existsSync(homeworkUploadDir)) {
 // ============================================================
 
 const homeworkUpload = multer({
+
   storage: multer.diskStorage({
 
     destination: (req, file, cb) => {
@@ -57,7 +66,8 @@ const homeworkUpload = multer({
         ext
       );
     }
-  },
+
+  }),
 
   limits: {
     fileSize: 5 * 1024 * 1024,
@@ -76,9 +86,9 @@ const homeworkUpload = multer({
     ];
 
     const ext =
-      path.extname(
-        file.originalname
-      ).toLowerCase();
+      path
+        .extname(file.originalname)
+        .toLowerCase();
 
     if (allowedTypes.includes(ext)) {
       cb(null, true);
@@ -90,10 +100,8 @@ const homeworkUpload = multer({
       );
     }
   }
+
 });
-
-
-const router = express.Router();
 
 
 // ============================================================
@@ -127,7 +135,6 @@ router.post(
         classAssigned
       } = req.body;
 
-
       if (
         !title ||
         !dueDate ||
@@ -140,7 +147,6 @@ router.post(
             'Please provide title, due date, and class assigned'
         });
       }
-
 
       const homework =
         new Homework({
@@ -164,11 +170,10 @@ router.post(
             req.file
               ? `/uploads/homeworks/${req.file.filename}`
               : null
+
         });
 
-
       await homework.save();
-
 
       console.log(
         '[HOMEWORK CREATE] Created:',
@@ -179,7 +184,6 @@ router.post(
           classAssigned: homework.classAssigned
         }
       );
-
 
       return res.json({
         msg:
@@ -229,28 +233,29 @@ router.get(
         }
       );
 
-
       let query = {};
 
-
       // --------------------------------------------------------
-      // ALWAYS KEEP HOMEWORK INSIDE CURRENT SCHOOL
+      // SCHOOL ISOLATION
       // --------------------------------------------------------
 
       if (req.user.school) {
-        query.school = req.user.school;
+        query.school =
+          req.user.school;
       }
 
+      const role =
+        String(
+          req.user.role || ''
+        )
+          .toLowerCase()
+          .trim();
 
       // --------------------------------------------------------
       // STUDENT
       // --------------------------------------------------------
 
-      if (
-        String(req.user.role)
-          .toLowerCase()
-          .trim() === 'student'
-      ) {
+      if (role === 'student') {
 
         const studentClass =
           req.user.profile?.class ||
@@ -267,8 +272,8 @@ router.get(
 
         query.classAssigned =
           studentClass;
-      }
 
+      }
 
       // --------------------------------------------------------
       // TEACHER
@@ -280,36 +285,29 @@ router.get(
           req.user.id;
       }
 
-
       console.log(
         '[HOMEWORK LIST] Query:',
         query
       );
 
-
       const homeworks =
         await Homework.find(query)
-
           .populate(
             'teacher',
             'name email'
           )
-
           .populate(
             'submissions.student',
             'name email'
           )
-
           .sort({
             dueDate: 1
           });
-
 
       console.log(
         '[HOMEWORK LIST] Found:',
         homeworks.length
       );
-
 
       return res.json(homeworks);
 
@@ -361,12 +359,10 @@ router.post(
         }
       );
 
-
       const homework =
         await Homework.findById(
           req.params.homeworkId
         );
-
 
       if (!homework) {
 
@@ -376,16 +372,15 @@ router.post(
         });
       }
 
-
       // --------------------------------------------------------
-      // SCHOOL SECURITY
+      // SCHOOL CHECK
       // --------------------------------------------------------
 
       if (
         homework.school &&
         req.user.school &&
         String(homework.school) !==
-        String(req.user.school)
+          String(req.user.school)
       ) {
 
         return res.status(403).json({
@@ -394,9 +389,8 @@ router.post(
         });
       }
 
-
       // --------------------------------------------------------
-      // CHECK EXISTING SUBMISSION
+      // CHECK DUPLICATE SUBMISSION
       // --------------------------------------------------------
 
       const existingSubmission =
@@ -406,7 +400,6 @@ router.post(
             String(req.user.id)
         );
 
-
       if (existingSubmission) {
 
         return res.status(400).json({
@@ -414,7 +407,6 @@ router.post(
             'You have already submitted this homework'
         });
       }
-
 
       // --------------------------------------------------------
       // ADD SUBMISSION
@@ -432,11 +424,10 @@ router.post(
 
         submittedAt:
           new Date()
+
       });
 
-
       await homework.save();
-
 
       console.log(
         '[HOMEWORK SUBMIT] Success:',
@@ -449,7 +440,6 @@ router.post(
         }
       );
 
-
       return res.json({
 
         msg:
@@ -459,6 +449,7 @@ router.post(
           homework.submissions[
             homework.submissions.length - 1
           ]
+
       });
 
     } catch (err) {
@@ -487,11 +478,10 @@ router.post(
 //   Can view homework they created.
 //
 // Student:
-//   Can view homework assigned to their class.
-//   They only see their own submission.
+//   Can view homework assigned to their class,
+//   even BEFORE submitting.
 //
-// IMPORTANT:
-//   Student does NOT need to have submitted first.
+// Student only sees their own submission.
 // ============================================================
 
 router.get(
@@ -524,7 +514,6 @@ router.get(
         }
       );
 
-
       // --------------------------------------------------------
       // FIND HOMEWORK
       // --------------------------------------------------------
@@ -533,21 +522,16 @@ router.get(
         await Homework.findById(
           req.params.id
         )
-        .populate(
-          'teacher',
-          'name email'
-        )
-        .populate(
-          'submissions.student',
-          'name email'
-        );
-
+          .populate(
+            'teacher',
+            'name email'
+          )
+          .populate(
+            'submissions.student',
+            'name email'
+          );
 
       if (!homework) {
-
-        console.log(
-          '[HOMEWORK VIEW] Homework not found'
-        );
 
         return res.status(404).json({
           error:
@@ -555,9 +539,8 @@ router.get(
         });
       }
 
-
       console.log(
-        '[HOMEWORK VIEW] Found homework:',
+        '[HOMEWORK VIEW] Found:',
         {
           id:
             String(homework._id),
@@ -578,7 +561,6 @@ router.get(
         }
       );
 
-
       // --------------------------------------------------------
       // SCHOOL SECURITY
       // --------------------------------------------------------
@@ -587,18 +569,11 @@ router.get(
         homework.school &&
         req.user.school &&
         String(homework.school) !==
-        String(req.user.school)
+          String(req.user.school)
       ) {
 
         console.error(
-          '[HOMEWORK VIEW] SCHOOL MISMATCH:',
-          {
-            homeworkSchool:
-              String(homework.school),
-
-            userSchool:
-              String(req.user.school)
-          }
+          '[HOMEWORK VIEW] SCHOOL MISMATCH'
         );
 
         return res.status(403).json({
@@ -607,14 +582,12 @@ router.get(
         });
       }
 
-
-      const userRole =
+      const role =
         String(
           req.user.role || ''
         )
-        .toLowerCase()
-        .trim();
-
+          .toLowerCase()
+          .trim();
 
       const userId =
         String(
@@ -623,12 +596,11 @@ router.get(
           ''
         );
 
-
       // ========================================================
-      // TEACHER AUTHORIZATION
+      // TEACHER
       // ========================================================
 
-      if (userRole === 'teacher') {
+      if (role === 'teacher') {
 
         const homeworkTeacherId =
           homework.teacher
@@ -637,22 +609,16 @@ router.get(
               )
             : '';
 
-
         console.log(
-          '[HOMEWORK VIEW] Teacher authorization:',
+          '[HOMEWORK VIEW] Teacher IDs:',
           {
             loggedInTeacher:
               userId,
 
             homeworkTeacher:
-              homeworkTeacherId,
-
-            match:
-              homeworkTeacherId ===
-              userId
+              homeworkTeacherId
           }
         );
-
 
         if (
           homeworkTeacherId !==
@@ -665,66 +631,43 @@ router.get(
           });
         }
 
-
-        // Teacher sees ALL submissions.
-
         console.log(
           '[HOMEWORK VIEW] Teacher authorized'
         );
 
-        console.log(
-          '[HOMEWORK VIEW] Returning all submissions:',
-          homework.submissions?.length || 0
-        );
-
-
-        console.log(
-          '================================================'
-        );
-
-
         return res.json(homework);
       }
 
-
       // ========================================================
-      // STUDENT AUTHORIZATION
+      // STUDENT
       // ========================================================
 
-      if (userRole === 'student') {
-
-        // ------------------------------------------------------
-        // Get student's class
-        // ------------------------------------------------------
+      if (role === 'student') {
 
         const studentClass =
           req.user.profile?.class ||
           req.user.class;
-
 
         console.log(
           '[HOMEWORK VIEW] Student class:',
           studentClass
         );
 
-
         // ------------------------------------------------------
-        // Student must belong to assigned class
+        // CLASS CHECK
         // ------------------------------------------------------
 
         if (
           studentClass &&
           homework.classAssigned &&
           String(studentClass).trim() !==
-          String(homework.classAssigned).trim()
+            String(homework.classAssigned).trim()
         ) {
 
           console.error(
             '[HOMEWORK VIEW] CLASS MISMATCH:',
             {
-              studentClass:
-                studentClass,
-
+              studentClass,
               homeworkClass:
                 homework.classAssigned
             }
@@ -736,13 +679,8 @@ router.get(
           });
         }
 
-
         // ------------------------------------------------------
-        // IMPORTANT:
-        // Student is allowed to VIEW before submitting.
-        //
-        // We only filter submissions so that the student
-        // cannot see other students' submissions.
+        // ONLY SHOW THIS STUDENT'S SUBMISSION
         // ------------------------------------------------------
 
         homework.submissions =
@@ -762,7 +700,6 @@ router.get(
             }
           );
 
-
         console.log(
           '[HOMEWORK VIEW] Student authorized'
         );
@@ -772,25 +709,12 @@ router.get(
           homework.submissions.length
         );
 
-
-        console.log(
-          '================================================'
-        );
-
-
         return res.json(homework);
       }
 
-
-      // ========================================================
+      // --------------------------------------------------------
       // UNKNOWN ROLE
-      // ========================================================
-
-      console.error(
-        '[HOMEWORK VIEW] Unauthorized role:',
-        req.user.role
-      );
-
+      // --------------------------------------------------------
 
       return res.status(403).json({
         error:
@@ -811,7 +735,6 @@ router.get(
       console.error(
         '================================================'
       );
-
 
       return res.status(500).json({
         error:
@@ -844,12 +767,10 @@ router.put(
         comments
       } = req.body;
 
-
       const homework =
         await Homework.findById(
           req.params.homeworkId
         );
-
 
       if (!homework) {
 
@@ -859,10 +780,7 @@ router.put(
         });
       }
 
-
-      // --------------------------------------------------------
-      // ONLY HOMEWORK OWNER CAN GRADE
-      // --------------------------------------------------------
+      // Only homework owner can grade
 
       if (
         String(homework.teacher) !==
@@ -875,12 +793,10 @@ router.put(
         });
       }
 
-
       const submission =
         homework.submissions.id(
           req.params.submissionId
         );
-
 
       if (!submission) {
 
@@ -890,16 +806,13 @@ router.put(
         });
       }
 
-
       submission.grade =
         grade;
 
       submission.comments =
         comments;
 
-
       await homework.save();
-
 
       return res.json({
 
@@ -947,7 +860,6 @@ router.delete(
           req.params.id
         );
 
-
       if (!homework) {
 
         return res.status(404).json({
@@ -956,10 +868,7 @@ router.delete(
         });
       }
 
-
-      // --------------------------------------------------------
-      // ONLY OWNER CAN DELETE
-      // --------------------------------------------------------
+      // Only owner can delete
 
       if (
         String(homework.teacher) !==
@@ -972,9 +881,7 @@ router.delete(
         });
       }
 
-
       await homework.deleteOne();
-
 
       return res.json({
         msg:
@@ -1001,7 +908,7 @@ router.delete(
 
 
 // ============================================================
-// EXPORT
+// EXPORT ROUTER
 // ============================================================
 
 module.exports = router;
