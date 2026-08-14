@@ -1102,8 +1102,6 @@ function attachBookEventListeners() {
     }
   }
 
-
- ```javascript
 // =====================================================
 // Handle Issue button: modal, students, submit
 // =====================================================
