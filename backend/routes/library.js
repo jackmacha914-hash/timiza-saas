@@ -538,6 +538,7 @@ router.post('/:id/issue', protect, async (req, res) => {
         const {
             borrowerId,
             borrowerName,
+            borrowerEmail,
             className,
             dueDate,
             genre
@@ -545,6 +546,9 @@ router.post('/:id/issue', protect, async (req, res) => {
 
         const bookId =
             req.params.id;
+
+        const school =
+            req.user.school;
 
         if (
             !borrowerId ||
@@ -561,7 +565,7 @@ router.post('/:id/issue', protect, async (req, res) => {
 
         const book = await Book.findOne({
             _id: bookId,
-            school: req.user.school
+            school: school
         });
 
         if (!book) {
@@ -602,22 +606,57 @@ router.post('/:id/issue', protect, async (req, res) => {
         const borrowing =
             new Borrowing({
                 bookId: book._id,
-                bookTitle: book.title,
-                borrowerId,
-                borrowerName,
-                className,
+
+                bookTitle:
+                    book.title,
+
+                borrowerId:
+                    borrowerId,
+
+                borrowerName:
+                    borrowerName,
+
+                // Keep email if supplied by frontend
+                ...(borrowerEmail
+                    ? {
+                        borrowerEmail:
+                            borrowerEmail
+                    }
+                    : {}),
+
+                className:
+                    className,
+
                 genre:
                     genre ||
                     book.genre ||
                     'General',
+
+                // REQUIRED BY BORROWING SCHEMA
+                school:
+                    school,
+
                 dueDate:
                     new Date(dueDate),
-                returned: false,
-                fine: 0,
-                issueDate: new Date()
+
+                returned:
+                    false,
+
+                fine:
+                    0,
+
+                issueDate:
+                    new Date()
             });
 
         book.available -= 1;
+
+        // Keep book status synchronized
+        if (book.available <= 0) {
+            book.status = 'unavailable';
+        } else {
+            book.status = 'available';
+        }
 
         await borrowing.save();
         await book.save();
@@ -625,12 +664,30 @@ router.post('/:id/issue', protect, async (req, res) => {
         console.log(
             '[BOOK ISSUE] Successful:',
             {
-                bookId: book._id,
+                borrowingId:
+                    borrowing._id,
+
+                bookId:
+                    book._id,
+
                 bookTitle:
                     book.title,
-                borrowerId,
+
+                borrowerId:
+                    borrowerId,
+
+                borrowerName:
+                    borrowerName,
+
+                borrowerEmail:
+                    borrowerEmail || '',
+
+                className:
+                    className,
+
                 school:
-                    req.user.school,
+                    school,
+
                 availableCopies:
                     book.available
             }
@@ -638,17 +695,47 @@ router.post('/:id/issue', protect, async (req, res) => {
 
         return res.status(200).json({
             success: true,
+
             message:
                 'Book issued successfully',
-            borrowing,
+
+            borrowing:
+
+                borrowing,
+
             availableCopies:
                 book.available
         });
 
     } catch (err) {
+
         console.error(
             '[BOOK ISSUE] Error:',
-            err
+            {
+                message:
+                    err.message,
+
+                name:
+                    err.name,
+
+                code:
+                    err.code,
+
+                errors:
+                    err.errors
+                        ? Object.keys(
+                            err.errors
+                        ).reduce(
+                            (result, key) => {
+                                result[key] =
+                                    err.errors[key]
+                                        .message;
+                                return result;
+                            },
+                            {}
+                        )
+                        : undefined
+            }
         );
 
         if (err.name === 'CastError') {
@@ -660,22 +747,32 @@ router.post('/:id/issue', protect, async (req, res) => {
         }
 
         if (err.name === 'ValidationError') {
+
             const messages =
-                Object.values(err.errors)
-                    .map(val => val.message);
+                Object.values(
+                    err.errors
+                ).map(
+                    val =>
+                        val.message
+                );
 
             return res.status(400).json({
                 success: false,
+
                 error:
                     'Validation error',
-                details: messages
+
+                details:
+                    messages
             });
         }
 
         return res.status(500).json({
             success: false,
+
             error:
                 'Failed to issue book',
+
             details:
                 err.message
         });
