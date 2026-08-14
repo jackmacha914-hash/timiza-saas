@@ -2157,6 +2157,77 @@ if (!response.ok) {
       const nr = table.querySelector('.no-results-message'); if (nr) nr.remove();
     }
   }
+  // -------------------------
+  // Show library tab
+  // -------------------------
+  function showLibraryTab(tabId) {
+    console.log('[LIBRARY] Switching to tab:', tabId);
+
+    // Get all tab buttons
+    const tabButtons = document.querySelectorAll('.tab-btn');
+
+    // Get all tab content sections
+    const tabContents = document.querySelectorAll('.library-tab-content');
+
+    // Remove active state from all buttons
+    tabButtons.forEach(button => {
+      button.classList.remove('active');
+    });
+
+    // Hide all tab contents
+    tabContents.forEach(content => {
+      content.style.display = 'none';
+      content.classList.remove('active');
+    });
+
+    // Show selected tab
+    const selectedTab = document.getElementById(tabId);
+
+    if (!selectedTab) {
+      console.error('[LIBRARY] Tab not found:', tabId);
+      return;
+    }
+
+    selectedTab.style.display = 'block';
+    selectedTab.classList.add('active');
+
+    // Activate matching button
+    tabButtons.forEach(button => {
+      const onclickValue = button.getAttribute('onclick') || '';
+
+      if (onclickValue.includes(`showLibraryTab('${tabId}')`)) {
+        button.classList.add('active');
+      }
+    });
+
+    // Load data when switching to issued books
+    if (tabId === 'issued-books') {
+      if (typeof window.loadIssuedBooks === 'function') {
+        window.loadIssuedBooks().catch(err => {
+          console.error(
+            '[LIBRARY] Error loading issued books:',
+            err
+          );
+        });
+      }
+    }
+
+    // Reload available books when switching back
+    if (tabId === 'available-books') {
+      if (typeof window.loadLibraryWithFilters === 'function') {
+        window.loadLibraryWithFilters().catch(err => {
+          console.error(
+            '[LIBRARY] Error loading available books:',
+            err
+          );
+        });
+      }
+    }
+  }
+
+  // Make it available to inline onclick="showLibraryTab(...)"
+  window.showLibraryTab = showLibraryTab;
+
 
   // -------------------------
   // Initialize on DOM ready
@@ -2166,27 +2237,70 @@ if (!response.ok) {
       initLibrary();
       initIssuedBooksSearch();
       initializeLibraryForm();
-      // default tab show if you have function showLibraryTab
-      if (typeof window.showLibraryTab === 'function') window.showLibraryTab('available-books');
-      loadLibraryWithFilters().catch(console.error);
-      loadIssuedBooks().catch(() => {});
-      console.log('Library initialized');
+
+      // Default tab
+      if (typeof window.showLibraryTab === 'function') {
+        window.showLibraryTab('available-books');
+      }
+
+      // Load available books
+      loadLibraryWithFilters().catch(err => {
+        console.error(
+          '[LIBRARY] Error loading library:',
+          err
+        );
+      });
+
+      // Load issued books
+      loadIssuedBooks().catch(err => {
+        console.error(
+          '[LIBRARY] Error loading issued books:',
+          err
+        );
+      });
+
+      console.log('[LIBRARY] Library initialized successfully');
+
     } catch (err) {
-      console.error('initializeLibrary error', err);
+      console.error(
+        '[LIBRARY] initializeLibrary error:',
+        err
+      );
     }
   }
 
-  // ensure single DOMContentLoaded binding
+
+  // -------------------------
+  // Ensure single DOMContentLoaded binding
+  // -------------------------
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeLibrary);
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      initializeLibrary,
+      { once: true }
+    );
+
   } else {
+
     initializeLibrary();
+
   }
 
-  // Expose some functions for debugging
-  window.loadLibraryWithFilters = loadLibraryWithFilters;
-  window.loadIssuedBooks = loadIssuedBooks;
-  window.initializeLibraryForm = initializeLibraryForm;
-  window.apiFetch = apiFetch;
+
+  // -------------------------
+  // Expose functions for debugging
+  // -------------------------
+  window.loadLibraryWithFilters =
+    loadLibraryWithFilters;
+
+  window.loadIssuedBooks =
+    loadIssuedBooks;
+
+  window.initializeLibraryForm =
+    initializeLibraryForm;
+
+  window.apiFetch =
+    apiFetch;
 
 })();
