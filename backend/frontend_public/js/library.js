@@ -1781,14 +1781,25 @@ async function handleIssueButtonClick(actionBtn) {
             .json()
             .catch(() => ({}));
 
-        if (!response.ok) {
+if (!response.ok) {
 
-          throw new Error(
-            data.error ||
-            data.message ||
-            `Failed to issue book (HTTP ${response.status})`
-          );
-        }
+  console.error(
+    '[LIBRARY ISSUE] Full server error:',
+    data
+  );
+
+  const validationDetails =
+    Array.isArray(data.details)
+      ? data.details.join(', ')
+      : data.details || '';
+
+  throw new Error(
+    validationDetails ||
+    data.error ||
+    data.message ||
+    `Failed to issue book (HTTP ${response.status})`
+  );
+}
 
         console.log(
           '[LIBRARY ISSUE] Book issued successfully:',
