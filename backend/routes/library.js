@@ -31,18 +31,18 @@ const calculateFine = (dueDate) => {
 // Get books currently issued to the authenticated student
 // ============================================================
 router.get('/my-books', protect, async (req, res) => {
-    try {
-        console.log('================================================');
-        console.log('[MY BOOKS] START');
-        console.log('[MY BOOKS] req.user:', req.user);
-        console.log('================================================');
 
-        if (!req.user) {
-            return res.status(401).json({
-                success: false,
-                error: 'Authentication required'
-            });
-        }
+    if (
+        String(req.user?.role || '').toLowerCase() !== 'student'
+    ) {
+        return res.status(403).json({
+            success: false,
+            error: 'Only students can view their issued books'
+        });
+    }
+
+    // existing code...
+});
 
         // ----------------------------------------------------
         // AUTHENTICATED STUDENT ID
