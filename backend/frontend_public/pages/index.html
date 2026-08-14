@@ -4635,6 +4635,8 @@ window.fetch = async (input, init = {}) => {
                 // Re-enable submit button
                 if (submitBtn) submitBtn.disabled = false;
             }
+        });
+        
 
         // Function to load today's attendance - now in global scope
         window.loadTodaysAttendance = async function() {
@@ -4929,6 +4931,7 @@ window.fetch = async (input, init = {}) => {
                     submitBtn.disabled = false;
                 }
             }
+        });
 
         // Update fields based on role selection
         function updateFields() {
