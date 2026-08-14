@@ -1,810 +1,1151 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+
 const Book = mongoose.models.Book || require('../models/Book');
 const Borrowing = mongoose.models.Borrowing || require('../models/Borrowing');
+
 const router = express.Router();
 
-// Helper function to calculate fine (5 KES per day late)
+const { protect } = require('../middleware/auth');
+
+// ============================================================
+// Helper function to calculate fine
+// 5 KES per day late
+// ============================================================
 const calculateFine = (dueDate) => {
     const today = new Date();
     const due = new Date(dueDate);
+
     if (today <= due) return 0;
-    const diffTime = Math.ceil((today - due) / (1000 * 60 * 60 * 24));
-    return diffTime * 5; // 5 KES per day
+
+    const diffTime = Math.ceil(
+        (today - due) / (1000 * 60 * 60 * 24)
+    );
+
+    return diffTime * 5;
 };
 
-// Import the protect middleware
-const { protect } = require('../middleware/auth');
-
-// GET /api/library/my-books - get books issued to current student
+// ============================================================
+// GET /api/library/my-books
+// Get books issued to current student
+// ============================================================
 router.get('/my-books', protect, async (req, res) => {
-  try {
-    console.log('Fetching books for user ID:', req.user.id);
-    
-    // Get student ID from the authenticated user
-    const studentId = req.user.id;
+    try {
+        console.log(
+            'Fetching books for user ID:',
+            req.user.id
+        );
 
-    // Log the query being executed
-    console.log('Searching for borrowings with:', {
-      borrowerId: studentId,
-      returned: false
-    });
+        const studentId = req.user.id;
 
-    // Find all active borrowings for this student
-    const borrowings = await Borrowing.find({
-      borrowerId: studentId,
-      returned: false
-    }).sort({ dueDate: 1 });
+        const borrowings = await Borrowing.find({
+            borrowerId: studentId,
+            returned: false
+        }).sort({ dueDate: 1 });
 
-    console.log('Found', borrowings.length, 'active borrowings');
+        console.log(
+            'Found',
+            borrowings.length,
+            'active borrowings'
+        );
 
-    // Get book details for each borrowing
-    const books = await Promise.all(
-      borrowings.map(async (borrowing) => {
-        console.log('Processing borrowing:', borrowing._id, 'for book:', borrowing.bookId);
-        const book = await Book.findById(borrowing.bookId);
-        
-        if (!book) {
-          console.log('Book not found for borrowing:', borrowing._id);
-          return null;
-        }
-        
-        const bookData = {
-          id: book._id,
-          title: book.title,
-          author: book.author,
-          genre: book.genre,
-          issueDate: borrowing.issueDate,
-          dueDate: borrowing.dueDate,
-          status: new Date() > new Date(borrowing.dueDate) ? 'Overdue' : 'Issued',
-          fine: calculateFine(borrowing.dueDate)
-        };
-        
-        console.log('Processed book:', bookData.title);
-        return bookData;
-      })
-    );
+        const books = await Promise.all(
+            borrowings.map(async (borrowing) => {
 
-    // Filter out any null values (in case books were deleted)
-    const validBooks = books.filter(book => book !== null);
-    
-    console.log('Returning', validBooks.length, 'valid books');
-    res.json(validBooks);
-  } catch (err) {
-    console.error('Error fetching student books:', err);
-    if (err.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    res.status(500).json({ error: 'Server error' });
-  }
-});
+                const book = await Book.findById(
+                    borrowing.bookId
+                );
 
-// GET /api/library - list all books with optional filters
-router.get('/', protect, async (req, res) => {
-  try {
-    const { search, genre, author, className } = req.query;
-   const query = {
-  school: req.user.school
-};
-    
-    // Add search filter
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { author: { $regex: search, $options: 'i' } },
-        { genre: { $regex: search, $options: 'i' } }
-      ];
-    }
-    
-    // Add genre filter
-    if (genre) {
-      query.genre = genre;
-    }
-    
-    // Add author filter
-    if (author) {
-      query.author = { $regex: author, $options: 'i' };
-    }
-    
-    // Add class filter
-    if (className) {
-      console.log('Filtering by className:', className);
-      query.className = className;
-    }
-    
-    console.log('Final query:', JSON.stringify(query, null, 2));
-    const books = await Book.find(query);
-    console.log('Found books:', books.length);
-    res.json(books);
-  } catch (err) {
-    console.error('Error fetching books:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// POST /api/library - add a new book
-router.post('/', async (req, res) => {
-  try {
-    const { title, author, year, className, genre, status, copies } = req.body;
-    if (!title || !author || !className) {
-      return res.status(400).json({ error: 'Title, author, and class are required.' });
-    }
-    
-    const newBook = new Book({
-      title,
-      author,
-      year: year || new Date().getFullYear(),
-      className,
-      genre: genre || 'General', // Keep genre as a fallback
-      status: status || 'available',
-      copies: parseInt(copies) || 1,
-      available: parseInt(copies) || 1
-    });
-    
-    await newBook.save();
-    res.status(201).json({ msg: 'Book added!', book: newBook });
-  } catch (err) {
-    console.error('Error adding book:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /api/library/:id - get one book for editing
-router.get('/:id', protect, async (req, res) => {
-  try {
-    // Make sure the user is authenticated and belongs to a school
-    if (!req.user || !req.user.school) {
-      return res.status(403).json({
-        success: false,
-        message: 'User is not assigned to a school'
-      });
-    }
-
-    const bookId = req.params.id;
-
-    // Find the book AND make sure it belongs to the user's school
-    const book = await Book.findOne({
-      _id: bookId,
-      school: req.user.school
-    });
-
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: 'Book not found'
-      });
-    }
-
-    console.log(
-      `[BOOKS] Returning book ${book._id} for school ${req.user.school}`
-    );
-
-    return res.status(200).json({
-      success: true,
-      data: book
-    });
-
-  } catch (err) {
-    console.error('[BOOKS] Error fetching single book:', err);
-
-    // Invalid MongoDB ObjectId
-    if (err.name === 'CastError') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid book ID'
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
-});
-
-// PUT /api/library/:id - update a book
-// IMPORTANT: Users can only update books belonging to their own school
-router.put('/:id', protect, async (req, res) => {
-  try {
-    // --------------------------------------------------
-    // 1. Make sure the authenticated user has a school
-    // --------------------------------------------------
-    if (!req.user || !req.user.school) {
-      return res.status(403).json({
-        success: false,
-        message: 'User is not assigned to a school'
-      });
-    }
-
-    const {
-      title,
-      author,
-      year,
-      className,
-      genre,
-      status,
-      copies
-    } = req.body;
-
-    // --------------------------------------------------
-    // 2. Validate required fields
-    // --------------------------------------------------
-    if (!title || !author || !className) {
-      return res.status(400).json({
-        success: false,
-        error: 'Title, author, and class are required.'
-      });
-    }
-
-    // --------------------------------------------------
-    // 3. Find the book ONLY inside the user's school
-    // --------------------------------------------------
-    const book = await Book.findOne({
-      _id: req.params.id,
-      school: req.user.school
-    });
-
-    // If the book belongs to another school, it will
-    // behave as if it does not exist.
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        error: 'Book not found'
-      });
-    }
-
-    // --------------------------------------------------
-    // 4. Calculate available copies
-    // --------------------------------------------------
-    let available = book.available;
-
-    if (status && status !== book.status) {
-      if (status === 'available') {
-        available = parseInt(copies) || book.available || 1;
-      } else {
-        available = 0;
-      }
-    }
-
-    // --------------------------------------------------
-    // 5. Update ONLY this school's book
-    // --------------------------------------------------
-    const updatedBook = await Book.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        school: req.user.school
-      },
-      {
-        title: title.trim(),
-        author: author.trim(),
-        year: year
-          ? parseInt(year)
-          : book.year,
-        className: className.trim(),
-        genre: genre
-          ? genre.trim()
-          : book.genre || 'General',
-        status: status || book.status,
-        available
-      },
-      {
-        new: true,
-        runValidators: true
-      }
-    );
-
-    // Extra safety check
-    if (!updatedBook) {
-      return res.status(404).json({
-        success: false,
-        error: 'Book not found'
-      });
-    }
-
-    console.log('[BOOK UPDATE] Successful:', {
-      bookId: updatedBook._id,
-      bookTitle: updatedBook.title,
-      school: req.user.school,
-      userId: req.user.id
-    });
-
-    // --------------------------------------------------
-    // 6. Return updated book
-    // --------------------------------------------------
-    return res.status(200).json({
-      success: true,
-      message: 'Book updated successfully',
-      book: updatedBook
-    });
-
-  } catch (err) {
-    console.error('[BOOK UPDATE] Error:', {
-      message: err.message,
-      name: err.name,
-      code: err.code
-    });
-
-    // Invalid MongoDB ObjectId
-    if (err.name === 'CastError') {
-      return res.status(404).json({
-        success: false,
-        error: 'Book not found'
-      });
-    }
-
-    // Mongoose validation error
-    if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors)
-        .map(val => val.message);
-
-      return res.status(400).json({
-        success: false,
-        error: 'Validation error',
-        details: messages
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to update book',
-      details: err.message
-    });
-  }
-});
-
-// POST /api/library/:id/issue - issue a book to a student
-// IMPORTANT: Users can only issue books belonging to their own school
-router.post('/:id/issue', protect, async (req, res) => {
-  try {
-    // --------------------------------------------------
-    // 1. Make sure the authenticated user has a school
-    // --------------------------------------------------
-    if (!req.user || !req.user.school) {
-      return res.status(403).json({
-        success: false,
-        message: 'User is not assigned to a school'
-      });
-    }
-
-    const {
-      borrowerId,
-      borrowerName,
-      className,
-      dueDate,
-      genre
-    } = req.body;
-
-    const bookId = req.params.id;
-
-    // --------------------------------------------------
-    // 2. Validate required fields
-    // --------------------------------------------------
-    if (!borrowerId || !borrowerName || !className || !dueDate) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields'
-      });
-    }
-
-    // --------------------------------------------------
-    // 3. Find the book ONLY inside the user's school
-    // --------------------------------------------------
-    const book = await Book.findOne({
-      _id: bookId,
-      school: req.user.school
-    });
-
-    // IMPORTANT:
-    // If the book belongs to another school, it will not
-    // be found and cannot be issued.
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        error: 'Book not found'
-      });
-    }
-
-    // --------------------------------------------------
-    // 4. Ensure the book has a genre
-    // --------------------------------------------------
-    if (!book.genre) {
-      book.genre = genre || 'General';
-    }
-
-    // --------------------------------------------------
-    // 5. Check book availability
-    // --------------------------------------------------
-    if (book.available <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'No available copies of this book'
-      });
-    }
-
-    // --------------------------------------------------
-    // 6. Check if this borrower already has this book
-    // --------------------------------------------------
-    const existingBorrowing = await Borrowing.findOne({
-      bookId: book._id,
-      borrowerId,
-      returned: false
-    });
-
-    if (existingBorrowing) {
-      return res.status(400).json({
-        success: false,
-        error:
-          'This book is already issued to the same borrower and not yet returned'
-      });
-    }
-
-    // --------------------------------------------------
-    // 7. Create borrowing record
-    // --------------------------------------------------
-    const borrowing = new Borrowing({
-      bookId: book._id,
-      bookTitle: book.title,
-      borrowerId,
-      borrowerName,
-      className,
-      genre: genre || book.genre || 'General',
-      dueDate: new Date(dueDate),
-      returned: false,
-      fine: 0,
-      issueDate: new Date()
-    });
-
-    // --------------------------------------------------
-    // 8. Reduce available copies
-    // --------------------------------------------------
-    book.available -= 1;
-
-    // --------------------------------------------------
-    // 9. Save borrowing and book
-    // --------------------------------------------------
-    await borrowing.save();
-    await book.save();
-
-    console.log('[BOOK ISSUE] Successful:', {
-      bookId: book._id,
-      bookTitle: book.title,
-      borrowerId,
-      school: req.user.school,
-      availableCopies: book.available
-    });
-
-    // --------------------------------------------------
-    // 10. Return success response
-    // --------------------------------------------------
-    return res.status(200).json({
-      success: true,
-      message: 'Book issued successfully',
-      borrowing,
-      availableCopies: book.available
-    });
-
-  } catch (err) {
-    console.error('[BOOK ISSUE] Error:', {
-      message: err.message,
-      name: err.name,
-      code: err.code
-    });
-
-    // Invalid MongoDB ObjectId
-    if (err.name === 'CastError') {
-      return res.status(404).json({
-        success: false,
-        error: 'Book not found'
-      });
-    }
-
-    // Mongoose validation error
-    if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors)
-        .map(val => val.message);
-
-      return res.status(400).json({
-        success: false,
-        error: 'Validation error',
-        details: messages
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to issue book',
-      details: err.message
-    });
-  }
-});
-// DELETE /api/library/:id - delete a book
-router.delete('/:id', async (req, res) => {
-  try {
-    const book = await Book.findById(req.params.id);
-    
-    if (!book) {
-      return res.status(404).json({ error: 'Book not found' });
-    }
-
-    // Check if there are any active borrowings for this book
-    const activeBorrowings = await Borrowing.find({
-      bookId: req.params.id,
-      returned: false
-    });
-
-    if (activeBorrowings.length > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete book with active borrowings',
-        activeBorrowings: activeBorrowings.length
-      });
-    }
-
-    // Delete the book
-    await Book.findByIdAndDelete(req.params.id);
-    
-    // Also delete any borrowing records for this book
-    await Borrowing.deleteMany({ bookId: req.params.id });
-    
-    res.json({ message: 'Book deleted successfully' });
-  } catch (err) {
-    console.error('Error deleting book:', err);
-    res.status(500).json({ 
-      error: 'Failed to delete book',
-      details: err.message 
-    });
-  }
-});
-
-// GET /api/library/issued - get all issued books grouped by class
-router.get('/issued', async (req, res) => {
-  try {
-    const { returned, groupByClass = 'true', className } = req.query;
-    const shouldGroupByClass = groupByClass === 'true';
-    
-    // Build query
-    const query = {
-  school: req.user.school
-};
-    if (returned === 'true') {
-      query.returned = true;
-    } else if (returned === 'false') {
-      query.returned = false;
-    }
-    
-    // Add class filter if provided
-    if (className && className !== 'All') {
-      query.className = className;
-    }
-    
-    // First, get all active borrowings with book details
-    const pipeline = [
-      { $match: query },
-      {
-        $lookup: {
-          from: 'books',
-          localField: 'bookId',
-          foreignField: '_id',
-          as: 'bookDetails'
-        }
-      },
-      { $unwind: '$bookDetails' },
-      // Add a field for class name (default to 'Ungrouped' if not specified)
-      {
-        $addFields: {
-          className: { $ifNull: ['$className', 'Ungrouped'] }
-        }
-      },
-      // Group by book and borrower to get unique entries
-      {
-        $group: {
-          _id: {
-            bookId: '$bookId',
-            borrowerId: '$borrowerId',
-            returned: '$returned',
-            className: '$className'  // Include class in the grouping
-          },
-          // Keep the most recent record for each unique book-borrower pair
-          doc: { $first: '$$ROOT' },
-          // Keep the most recent due date
-          dueDate: { $first: '$dueDate' },
-          // Keep the most recent issue date
-          issueDate: { $first: '$issueDate' },
-          className: { $first: '$className' },  // Keep the class name
-          bookTitle: { $first: '$bookDetails.title' } // Include book title in the group
-        }
-      },
-      // Replace the root with the document
-      { $replaceRoot: { newRoot: { $mergeObjects: ['$doc', { className: '$className' }] } } },
-      // Sort by class name and then by due date
-      { $sort: { className: 1, dueDate: 1 } },
-      {
-        $project: {
-          _id: 1,
-          bookId: 1,
-          title: '$bookTitle',
-          className: 1,
-          author: '$bookDetails.author',
-          genre: 1,
-          borrowerName: 1,
-          borrowerId: 1,
-          issueDate: 1,
-          dueDate: 1,
-          returnDate: 1,
-          returned: 1,
-          fine: {
-            $let: {
-              vars: {
-                calculatedFine: {
-                  $cond: [
-                    { $and: [{ $eq: ['$returned', false] }, { $lte: ['$dueDate', new Date()] }] },
-                    calculateFine('$dueDate'),
-                    { $ifNull: ['$fine', 0] }
-                  ]
+                if (!book) {
+                    return null;
                 }
-              },
-              in: {
-                $cond: [
-                  { $or: [{ $eq: [{ $type: '$$calculatedFine' }, 'number'] }, { $eq: [{ $type: '$$calculatedFine' }, 'int'] }] },
-                  { $max: [0, { $toDouble: '$$calculatedFine' }] },
-                  0
-                ]
-              }
-            }
-          },
-          daysOverdue: {
-            $let: {
-              vars: {
-                isOverdue: {
-                  $and: [
-                    { $eq: ['$returned', false] },
-                    { $lte: ['$dueDate', new Date()] },
-                    { $ne: ['$dueDate', null] }
-                  ]
-                }
-              },
-              in: {
-                $cond: [
-                  '$$isOverdue',
-                  {
-                    $floor: {
-                      $divide: [
-                        { $subtract: [new Date(), '$dueDate'] },
-                        1000 * 60 * 60 * 24
-                      ]
-                    }
-                  },
-                  0
-                ]
-              }
-            }
-          }
+
+                const bookData = {
+                    id: book._id,
+                    title: book.title,
+                    author: book.author,
+                    genre: book.genre,
+                    issueDate: borrowing.issueDate,
+                    dueDate: borrowing.dueDate,
+                    status:
+                        new Date() >
+                        new Date(borrowing.dueDate)
+                            ? 'Overdue'
+                            : 'Issued',
+                    fine: calculateFine(
+                        borrowing.dueDate
+                    )
+                };
+
+                return bookData;
+            })
+        );
+
+        const validBooks = books.filter(
+            book => book !== null
+        );
+
+        res.json(validBooks);
+
+    } catch (err) {
+        console.error(
+            'Error fetching student books:',
+            err
+        );
+
+        if (
+            err.name === 'JsonWebTokenError'
+        ) {
+            return res.status(401).json({
+                error: 'Invalid token'
+            });
         }
-      },
-      { $sort: { dueDate: 1 } } // Sort by due date (earliest first)
-    ];
-    
-    const issuedBooks = await Borrowing.aggregate(pipeline);
-    
-    // Update fines for overdue books
-    await Promise.all(issuedBooks.map(async (book) => {
-      if (!book.returned && new Date(book.dueDate) < new Date()) {
-        await Borrowing.findByIdAndUpdate(book._id, { 
-          fine: book.fine 
+
+        res.status(500).json({
+            error: 'Server error'
         });
-      }
-    }));
-
-    res.json(issuedBooks);
-  } catch (err) {
-    console.error('Error fetching issued books:', err);
-    res.status(500).json({ error: err.message || 'Failed to fetch issued books' });
-  }
+    }
 });
 
-// POST /api/library/return/:id - mark a book as returned
-// DELETE /api/library/:id - delete a book
-router.delete('/:id', async (req, res) => {
-  try {
-    const bookId = req.params.id;
-    
-    // First check if the book exists
-    const book = await Book.findById(bookId);
-    if (!book) {
-      return res.status(404).json({ error: 'Book not found' });
+// ============================================================
+// GET /api/library
+// List books belonging ONLY to authenticated user's school
+// ============================================================
+router.get('/', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const {
+            search,
+            genre,
+            author,
+            className
+        } = req.query;
+
+        const query = {
+            school: req.user.school
+        };
+
+        if (search) {
+            query.$or = [
+                {
+                    title: {
+                        $regex: search,
+                        $options: 'i'
+                    }
+                },
+                {
+                    author: {
+                        $regex: search,
+                        $options: 'i'
+                    }
+                },
+                {
+                    genre: {
+                        $regex: search,
+                        $options: 'i'
+                    }
+                }
+            ];
+        }
+
+        if (genre) {
+            query.genre = genre;
+        }
+
+        if (author) {
+            query.author = {
+                $regex: author,
+                $options: 'i'
+            };
+        }
+
+        if (className) {
+            query.className = className;
+        }
+
+        console.log(
+            '[LIBRARY] School:',
+            req.user.school
+        );
+
+        console.log(
+            '[LIBRARY] Query:',
+            JSON.stringify(query, null, 2)
+        );
+
+        const books = await Book.find(query);
+
+        console.log(
+            `[LIBRARY] Returning ${books.length} books for school ${req.user.school}`
+        );
+
+        return res.status(200).json(books);
+
+    } catch (err) {
+        console.error(
+            'Error fetching books:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
-    
-    // Check if the book is currently borrowed
-    const activeBorrowings = await Borrowing.findOne({
-      bookId: book._id,
-      returned: false
-    });
-    
-    if (activeBorrowings) {
-      return res.status(400).json({ 
-        error: 'Cannot delete book that is currently borrowed' 
-      });
-    }
-    
-    // Delete the book
-    await Book.findByIdAndDelete(bookId);
-    
-    // Clean up any borrowing records for this book
-    await Borrowing.deleteMany({ bookId: book._id });
-    
-    res.json({ message: 'Book deleted successfully' });
-    
-  } catch (err) {
-    console.error('Error deleting book:', err);
-    res.status(500).json({ error: err.message || 'Failed to delete book' });
-  }
 });
 
-router.post('/return/:id', async (req, res) => {
-  try {
-    const { bookId, finePaid = 0 } = req.body;
-    const borrowingId = req.params.id;
-    
-    if (!bookId) {
-      return res.status(400).json({ error: 'Book ID is required' });
+// ============================================================
+// POST /api/library
+// Add a new book
+// IMPORTANT: school comes from authenticated user
+// ============================================================
+router.post('/', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const {
+            title,
+            author,
+            year,
+            className,
+            genre,
+            status,
+            copies
+        } = req.body;
+
+        if (!title || !author || !className) {
+            return res.status(400).json({
+                error:
+                    'Title, author, and class are required.'
+            });
+        }
+
+        const totalCopies =
+            parseInt(copies) || 1;
+
+        const newBook = new Book({
+            school: req.user.school,
+            title: title.trim(),
+            author: author.trim(),
+            year:
+                year ||
+                new Date().getFullYear(),
+            className: className.trim(),
+            genre:
+                genre || 'General',
+            status:
+                status || 'available',
+            copies: totalCopies,
+            available: totalCopies
+        });
+
+        await newBook.save();
+
+        console.log(
+            '[BOOK ADD] Successful:',
+            {
+                bookId: newBook._id,
+                school: req.user.school,
+                userId: req.user.id
+            }
+        );
+
+        return res.status(201).json({
+            success: true,
+            msg: 'Book added!',
+            book: newBook
+        });
+
+    } catch (err) {
+        console.error(
+            'Error adding book:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
-    
-    // Find the borrowing record
-    const borrowing = await Borrowing.findById(borrowingId);
-    if (!borrowing) {
-      return res.status(404).json({ error: 'Borrowing record not found' });
+});
+
+// ============================================================
+// GET /api/library/:id
+// Get ONE book for editing
+// IMPORTANT: Only the user's school can access it
+// ============================================================
+router.get('/:id', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const book = await Book.findOne({
+            _id: req.params.id,
+            school: req.user.school
+        });
+
+        if (!book) {
+            return res.status(404).json({
+                success: false,
+                message: 'Book not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: book
+        });
+
+    } catch (err) {
+        console.error(
+            '[BOOK GET ONE] Error:',
+            err
+        );
+
+        if (err.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid book ID'
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: err.message
+        });
     }
-    
-    if (borrowing.returned) {
-      return res.status(400).json({ error: 'This book has already been returned' });
+});
+
+// ============================================================
+// PUT /api/library/:id
+// Update/edit a book
+// IMPORTANT: Only update books belonging to user's school
+// ============================================================
+router.put('/:id', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const {
+            title,
+            author,
+            year,
+            className,
+            genre,
+            status,
+            copies
+        } = req.body;
+
+        if (!title || !author || !className) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    'Title, author, and class are required.'
+            });
+        }
+
+        const book = await Book.findOne({
+            _id: req.params.id,
+            school: req.user.school
+        });
+
+        if (!book) {
+            return res.status(404).json({
+                success: false,
+                error: 'Book not found'
+            });
+        }
+
+        const newCopies =
+            parseInt(copies);
+
+        // Keep the number of copies valid.
+        const totalCopies =
+            Number.isNaN(newCopies)
+                ? (book.copies || 1)
+                : newCopies;
+
+        // Calculate currently borrowed copies.
+        const borrowedCopies =
+            Math.max(
+                0,
+                (book.copies || 0) -
+                (book.available || 0)
+            );
+
+        // Never allow editing copies below
+        // the number currently borrowed.
+        if (totalCopies < borrowedCopies) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    `Cannot reduce copies below ${borrowedCopies}. ` +
+                    'Some copies are currently issued.'
+            });
+        }
+
+        let available =
+            totalCopies - borrowedCopies;
+
+        // If explicitly changing status
+        // to unavailable, available becomes 0.
+        if (status && status !== 'available') {
+            available = 0;
+        }
+
+        // If status is available,
+        // preserve copies already borrowed.
+        if (status === 'available') {
+            available =
+                totalCopies - borrowedCopies;
+        }
+
+        const updatedBook =
+            await Book.findOneAndUpdate(
+                {
+                    _id: req.params.id,
+                    school: req.user.school
+                },
+                {
+                    title: title.trim(),
+                    author: author.trim(),
+                    year:
+                        year
+                            ? parseInt(year)
+                            : book.year,
+                    className:
+                        className.trim(),
+                    genre:
+                        genre
+                            ? genre.trim()
+                            : book.genre || 'General',
+                    status:
+                        status || book.status,
+                    copies: totalCopies,
+                    available
+                },
+                {
+                    new: true,
+                    runValidators: true
+                }
+            );
+
+        if (!updatedBook) {
+            return res.status(404).json({
+                success: false,
+                error: 'Book not found'
+            });
+        }
+
+        console.log(
+            '[BOOK UPDATE] Successful:',
+            {
+                bookId: updatedBook._id,
+                bookTitle:
+                    updatedBook.title,
+                school:
+                    req.user.school,
+                userId:
+                    req.user.id
+            }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message:
+                'Book updated successfully',
+            book: updatedBook
+        });
+
+    } catch (err) {
+        console.error(
+            '[BOOK UPDATE] Error:',
+            err
+        );
+
+        if (err.name === 'CastError') {
+            return res.status(404).json({
+                success: false,
+                error: 'Book not found'
+            });
+        }
+
+        if (err.name === 'ValidationError') {
+            const messages =
+                Object.values(err.errors)
+                    .map(val => val.message);
+
+            return res.status(400).json({
+                success: false,
+                error:
+                    'Validation error',
+                details: messages
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            error:
+                'Failed to update book',
+            details:
+                err.message
+        });
     }
-    
-    // Find the book
-    const book = await Book.findById(bookId);
-    if (!book) {
-      return res.status(404).json({ error: 'Book not found' });
+});
+
+// ============================================================
+// POST /api/library/:id/issue
+// Issue a book to a student
+// IMPORTANT: Book must belong to user's school
+// ============================================================
+router.post('/:id/issue', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const {
+            borrowerId,
+            borrowerName,
+            className,
+            dueDate,
+            genre
+        } = req.body;
+
+        const bookId =
+            req.params.id;
+
+        if (
+            !borrowerId ||
+            !borrowerName ||
+            !className ||
+            !dueDate
+        ) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    'Missing required fields'
+            });
+        }
+
+        const book = await Book.findOne({
+            _id: bookId,
+            school: req.user.school
+        });
+
+        if (!book) {
+            return res.status(404).json({
+                success: false,
+                error: 'Book not found'
+            });
+        }
+
+        if (!book.genre) {
+            book.genre =
+                genre || 'General';
+        }
+
+        if (book.available <= 0) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    'No available copies of this book'
+            });
+        }
+
+        const existingBorrowing =
+            await Borrowing.findOne({
+                bookId: book._id,
+                borrowerId,
+                returned: false
+            });
+
+        if (existingBorrowing) {
+            return res.status(400).json({
+                success: false,
+                error:
+                    'This book is already issued to the same borrower and not yet returned'
+            });
+        }
+
+        const borrowing =
+            new Borrowing({
+                bookId: book._id,
+                bookTitle: book.title,
+                borrowerId,
+                borrowerName,
+                className,
+                genre:
+                    genre ||
+                    book.genre ||
+                    'General',
+                dueDate:
+                    new Date(dueDate),
+                returned: false,
+                fine: 0,
+                issueDate: new Date()
+            });
+
+        book.available -= 1;
+
+        await borrowing.save();
+        await book.save();
+
+        console.log(
+            '[BOOK ISSUE] Successful:',
+            {
+                bookId: book._id,
+                bookTitle:
+                    book.title,
+                borrowerId,
+                school:
+                    req.user.school,
+                availableCopies:
+                    book.available
+            }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message:
+                'Book issued successfully',
+            borrowing,
+            availableCopies:
+                book.available
+        });
+
+    } catch (err) {
+        console.error(
+            '[BOOK ISSUE] Error:',
+            err
+        );
+
+        if (err.name === 'CastError') {
+            return res.status(404).json({
+                success: false,
+                error:
+                    'Book not found'
+            });
+        }
+
+        if (err.name === 'ValidationError') {
+            const messages =
+                Object.values(err.errors)
+                    .map(val => val.message);
+
+            return res.status(400).json({
+                success: false,
+                error:
+                    'Validation error',
+                details: messages
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            error:
+                'Failed to issue book',
+            details:
+                err.message
+        });
     }
-    
-    // Calculate fine if the book is returned late
-    const today = new Date();
-    const dueDate = new Date(borrowing.dueDate);
-    let fine = 0;
-    let daysOverdue = 0;
-    
-    if (today > dueDate) {
-      daysOverdue = Math.ceil((today - dueDate) / (1000 * 60 * 60 * 24));
-      fine = daysOverdue * 5; // 5 KES per day late
+});
+
+// ============================================================
+// GET /api/library/issued
+// Get issued books for ONLY the authenticated user's school
+// ============================================================
+router.get('/issued', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const {
+            returned,
+            groupByClass = 'true',
+            className
+        } = req.query;
+
+        const query = {
+            school: req.user.school
+        };
+
+        if (returned === 'true') {
+            query.returned = true;
+        } else if (returned === 'false') {
+            query.returned = false;
+        }
+
+        if (
+            className &&
+            className !== 'All'
+        ) {
+            query.className =
+                className;
+        }
+
+        // IMPORTANT:
+        // Borrowing records need to be connected
+        // to the school through the book.
+        const pipeline = [
+            {
+                $lookup: {
+                    from: 'books',
+                    localField: 'bookId',
+                    foreignField: '_id',
+                    as: 'bookDetails'
+                }
+            },
+
+            {
+                $unwind: '$bookDetails'
+            },
+
+            // IMPORTANT SCHOOL SECURITY:
+            // Only include borrowings where
+            // the related book belongs to this school.
+            {
+                $match: {
+                    'bookDetails.school':
+                        req.user.school,
+                    ...query
+                }
+            },
+
+            {
+                $addFields: {
+                    className: {
+                        $ifNull: [
+                            '$className',
+                            'Ungrouped'
+                        ]
+                    }
+                }
+            },
+
+            {
+                $group: {
+                    _id: {
+                        bookId: '$bookId',
+                        borrowerId:
+                            '$borrowerId',
+                        returned:
+                            '$returned',
+                        className:
+                            '$className'
+                    },
+
+                    doc: {
+                        $first: '$$ROOT'
+                    },
+
+                    dueDate: {
+                        $first: '$dueDate'
+                    },
+
+                    issueDate: {
+                        $first: '$issueDate'
+                    },
+
+                    className: {
+                        $first:
+                            '$className'
+                    },
+
+                    bookTitle: {
+                        $first:
+                            '$bookDetails.title'
+                    }
+                }
+            },
+
+            {
+                $replaceRoot: {
+                    newRoot: {
+                        $mergeObjects: [
+                            '$doc',
+                            {
+                                className:
+                                    '$className'
+                            }
+                        ]
+                    }
+                }
+            },
+
+            {
+                $sort: {
+                    className: 1,
+                    dueDate: 1
+                }
+            },
+
+            {
+                $project: {
+                    _id: 1,
+                    bookId: 1,
+                    title:
+                        '$bookTitle',
+                    className: 1,
+                    author:
+                        '$bookDetails.author',
+                    genre: 1,
+                    borrowerName: 1,
+                    borrowerId: 1,
+                    issueDate: 1,
+                    dueDate: 1,
+                    returnDate: 1,
+                    returned: 1,
+                    fine: {
+                        $ifNull: [
+                            '$fine',
+                            0
+                        ]
+                    },
+
+                    daysOverdue: {
+                        $cond: [
+                            {
+                                $and: [
+                                    {
+                                        $eq: [
+                                            '$returned',
+                                            false
+                                        ]
+                                    },
+                                    {
+                                        $lte: [
+                                            '$dueDate',
+                                            new Date()
+                                        ]
+                                    },
+                                    {
+                                        $ne: [
+                                            '$dueDate',
+                                            null
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                $floor: {
+                                    $divide: [
+                                        {
+                                            $subtract: [
+                                                new Date(),
+                                                '$dueDate'
+                                            ]
+                                        },
+                                        1000 *
+                                        60 *
+                                        60 *
+                                        24
+                                    ]
+                                }
+                            },
+                            0
+                        ]
+                    }
+                }
+            },
+
+            {
+                $sort: {
+                    dueDate: 1
+                }
+            }
+        ];
+
+        const issuedBooks =
+            await Borrowing.aggregate(
+                pipeline
+            );
+
+        // Update fines for overdue books.
+        await Promise.all(
+            issuedBooks.map(
+                async (book) => {
+                    if (
+                        !book.returned &&
+                        new Date(
+                            book.dueDate
+                        ) < new Date()
+                    ) {
+                        const fine =
+                            calculateFine(
+                                book.dueDate
+                            );
+
+                        await Borrowing.findByIdAndUpdate(
+                            book._id,
+                            {
+                                fine
+                            }
+                        );
+                    }
+                }
+            )
+        );
+
+        return res.json(
+            issuedBooks
+        );
+
+    } catch (err) {
+        console.error(
+            'Error fetching issued books:',
+            err
+        );
+
+        return res.status(500).json({
+            error:
+                err.message ||
+                'Failed to fetch issued books'
+        });
     }
-    
-    // Update the borrowing record
-    borrowing.returned = true;
-    borrowing.returnDate = today;
-    borrowing.fine = fine;
-    borrowing.finePaid = parseFloat(finePaid) || 0;
-    
-    // Update book availability
-    book.available += 1;
-    if (book.available > 0) {
-      book.status = 'available';
+});
+
+// ============================================================
+// POST /api/library/return/:id
+// Mark a book as returned
+// ============================================================
+router.post('/return/:id', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const {
+            bookId,
+            finePaid = 0
+        } = req.body;
+
+        const borrowingId =
+            req.params.id;
+
+        if (!bookId) {
+            return res.status(400).json({
+                error:
+                    'Book ID is required'
+            });
+        }
+
+        // Find borrowing AND verify
+        // its book belongs to user's school.
+        const book =
+            await Book.findOne({
+                _id: bookId,
+                school:
+                    req.user.school
+            });
+
+        if (!book) {
+            return res.status(404).json({
+                error:
+                    'Book not found'
+            });
+        }
+
+        const borrowing =
+            await Borrowing.findOne({
+                _id: borrowingId,
+                bookId: book._id,
+                returned: false
+            });
+
+        if (!borrowing) {
+            return res.status(404).json({
+                error:
+                    'Borrowing record not found'
+            });
+        }
+
+        const today =
+            new Date();
+
+        const dueDate =
+            new Date(
+                borrowing.dueDate
+            );
+
+        let fine = 0;
+        let daysOverdue = 0;
+
+        if (today > dueDate) {
+            daysOverdue =
+                Math.ceil(
+                    (today - dueDate) /
+                    (1000 *
+                        60 *
+                        60 *
+                        24)
+                );
+
+            fine =
+                daysOverdue * 5;
+        }
+
+        borrowing.returned =
+            true;
+
+        borrowing.returnDate =
+            today;
+
+        borrowing.fine =
+            fine;
+
+        borrowing.finePaid =
+            parseFloat(finePaid) || 0;
+
+        book.available += 1;
+
+        if (book.available > 0) {
+            book.status =
+                'available';
+        }
+
+        await borrowing.save();
+        await book.save();
+
+        return res.json({
+            message:
+                'Book returned successfully',
+            fine,
+            finePaid:
+                borrowing.finePaid,
+            daysOverdue,
+            book,
+            borrowing
+        });
+
+    } catch (err) {
+        console.error(
+            'Error returning book:',
+            err
+        );
+
+        return res.status(500).json({
+            error:
+                err.message ||
+                'Failed to return book'
+        });
     }
-    
-    // Save changes
-    await borrowing.save();
-    await book.save();
-    
-    res.json({ 
-      message: 'Book returned successfully',
-      fine,
-      finePaid: borrowing.finePaid,
-      daysOverdue,
-      book: book,
-      borrowing: borrowing
-    });
-    
-  } catch (err) {
-    console.error('Error returning book:', err);
-    res.status(500).json({ error: err.message || 'Failed to return book' });
-  }
+});
+
+// ============================================================
+// DELETE /api/library/:id
+// Delete a book ONLY from user's school
+// ============================================================
+router.delete('/:id', protect, async (req, res) => {
+    try {
+
+        if (!req.user || !req.user.school) {
+            return res.status(403).json({
+                success: false,
+                message:
+                    'User is not assigned to a school'
+            });
+        }
+
+        const book =
+            await Book.findOne({
+                _id: req.params.id,
+                school:
+                    req.user.school
+            });
+
+        if (!book) {
+            return res.status(404).json({
+                error:
+                    'Book not found'
+            });
+        }
+
+        const activeBorrowings =
+            await Borrowing.find({
+                bookId: book._id,
+                returned: false
+            });
+
+        if (
+            activeBorrowings.length > 0
+        ) {
+            return res.status(400).json({
+                error:
+                    'Cannot delete book with active borrowings',
+                activeBorrowings:
+                    activeBorrowings.length
+            });
+        }
+
+        await Book.findByIdAndDelete(
+            book._id
+        );
+
+        await Borrowing.deleteMany({
+            bookId: book._id
+        });
+
+        return res.json({
+            message:
+                'Book deleted successfully'
+        });
+
+    } catch (err) {
+        console.error(
+            'Error deleting book:',
+            err
+        );
+
+        return res.status(500).json({
+            error:
+                'Failed to delete book',
+            details:
+                err.message
+        });
+    }
 });
 
 module.exports = router;
