@@ -399,6 +399,19 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('Tab clicked:', tab.textContent);
             const sectionId = this.getAttribute('data-tab');
             console.log('Section ID:', sectionId);
+
+            if (sectionId === 'library-section') {
+    console.log('[STUDENT LIBRARY] Library section opened');
+
+    if (typeof window.fetchMyIssuedBooks === 'function') {
+        console.log('[STUDENT LIBRARY] Calling fetchMyIssuedBooks()');
+        window.fetchMyIssuedBooks();
+    } else {
+        console.error(
+            '[STUDENT LIBRARY] fetchMyIssuedBooks is NOT available'
+        );
+    }
+}
             
             // Remove active class from all tabs and add to clicked tab
             tabs.forEach(t => t.classList.remove('active'));
