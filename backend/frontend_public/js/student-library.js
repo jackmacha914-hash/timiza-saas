@@ -1,126 +1,592 @@
-// Import API configuration
+// ============================================================
+// STUDENT LIBRARY
+// Loads books currently issued to the logged-in student
+// ============================================================
+
 import { API_CONFIG } from './config.js';
 
-// Student Library Management
-document.addEventListener('DOMContentLoaded', function() {
-    // Load books when the library tab is clicked
-    document.querySelector('[data-tab="library-section"]')?.addEventListener('click', fetchMyIssuedBooks);
+
+// ============================================================
+// INITIALIZE
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    console.log(
+        '[STUDENT LIBRARY] Student library module loaded'
+    );
+
+    // Attach click listener if the tab already exists.
+    const libraryTab =
+        document.querySelector(
+            '[data-tab="library-section"]'
+        );
+
+    if (libraryTab) {
+
+        libraryTab.addEventListener(
+            'click',
+            () => {
+                console.log(
+                    '[STUDENT LIBRARY] Library tab clicked'
+                );
+
+                fetchMyIssuedBooks();
+            }
+        );
+
+    } else {
+
+        console.warn(
+            '[STUDENT LIBRARY] Library tab not found during DOMContentLoaded'
+        );
+    }
 });
 
-// Fetch books issued to the current student
+
+// ============================================================
+// FETCH MY ISSUED BOOKS
+// Backend:
+// GET /api/library/my-books
+// ============================================================
+
 async function fetchMyIssuedBooks() {
+
+    console.log(
+        '[STUDENT LIBRARY] Fetching my issued books...'
+    );
+
     try {
-        const token = localStorage.getItem('token');
+
+        const token =
+            localStorage.getItem('token');
+
         if (!token) {
-            showMessage('Please log in to view your books', 'error');
+
+            console.error(
+                '[STUDENT LIBRARY] No authentication token'
+            );
+
+            showMessage(
+                'Please log in to view your books',
+                'error'
+            );
+
             return;
         }
 
-        console.log('Fetching issued books...');
-        console.log('Token:', token ? 'Token exists' : 'No token found');
-        
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/library/my-books`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            credentials: 'include' // Include cookies for session-based auth if needed
-        });
+        console.log(
+            '[STUDENT LIBRARY] Token exists'
+        );
 
-        console.log('Response status:', response.status);
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('Error response:', errorData);
-            throw new Error(errorData.error || 'Failed to fetch your books');
+        const endpoint =
+            `${API_CONFIG.BASE_URL}/api/library/my-books`;
+
+        console.log(
+            '[STUDENT LIBRARY] Endpoint:',
+            endpoint
+        );
+
+        const response =
+            await fetch(
+                endpoint,
+                {
+                    method: 'GET',
+
+                    headers: {
+                        'Authorization':
+                            `Bearer ${token}`,
+
+                        'Accept':
+                            'application/json'
+                    },
+
+                    credentials: 'include'
+                }
+            );
+
+        console.log(
+            '[STUDENT LIBRARY] Response status:',
+            response.status
+        );
+
+        // ----------------------------------------------------
+        // Read response safely
+        // ----------------------------------------------------
+
+        const contentType =
+            response.headers.get(
+                'content-type'
+            ) || '';
+
+        let result;
+
+        if (
+            contentType.includes(
+                'application/json'
+            )
+        ) {
+
+            result =
+                await response.json();
+
+        } else {
+
+            const text =
+                await response.text();
+
+            console.error(
+                '[STUDENT LIBRARY] Non-JSON response:',
+                text
+            );
+
+            throw new Error(
+                `Server returned ${response.status}`
+            );
         }
 
-        const books = await response.json();
-        console.log('Received books:', books);
+        console.log(
+            '[STUDENT LIBRARY] Server response:',
+            result
+        );
+
+        // ----------------------------------------------------
+        // Handle errors
+        // ----------------------------------------------------
+
+        if (!response.ok) {
+
+            const message =
+                result?.message ||
+                result?.error ||
+                'Failed to fetch your books';
+
+            throw new Error(message);
+        }
+
+        // ----------------------------------------------------
+        // Normalize response
+        //
+        // Your current backend returns:
+        //
+        // [
+        //   {
+        //      id,
+        //      title,
+        //      author,
+        //      ...
+        //   }
+        // ]
+        //
+        // But this also supports:
+        //
+        // { data: [...] }
+        // { books: [...] }
+        // ----------------------------------------------------
+
+        let books = [];
+
+        if (Array.isArray(result)) {
+
+            books = result;
+
+        } else if (
+            Array.isArray(result?.data)
+        ) {
+
+            books =
+                result.data;
+
+        } else if (
+            Array.isArray(result?.books)
+        ) {
+
+            books =
+                result.books;
+
+        }
+
+        console.log(
+            '[STUDENT LIBRARY] Books received:',
+            books
+        );
+
+        console.log(
+            '[STUDENT LIBRARY] Number of books:',
+            books.length
+        );
+
         displayMyBooks(books);
+
+        return books;
+
     } catch (error) {
-        console.error('Error fetching issued books:', error);
-        showMessage(error.message || 'Failed to load your books. Please try again.', 'error');
+
+        console.error(
+            '[STUDENT LIBRARY] Error fetching issued books:',
+            error
+        );
+
+        showMessage(
+            error.message ||
+            'Failed to load your books. Please try again.',
+            'error'
+        );
+
+        // Also show the error in the table.
+        const booksList =
+            document.getElementById(
+                'my-books-list'
+            );
+
+        if (booksList) {
+
+            booksList.innerHTML = `
+                <tr>
+                    <td
+                        colspan="5"
+                        class="text-center text-danger py-4"
+                    >
+                        Failed to load your issued books.
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
-// Display the student's issued books
-function displayMyBooks(books) {
-    const booksList = document.getElementById('my-books-list');
-    if (!booksList) return;
 
-    if (!books || books.length === 0) {
-        booksList.innerHTML = '<tr><td colspan="5" class="text-center">No books currently issued to you.</td></tr>';
+// ============================================================
+// DISPLAY MY BOOKS
+// ============================================================
+
+function displayMyBooks(books) {
+
+    const booksList =
+        document.getElementById(
+            'my-books-list'
+        );
+
+    if (!booksList) {
+
+        console.error(
+            '[STUDENT LIBRARY] #my-books-list not found'
+        );
+
         return;
     }
 
-    booksList.innerHTML = books.map(book => `
-        <tr>
-            <td>${escapeHtml(book.title || 'N/A')}</td>
-            <td>${escapeHtml(book.author || 'N/A')}</td>
-            <td>${formatDate(book.issueDate)}</td>
-            <td class="${new Date(book.dueDate) < new Date() ? 'text-danger fw-bold' : ''}">
-                ${formatDate(book.dueDate)}
-            </td>
-            <td>
-                <span class="badge ${getStatusBadgeClass(book.status)}">
-                    ${book.status || 'Unknown'}
-                    ${book.fine > 0 ? `(KES ${book.fine.toFixed(2)})` : ''}
-                </span>
-            </td>
-        </tr>
-    `).join('');
+    // --------------------------------------------------------
+    // No books
+    // --------------------------------------------------------
 
-    // Initialize tooltips if using Bootstrap
-    if (typeof bootstrap !== 'undefined') {
-        const tooltipTriggerList = [].slice.call(booksList.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    if (
+        !Array.isArray(books) ||
+        books.length === 0
+    ) {
+
+        console.log(
+            '[STUDENT LIBRARY] No books currently issued'
+        );
+
+        booksList.innerHTML = `
+            <tr>
+                <td
+                    colspan="5"
+                    class="text-center text-muted py-4"
+                >
+                    <i class="fas fa-book-open me-2"></i>
+                    No books currently issued to you.
+                </td>
+            </tr>
+        `;
+
+        return;
     }
+
+    // --------------------------------------------------------
+    // Render books
+    // --------------------------------------------------------
+
+    booksList.innerHTML =
+        books.map(book => {
+
+            const issueDate =
+                formatDate(
+                    book.issueDate
+                );
+
+            const dueDate =
+                formatDate(
+                    book.dueDate
+                );
+
+            const due =
+                book.dueDate
+                    ? new Date(
+                        book.dueDate
+                    )
+                    : null;
+
+            const isOverdue =
+                due &&
+                due < new Date() &&
+                book.status !== 'Returned';
+
+            const fine =
+                Number(
+                    book.fine || 0
+                );
+
+            const status =
+                book.status ||
+                (
+                    isOverdue
+                        ? 'Overdue'
+                        : 'Issued'
+                );
+
+            return `
+                <tr>
+
+                    <td>
+                        <div class="fw-semibold">
+                            ${escapeHtml(
+                                book.title ||
+                                'N/A'
+                            )}
+                        </div>
+
+                        ${
+                            book.genre
+                                ? `
+                                    <small class="text-muted">
+                                        ${escapeHtml(
+                                            book.genre
+                                        )}
+                                    </small>
+                                  `
+                                : ''
+                        }
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            book.author ||
+                            'N/A'
+                        )}
+                    </td>
+
+                    <td>
+                        ${issueDate}
+                    </td>
+
+                    <td class="${
+                        isOverdue
+                            ? 'text-danger fw-bold'
+                            : ''
+                    }">
+
+                        ${dueDate}
+
+                        ${
+                            isOverdue
+                                ? `
+                                    <div>
+                                        <small class="text-danger">
+                                            Overdue
+                                        </small>
+                                    </div>
+                                  `
+                                : ''
+                        }
+
+                    </td>
+
+                    <td>
+
+                        <span
+                            class="badge ${
+                                getStatusBadgeClass(
+                                    status
+                                )
+                            }"
+                        >
+                            ${escapeHtml(status)}
+
+                            ${
+                                fine > 0
+                                    ? `
+                                        — KES ${fine.toFixed(2)}
+                                      `
+                                    : ''
+                            }
+                        </span>
+
+                    </td>
+
+                </tr>
+            `;
+
+        }).join('');
+
+    console.log(
+        `[STUDENT LIBRARY] Displayed ${books.length} books`
+    );
 }
 
-// Helper function to format dates
+
+// ============================================================
+// FORMAT DATE
+// ============================================================
+
 function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+
+    if (!dateString) {
+        return 'N/A';
+    }
+
+    const date =
+        new Date(dateString);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+        return 'N/A';
+    }
+
+    return date.toLocaleDateString(
+        undefined,
+        {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        }
+    );
 }
 
-// Helper function to get appropriate badge class based on status
+
+// ============================================================
+// STATUS BADGE
+// ============================================================
+
 function getStatusBadgeClass(status) {
-    switch ((status || '').toLowerCase()) {
+
+    switch (
+        String(status || '')
+            .toLowerCase()
+    ) {
+
         case 'issued':
             return 'bg-primary';
+
         case 'overdue':
             return 'bg-danger';
+
         case 'returned':
             return 'bg-success';
+
         default:
             return 'bg-secondary';
     }
 }
 
-// Helper function to escape HTML
-function escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return unsafe;
-    return unsafe
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
 
-// Helper function to show messages
-function showMessage(message, type = 'info') {
-    const messageEl = document.getElementById('message');
-    if (messageEl) {
-        messageEl.textContent = message;
-        messageEl.className = `alert alert-${type} alert-dismissible fade show`;
-        messageEl.style.display = 'block';
+// ============================================================
+// ESCAPE HTML
+// ============================================================
+
+function escapeHtml(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return '';
     }
+
+    return String(value)
+        .replace(
+            /&/g,
+            '&amp;'
+        )
+        .replace(
+            /</g,
+            '&lt;'
+        )
+        .replace(
+            />/g,
+            '&gt;'
+        )
+        .replace(
+            /"/g,
+            '&quot;'
+        )
+        .replace(
+            /'/g,
+            '&#039;'
+        );
 }
 
-// Make the fetch function available globally
-window.fetchMyIssuedBooks = fetchMyIssuedBooks;
+
+// ============================================================
+// SHOW MESSAGE
+// ============================================================
+
+function showMessage(
+    message,
+    type = 'info'
+) {
+
+    const messageEl =
+        document.getElementById(
+            'message'
+        );
+
+    if (!messageEl) {
+
+        console.warn(
+            '[STUDENT LIBRARY] #message not found:',
+            message
+        );
+
+        return;
+    }
+
+    let alertType = type;
+
+    if (type === 'error') {
+        alertType = 'danger';
+    }
+
+    messageEl.textContent =
+        message;
+
+    messageEl.className =
+        `alert alert-${alertType} alert-dismissible fade show`;
+
+    messageEl.style.display =
+        'block';
+}
+
+
+// ============================================================
+// GLOBAL ACCESS
+// ============================================================
+
+window.fetchMyIssuedBooks =
+    fetchMyIssuedBooks;
+
+window.displayMyBooks =
+    displayMyBooks;
+
+
+// ============================================================
+// MODULE LOADED
+// ============================================================
+
+console.log(
+    '[STUDENT LIBRARY] Module ready'
+);
