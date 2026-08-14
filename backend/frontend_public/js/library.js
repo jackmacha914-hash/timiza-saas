@@ -2066,7 +2066,7 @@ if (!response.ok) {
     // find modal etc. For brevity show confirm then call API
     if (!confirm(`Return book "${btn.getAttribute('data-book-title')}" for ${btn.getAttribute('data-borrower')}?`)) return;
     try {
-      await apiFetch(`/library/return/${issueId}`, { method: 'POST', body: JSON.stringify({ finePaid: fine }) });
+      await apiFetch(`/api/library/return/${issueId}`, { method: 'POST', body: JSON.stringify({ finePaid: fine }) });
       showNotification('Book returned', 'success');
       await loadIssuedBooks();
       await loadLibraryWithFilters();
