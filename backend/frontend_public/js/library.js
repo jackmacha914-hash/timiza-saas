@@ -1103,487 +1103,689 @@ function attachBookEventListeners() {
   }
 
 
-  // =====================================================
-  // Handle Issue button: heavy logic (modal, students, submit)
-  // =====================================================
-  async function handleIssueButtonClick(actionBtn) {
-    const bookId = actionBtn.getAttribute('data-id');
-    const genre = actionBtn.getAttribute('data-genre') || 'General';
-    const bookTitle = (actionBtn.closest('tr')?.querySelector('td:nth-child(2)')?.textContent) || '';
+ ```javascript
+// =====================================================
+// Handle Issue button: modal, students, submit
+// =====================================================
+async function handleIssueButtonClick(actionBtn) {
+  const bookId = actionBtn.getAttribute('data-id');
+  const genre = actionBtn.getAttribute('data-genre') || 'General';
 
-    const universalModal = document.getElementById('universal-edit-modal');
-    const universalForm = document.getElementById('universal-edit-form');
-    const universalMsg = document.getElementById('universal-edit-msg');
-    const universalTitle = document.getElementById('universal-edit-title');
+  const bookTitle =
+    actionBtn.closest('tr')?.querySelector('td:nth-child(2)')?.textContent?.trim() || '';
 
-    if (!universalModal || !universalForm) {
-      console.error('Issue modal/form missing in DOM');
-      showNotification('Issue modal not found', 'error');
+  const universalModal =
+    document.getElementById('universal-edit-modal');
+
+  const universalForm =
+    document.getElementById('universal-edit-form');
+
+  const universalMsg =
+    document.getElementById('universal-edit-msg');
+
+  const universalTitle =
+    document.getElementById('universal-edit-title');
+
+  // -----------------------------------------------------
+  // Check modal/form exists
+  // -----------------------------------------------------
+  if (!universalModal || !universalForm) {
+    console.error('Issue modal/form missing in DOM');
+    showNotification('Issue modal not found', 'error');
+    return;
+  }
+
+  // Clear old message
+  if (universalMsg) {
+    universalMsg.textContent = '';
+    universalMsg.style.display = 'none';
+  }
+
+  // Set modal title
+  if (universalTitle) {
+    universalTitle.textContent =
+      `Issue Book: ${bookTitle || ''}`;
+  }
+
+  // -----------------------------------------------------
+  // Default due date = 14 days from today
+  // -----------------------------------------------------
+  const defaultDue = new Date();
+  defaultDue.setDate(defaultDue.getDate() + 14);
+
+  const defaultDueStr =
+    defaultDue.toISOString().split('T')[0];
+
+  // -----------------------------------------------------
+  // Build issue form
+  // -----------------------------------------------------
+  universalForm.innerHTML = `
+    <input
+      type="hidden"
+      name="bookId"
+      value="${escapeAttr(bookId)}"
+    >
+
+    <input
+      type="hidden"
+      name="genre"
+      value="${escapeAttr(genre)}"
+    >
+
+    <div class="mb-4">
+      <label for="classSelect">Class</label>
+
+      <select
+        id="classSelect"
+        name="class"
+        required
+      >
+        <option value="">Select a class</option>
+
+        <optgroup label="Pre-Primary">
+          <option value="PP1">PP1</option>
+          <option value="PP2">PP2</option>
+        </optgroup>
+
+        <optgroup label="Lower Primary">
+          <option value="Grade 1">Grade 1</option>
+          <option value="Grade 2">Grade 2</option>
+          <option value="Grade 3">Grade 3</option>
+        </optgroup>
+
+        <optgroup label="Upper Primary">
+          <option value="Grade 4">Grade 4</option>
+          <option value="Grade 5">Grade 5</option>
+          <option value="Grade 6">Grade 6</option>
+        </optgroup>
+
+        <optgroup label="Junior Secondary">
+          <option value="Grade 7">Grade 7</option>
+          <option value="Grade 8">Grade 8</option>
+        </optgroup>
+
+        <optgroup label="Secondary">
+          <option value="Form 1">Form 1</option>
+          <option value="Form 2">Form 2</option>
+          <option value="Form 3">Form 3</option>
+          <option value="Form 4">Form 4</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="mb-4">
+      <label for="studentSelect">Student</label>
+
+      <select
+        id="studentSelect"
+        name="studentId"
+        required
+        disabled
+      >
+        <option value="">
+          Select a class first
+        </option>
+      </select>
+    </div>
+
+    <div class="mb-4">
+      <label for="dueDate">Due Date</label>
+
+      <input
+        id="dueDate"
+        name="dueDate"
+        type="date"
+        required
+        value="${defaultDueStr}"
+      >
+    </div>
+
+    <div
+      id="issue-form-msg"
+      style="display:none;"
+    ></div>
+
+    <div class="flex items-center justify-end gap-3">
+
+      <button
+        type="button"
+        class="cancel-btn"
+      >
+        Cancel
+      </button>
+
+      <button
+        type="submit"
+        class="submit-btn"
+      >
+        <i class="fas fa-book-reader mr-2"></i>
+        Issue Book
+      </button>
+
+    </div>
+  `;
+
+  // -----------------------------------------------------
+  // Show modal
+  // -----------------------------------------------------
+  showModal(universalModal);
+
+  // -----------------------------------------------------
+  // IMPORTANT:
+  // Clone/replace the form FIRST.
+  //
+  // Your previous code attached the class change
+  // listener BEFORE replacing the form. That destroyed
+  // the element containing the listener.
+  // -----------------------------------------------------
+  const newForm =
+    universalForm.cloneNode(true);
+
+  universalForm.parentNode.replaceChild(
+    newForm,
+    universalForm
+  );
+
+  // -----------------------------------------------------
+  // Get references AFTER replacement
+  // -----------------------------------------------------
+  const finalForm =
+    document.getElementById('universal-edit-form');
+
+  if (!finalForm) {
+    console.error('Final issue form not found');
+    showNotification('Issue form not found', 'error');
+    return;
+  }
+
+  const classSelect =
+    finalForm.querySelector('#classSelect');
+
+  const studentSelect =
+    finalForm.querySelector('#studentSelect');
+
+  const formMsg =
+    finalForm.querySelector('#issue-form-msg');
+
+  const cancelBtn =
+    finalForm.querySelector('.cancel-btn');
+
+  const submitBtn =
+    finalForm.querySelector('.submit-btn');
+
+  // -----------------------------------------------------
+  // Make sure class/student elements exist
+  // -----------------------------------------------------
+  if (!classSelect || !studentSelect) {
+    console.error(
+      'classSelect or studentSelect missing from issue form'
+    );
+
+    showNotification(
+      'Class/student fields are missing',
+      'error'
+    );
+
+    return;
+  }
+
+  // -----------------------------------------------------
+  // Cancel button
+  // -----------------------------------------------------
+  if (cancelBtn) {
+    cancelBtn.onclick = (ev) => {
+      ev.preventDefault();
+      hideModal(universalModal);
+    };
+  }
+
+  // =====================================================
+  // LOAD STUDENTS WHEN CLASS CHANGES
+  // =====================================================
+  classSelect.addEventListener('change', async () => {
+
+    const cls =
+      classSelect.value.trim();
+
+    console.log(
+      '[LIBRARY ISSUE] Class selected:',
+      cls
+    );
+
+    // No class selected
+    if (!cls) {
+      studentSelect.disabled = true;
+
+      studentSelect.innerHTML = `
+        <option value="">
+          Select a class first
+        </option>
+      `;
+
       return;
     }
 
-    if (universalMsg) {
-      universalMsg.textContent = '';
-      universalMsg.style.display = 'none';
-    }
+    // Show loading state
+    studentSelect.disabled = true;
 
-    if (universalTitle) {
-      universalTitle.textContent =
-        `Issue Book: ${bookTitle || ''}`;
-    }
-
-    const defaultDue = new Date();
-    defaultDue.setDate(
-      defaultDue.getDate() + 14
-    );
-
-    const defaultDueStr =
-      defaultDue.toISOString().split('T')[0];
-
-    universalForm.innerHTML = `
-      <input
-        type="hidden"
-        name="bookId"
-        value="${escapeAttr(bookId)}"
-      >
-
-      <input
-        type="hidden"
-        name="genre"
-        value="${escapeAttr(genre)}"
-      >
-
-      <div class="mb-4">
-        <label for="classSelect">Class</label>
-
-        <select
-          id="classSelect"
-          name="class"
-          required
-        >
-          <option value="">Select a class</option>
-
-          <optgroup label="Pre-Primary">
-            <option value="PP1">PP1</option>
-            <option value="PP2">PP2</option>
-          </optgroup>
-
-          <optgroup label="Lower Primary">
-            <option value="Grade 1">Grade 1</option>
-            <option value="Grade 2">Grade 2</option>
-            <option value="Grade 3">Grade 3</option>
-          </optgroup>
-
-          <optgroup label="Upper Primary">
-            <option value="Grade 4">Grade 4</option>
-            <option value="Grade 5">Grade 5</option>
-            <option value="Grade 6">Grade 6</option>
-          </optgroup>
-
-          <optgroup label="Junior Secondary">
-            <option value="Grade 7">Grade 7</option>
-            <option value="Grade 8">Grade 8</option>
-          </optgroup>
-
-          <optgroup label="Secondary">
-            <option value="Form 1">Form 1</option>
-            <option value="Form 2">Form 2</option>
-            <option value="Form 3">Form 3</option>
-            <option value="Form 4">Form 4</option>
-          </optgroup>
-        </select>
-      </div>
-
-      <div class="mb-4">
-        <label for="studentSelect">Student</label>
-
-        <select
-          id="studentSelect"
-          name="studentId"
-          required
-          disabled
-        >
-          <option value="">
-            Select a class first
-          </option>
-        </select>
-      </div>
-
-      <div class="mb-4">
-        <label for="dueDate">Due Date</label>
-
-        <input
-          id="dueDate"
-          name="dueDate"
-          type="date"
-          required
-          value="${defaultDueStr}"
-        >
-      </div>
-
-      <div
-        id="issue-form-msg"
-        style="display:none;"
-      ></div>
-
-      <div class="flex items-center justify-end gap-3">
-
-        <button
-          type="button"
-          class="cancel-btn"
-        >
-          Cancel
-        </button>
-
-        <button
-          type="submit"
-          class="submit-btn"
-        >
-          <i class="fas fa-book-reader mr-2"></i>
-          Issue Book
-        </button>
-
-      </div>
+    studentSelect.innerHTML = `
+      <option value="">
+        Loading students...
+      </option>
     `;
 
-    showModal(universalModal);
+    try {
 
-    const classSelect =
-      universalForm.querySelector(
-        '#classSelect'
+      // -------------------------------------------------
+      // The students endpoint expects:
+      //
+      // /api/students/class/Grade%201
+      //
+      // apiFetch should add /api automatically.
+      // -------------------------------------------------
+      const endpoint =
+        `/students/class/${encodeURIComponent(cls)}`;
+
+      console.log(
+        '[LIBRARY ISSUE] Fetching students:',
+        endpoint
       );
 
-    const studentSelect =
-      universalForm.querySelector(
-        '#studentSelect'
+      const response =
+        await apiFetch(endpoint);
+
+      console.log(
+        '[LIBRARY ISSUE] Students response:',
+        response
       );
 
-    async function onClassChangePopulateStudents() {
+      // -------------------------------------------------
+      // Support both:
+      //
+      // [ students ]
+      //
+      // and:
+      //
+      // { success: true, data: [ students ] }
+      // -------------------------------------------------
+      const students =
+        Array.isArray(response)
+          ? response
+          : Array.isArray(response?.data)
+            ? response.data
+            : [];
 
-      const cls =
-        classSelect.value;
+      console.log(
+        '[LIBRARY ISSUE] Students found:',
+        students.length
+      );
+
+      // Clear dropdown
+      studentSelect.innerHTML = '';
+
+      // -------------------------------------------------
+      // No students
+      // -------------------------------------------------
+      if (students.length === 0) {
+
+        studentSelect.innerHTML = `
+          <option value="">
+            No students found in ${cls}
+          </option>
+        `;
+
+        studentSelect.disabled = true;
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // Default option
+      // -------------------------------------------------
+      const defaultOpt =
+        document.createElement('option');
+
+      defaultOpt.value = '';
+      defaultOpt.textContent =
+        'Select a student';
+
+      defaultOpt.disabled = true;
+      defaultOpt.selected = true;
+
+      studentSelect.appendChild(
+        defaultOpt
+      );
+
+      // -------------------------------------------------
+      // Add students
+      // -------------------------------------------------
+      students.forEach((student) => {
+
+        const opt =
+          document.createElement('option');
+
+        const studentId =
+          student._id ||
+          student.id ||
+          '';
+
+        const studentName =
+          student.name ||
+          student.displayName ||
+          student.fullName ||
+          student.email ||
+          'Unnamed student';
+
+        opt.value = studentId;
+
+        opt.textContent = studentName;
+
+        if (student.email) {
+          opt.setAttribute(
+            'data-email',
+            student.email
+          );
+        }
+
+        // Store class too, if available
+        if (student.class) {
+          opt.setAttribute(
+            'data-class',
+            student.class
+          );
+        }
+
+        studentSelect.appendChild(
+          opt
+        );
+      });
+
+      // -------------------------------------------------
+      // IMPORTANT:
+      // Enable the student dropdown ONLY after students
+      // have successfully been loaded.
+      // -------------------------------------------------
+      studentSelect.disabled = false;
+
+      console.log(
+        '[LIBRARY ISSUE] Student dropdown enabled'
+      );
+
+    } catch (err) {
+
+      console.error(
+        '[LIBRARY ISSUE] Error fetching students:',
+        err
+      );
+
+      studentSelect.innerHTML = `
+        <option value="">
+          Error loading students
+        </option>
+      `;
 
       studentSelect.disabled = true;
 
-      studentSelect.innerHTML =
-        `<option value="">Loading students...</option>`;
+      if (formMsg) {
+        formMsg.textContent =
+          err.message ||
+          'Failed to load students';
 
-      try {
+        formMsg.className =
+          'mt-3 text-sm text-red-600';
 
-        const formatted = cls;
+        formMsg.style.display =
+          'block';
+      }
 
-        const res =
-          await apiFetch(
-            `/students/class/${encodeURIComponent(formatted)}`
-          );
+    }
+  });
 
-        const students =
-          Array.isArray(res)
-            ? res
-            : (res.data || []);
+  // =====================================================
+  // FORM SUBMIT
+  // =====================================================
+  finalForm.onsubmit = async (ev) => {
 
-        studentSelect.innerHTML = '';
+    ev.preventDefault();
 
-        if (students.length === 0) {
+    // ---------------------------------------------------
+    // Disable submit button
+    // ---------------------------------------------------
+    if (submitBtn) {
 
-          studentSelect.innerHTML =
-            `<option value="">No students found</option>`;
+      submitBtn.disabled = true;
 
-        } else {
+      submitBtn.setAttribute(
+        'data-submitting',
+        'true'
+      );
 
-          const defaultOpt =
-            document.createElement('option');
+      submitBtn.innerHTML =
+        '<i class="fas fa-spinner fa-spin mr-2"></i>Issuing...';
+    }
 
-          defaultOpt.value = '';
-          defaultOpt.textContent =
-            'Select a student';
+    if (formMsg) {
+      formMsg.textContent = '';
+      formMsg.style.display = 'none';
+    }
 
-          defaultOpt.disabled = true;
-          defaultOpt.selected = true;
+    try {
 
-          studentSelect.appendChild(
-            defaultOpt
-          );
+      const formData =
+        new FormData(finalForm);
 
-          students.forEach(s => {
+      const bookIdVal =
+        formData.get('bookId');
 
-            const opt =
-              document.createElement('option');
+      const borrowerId =
+        formData.get('studentId');
 
-            opt.value =
-              s._id ||
-              s.id ||
-              '';
+      const dueDate =
+        formData.get('dueDate');
 
-            opt.textContent =
-              s.name ||
-              s.displayName ||
-              s.email ||
-              (s._id || '').slice(0, 6);
+      const clsVal =
+        classSelect.value.trim();
 
-            if (s.email) {
-              opt.setAttribute(
-                'data-email',
-                s.email
-              );
-            }
+      // -------------------------------------------------
+      // Get selected student
+      // -------------------------------------------------
+      const borrowerOption =
+        studentSelect.options[
+          studentSelect.selectedIndex
+        ];
 
-            studentSelect.appendChild(
-              opt
-            );
-          });
+      const borrowerName =
+        borrowerOption &&
+        borrowerOption.value
+          ? borrowerOption.textContent.trim()
+          : '';
+
+      const borrowerEmail =
+        borrowerOption
+          ? borrowerOption.getAttribute(
+              'data-email'
+            ) || ''
+          : '';
+
+      // -------------------------------------------------
+      // Validation
+      // -------------------------------------------------
+      if (!clsVal) {
+        throw new Error(
+          'Please select a class'
+        );
+      }
+
+      if (!borrowerId) {
+        throw new Error(
+          'Please select a student'
+        );
+      }
+
+      if (!dueDate) {
+        throw new Error(
+          'Please select a due date'
+        );
+      }
+
+      const token =
+        localStorage.getItem('token');
+
+      if (!token) {
+        throw new Error(
+          'Authentication required'
+        );
+      }
+
+      console.log(
+        '[LIBRARY ISSUE] Submitting:',
+        {
+          bookId: bookIdVal,
+          borrowerId,
+          borrowerName,
+          borrowerEmail,
+          className: clsVal,
+          dueDate,
+          genre
         }
+      );
 
-      } catch (err) {
+      // =================================================
+      // ISSUE BOOK API
+      // =================================================
+      const resp =
+        await fetch(
+          `${BASE}/api/library/${bookIdVal}/issue`,
+          {
+            method: 'POST',
 
-        console.error(
-          'Error fetching students for class',
-          err
+            headers: {
+              'Content-Type':
+                'application/json',
+
+              'Authorization':
+                `Bearer ${token}`
+            },
+
+            body: JSON.stringify({
+              borrowerName,
+              borrowerId,
+              borrowerEmail,
+              dueDate,
+              className: clsVal,
+              genre
+            })
+          }
         );
 
-        studentSelect.innerHTML =
-          `<option value="">Error loading students</option>`;
+      const data =
+        await resp.json()
+          .catch(() => ({}));
 
-      } finally {
+      console.log(
+        '[LIBRARY ISSUE] API response:',
+        data
+      );
 
-        studentSelect.disabled = false;
+      // -------------------------------------------------
+      // API error
+      // -------------------------------------------------
+      if (!resp.ok) {
+
+        throw new Error(
+          data.error ||
+          data.message ||
+          `Failed to issue book (status ${resp.status})`
+        );
       }
-    }
 
-    classSelect.addEventListener(
-      'change',
-      onClassChangePopulateStudents
-    );
+      // =================================================
+      // SUCCESS
+      // =================================================
+      if (formMsg) {
 
-    const newForm =
-      universalForm.cloneNode(true);
+        formMsg.textContent =
+          'Book issued successfully!';
 
-    universalForm.parentNode.replaceChild(
-      newForm,
-      universalForm
-    );
+        formMsg.className =
+          'mt-3 text-sm text-green-600';
 
-    const finalForm =
-      document.getElementById(
-        'universal-edit-form'
+        formMsg.style.display =
+          'block';
+      }
+
+      showNotification(
+        'Book issued successfully',
+        'success'
       );
 
-    const formMsg =
-      document.getElementById(
-        'issue-form-msg'
-      );
+      // -------------------------------------------------
+      // Close modal and refresh library
+      // -------------------------------------------------
+      setTimeout(() => {
 
-    const cancelBtn =
-      finalForm.querySelector(
-        '.cancel-btn'
-      );
+        hideModal(
+          universalModal
+        );
 
-    const submitBtn =
-      finalForm.querySelector(
-        '.submit-btn'
-      );
-
-    if (cancelBtn) {
-      cancelBtn.onclick = (ev) => {
-        ev.preventDefault();
-        hideModal(universalModal);
-      };
-    }
-
-    finalForm.onsubmit =
-      async (ev) => {
-
-        ev.preventDefault();
+        loadLibraryWithFilters()
+          .catch(console.error);
 
         if (submitBtn) {
 
-          submitBtn.disabled = true;
+          submitBtn.disabled =
+            false;
 
-          submitBtn.setAttribute(
-            'data-submitting',
-            'true'
+          submitBtn.removeAttribute(
+            'data-submitting'
           );
 
           submitBtn.innerHTML =
-            '<i class="fas fa-spinner fa-spin mr-2"></i>Issuing...';
+            '<i class="fas fa-book-reader mr-2"></i>Issue Book';
         }
 
-        if (formMsg) {
+      }, 900);
 
-          formMsg.textContent = '';
+    } catch (error) {
 
-          formMsg.style.display =
-            'none';
-        }
+      console.error(
+        '[LIBRARY ISSUE] Error issuing book:',
+        error
+      );
 
-        try {
+      if (formMsg) {
 
-          const f =
-            new FormData(finalForm);
+        formMsg.textContent =
+          error.message ||
+          'An error occurred';
 
-          const bookIdVal =
-            f.get('bookId');
+        formMsg.className =
+          'mt-3 text-sm text-red-600';
 
-          const borrowerId =
-            f.get('studentId');
+        formMsg.style.display =
+          'block';
 
-          const borrowerOption =
-            finalForm.querySelector(
-              '#studentSelect option:checked'
-            );
+        formMsg.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
 
-          const borrowerName =
-            borrowerOption
-              ? borrowerOption.textContent
-              : '';
+      if (submitBtn) {
 
-          const borrowerEmail =
-            borrowerOption
-              ? borrowerOption.getAttribute(
-                  'data-email'
-                ) || ''
-              : '';
+        submitBtn.disabled =
+          false;
 
-          const dueDate =
-            f.get('dueDate');
+        submitBtn.removeAttribute(
+          'data-submitting'
+        );
 
-          const clsVal =
-            finalForm.querySelector(
-              '#classSelect'
-            )?.value || '';
-
-          if (!borrowerId || !dueDate) {
-            throw new Error(
-              'Please select a student and due date'
-            );
-          }
-
-          const token =
-            localStorage.getItem(
-              'token'
-            );
-
-          if (!token) {
-            throw new Error(
-              'Authentication required'
-            );
-          }
-
-          const resp =
-            await fetch(
-              `${BASE}/api/library/${bookIdVal}/issue`,
-              {
-                method: 'POST',
-
-                headers: {
-                  'Content-Type':
-                    'application/json',
-
-                  'Authorization':
-                    `Bearer ${token}`
-                },
-
-                body: JSON.stringify({
-                  borrowerName,
-                  borrowerId,
-                  borrowerEmail,
-                  dueDate,
-                  className: clsVal,
-                  genre
-                })
-              }
-            );
-
-          const data =
-            await resp.json()
-              .catch(() => ({}));
-
-          if (!resp.ok) {
-
-            throw new Error(
-              data.error ||
-              data.message ||
-              `Failed to issue (status ${resp.status})`
-            );
-          }
-
-          if (formMsg) {
-
-            formMsg.textContent =
-              'Book issued successfully!';
-
-            formMsg.className =
-              'mt-3 text-sm text-green-600';
-
-            formMsg.style.display =
-              'block';
-          }
-
-          setTimeout(() => {
-
-            hideModal(
-              universalModal
-            );
-
-            loadLibraryWithFilters()
-              .catch(console.error);
-
-            if (submitBtn) {
-
-              submitBtn.disabled =
-                false;
-
-              submitBtn.removeAttribute(
-                'data-submitting'
-              );
-
-              submitBtn.innerHTML =
-                '<i class="fas fa-book-reader mr-2"></i>Issue Book';
-            }
-
-          }, 900);
-
-        } catch (error) {
-
-          console.error(
-            'Error issuing book:',
-            error
-          );
-
-          if (formMsg) {
-
-            formMsg.textContent =
-              error.message ||
-              'An error occurred';
-
-            formMsg.className =
-              'mt-3 text-sm text-red-600';
-
-            formMsg.style.display =
-              'block';
-
-            formMsg.scrollIntoView({
-              behavior: 'smooth',
-              block: 'center'
-            });
-          }
-
-          if (submitBtn) {
-
-            submitBtn.disabled =
-              false;
-
-            submitBtn.removeAttribute(
-              'data-submitting'
-            );
-
-            submitBtn.innerHTML =
-              '<i class="fas fa-book-reader mr-2"></i>Issue Book';
-          }
-        }
-      };
-  }
-
+        submitBtn.innerHTML =
+          '<i class="fas fa-book-reader mr-2"></i>Issue Book';
+      }
+    }
+  };
+}
 
   // -------------------------
   // Fees / Attendance / library stat integration (optional)
