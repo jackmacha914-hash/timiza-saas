@@ -172,67 +172,940 @@ console.log('Library script loaded');
     }
   }
 
-  // -------------------------
-  // Attach listeners on table (edit/issue/delete) - single delegate
-  // -------------------------
-  function attachBookEventListeners() {
-    if (!libraryTableBody) libraryTableBody = document.getElementById('library-table-body');
-    if (!libraryTableBody) return;
-    if (libraryTableBody._bound) return;
-    libraryTableBody._bound = true;
+ // -------------------------
+// Attach listeners on table (edit/issue/delete) - single delegate
+// -------------------------
+function attachBookEventListeners() {
+  if (!libraryTableBody) {
+    libraryTableBody = document.getElementById('library-table-body');
+  }
 
-    libraryTableBody.addEventListener('click', async (e) => {
-      const btn = e.target.closest('.edit-book-btn, .issue-book-btn, .delete-book-btn');
-      if (!btn) return;
-      const bookId = btn.getAttribute('data-id');
+  if (!libraryTableBody) return;
+  if (libraryTableBody._bound) return;
 
-      // EDIT: placeholder - keep your edit logic if you want
-      if (btn.classList.contains('edit-book-btn')) {
-        console.log('Edit clicked for', bookId);
-        showNotification('Edit not implemented in this build', 'info');
-        return;
+  libraryTableBody._bound = true;
+
+  libraryTableBody.addEventListener('click', async (e) => {
+
+    const btn = e.target.closest(
+      '.edit-book-btn, .issue-book-btn, .delete-book-btn'
+    );
+
+    if (!btn) return;
+
+    const bookId = btn.getAttribute('data-id');
+
+    // =====================================================
+    // EDIT BOOK
+    // =====================================================
+    if (btn.classList.contains('edit-book-btn')) {
+
+      console.log('Edit clicked for', bookId);
+
+      try {
+
+        // Get the book first
+        const token =
+          localStorage.getItem('token') ||
+          localStorage.getItem('authToken');
+
+        if (!token) {
+          showNotification(
+            'You are not authenticated. Please log in again.',
+            'error'
+          );
+          return;
+        }
+
+        const response = await fetch(`/api/library/${bookId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load book');
+        }
+
+        const result = await response.json();
+
+        const book = result.book || result.data || result;
+
+        // Ask for updated values
+        const title = prompt(
+          'Book title:',
+          book.title || ''
+        );
+
+        if (title === null) return;
+
+        const author = prompt(
+          'Author:',
+          book.author || ''
+        );
+
+        if (author === null) return;
+
+        const className = prompt(
+          'Class:',
+          book.className || ''
+        );
+
+        if (className === null) return;
+
+        const genre = prompt(
+          'Genre:',
+          book.genre || ''
+        );
+
+        if (genre === null) return;
+
+        const year = prompt(
+          'Year:',
+          book.year || new Date().getFullYear()
+        );
+
+        if (year === null) return;
+
+        const status = prompt(
+          'Status (available/unavailable):',
+          book.status || 'available'
+        );
+
+        if (status === null) return;
+
+        const copies = prompt(
+          'Number of copies:',
+          book.copies || book.available || 1
+        );
+
+        if (copies === null) return;
+
+        // =================================================
+        // UPDATE BOOK
+        // =================================================
+
+        const updateResponse = await fetch(
+          `/api/library/${bookId}`,
+          {
+            method: 'PUT',
+
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+              title: title.trim(),
+              author: author.trim(),
+              year: parseInt(year) || new Date().getFullYear(),
+              className: className.trim(),
+              genre: genre.trim(),
+              status: status.trim().toLowerCase(),
+              copies: parseInt(copies) || 1
+            })
+          }
+        );
+
+        const updateResult = await updateResponse.json();
+
+        if (!updateResponse.ok) {
+          throw new Error(
+            updateResult.error ||
+            updateResult.message ||
+            'Failed to update book'
+          );
+        }
+
+        console.log(
+          'Book updated successfully:',
+          updateResult
+        );
+
+        showNotification(
+          'Book updated successfully',
+          'success'
+        );
+
+        // Refresh the books table
+        if (typeof loadBooks === 'function') {
+          await loadBooks();
+        } else if (typeof fetchBooks === 'function') {
+          await fetchBooks();
+        } else {
+          // Reload as fallback
+          window.location.reload();
+        }
+
+      } catch (err) {
+
+        console.error(
+          'Error editing book:',
+          err
+        );
+
+        showNotification(
+          err.message || 'Failed to update book',
+          'error'
+        );
       }
 
+      return;
+    }
+  
+      // -------------------------
+      // EDIT
+      // -------------------------
+      if (btn.classList.contains('edit-book-btn')) {
+        return handleEditButtonClick(btn);
+      }
+
+      // -------------------------
       // ISSUE
+      // -------------------------
       if (btn.classList.contains('issue-book-btn')) {
         return handleIssueButtonClick(btn);
       }
 
+      // -------------------------
       // DELETE
+      // -------------------------
       if (btn.classList.contains('delete-book-btn')) {
         if (!confirm('Are you sure you want to delete this book?')) return;
+
         try {
           btn.disabled = true;
           btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-          await apiFetch(`/api/library/${bookId}`, { method: 'DELETE' });
-          showNotification('Book deleted successfully', 'success');
+
+          await apiFetch(`/api/library/${bookId}`, {
+            method: 'DELETE'
+          });
+
+          showNotification(
+            'Book deleted successfully',
+            'success'
+          );
+
           const row = btn.closest('tr');
-          if (row) row.remove();
-          setTimeout(() => loadLibraryWithFilters().catch(console.error), 300);
+
+          if (row) {
+            row.remove();
+          }
+
+          setTimeout(() => {
+            loadLibraryWithFilters().catch(console.error);
+          }, 300);
+
         } catch (error) {
           console.error('Delete error', error);
-          showNotification(error.message || 'Failed to delete book', 'error');
+
+          showNotification(
+            error.message || 'Failed to delete book',
+            'error'
+          );
+
         } finally {
           btn.disabled = false;
           btn.innerHTML = '<i class="fas fa-trash"></i>';
         }
+
         return;
       }
     });
 
-    // checkbox selection
+    // -------------------------
+    // Checkbox selection
+    // -------------------------
     libraryTableBody.addEventListener('change', (e) => {
       const cb = e.target.closest('.library-select-checkbox');
+
       if (!cb) return;
+
       const id = cb.getAttribute('data-id');
-      if (cb.checked) selectedBookIds.add(id); else selectedBookIds.delete(id);
+
+      if (cb.checked) {
+        selectedBookIds.add(id);
+      } else {
+        selectedBookIds.delete(id);
+      }
+
       updateLibraryBulkToolbarState();
     });
   }
 
-  // -------------------------
+
+  // =====================================================
+  // HANDLE EDIT BOOK
+  // =====================================================
+  async function handleEditButtonClick(actionBtn) {
+
+    const bookId = actionBtn.getAttribute('data-id');
+
+    if (!bookId) {
+      showNotification(
+        'Book ID is missing',
+        'error'
+      );
+      return;
+    }
+
+    console.log(
+      'Edit clicked for',
+      bookId
+    );
+
+    const universalModal =
+      document.getElementById('universal-edit-modal');
+
+    const universalForm =
+      document.getElementById('universal-edit-form');
+
+    const universalMsg =
+      document.getElementById('universal-edit-msg');
+
+    const universalTitle =
+      document.getElementById('universal-edit-title');
+
+
+    if (!universalModal || !universalForm) {
+
+      console.error(
+        'Edit modal/form missing in DOM'
+      );
+
+      showNotification(
+        'Edit modal not found',
+        'error'
+      );
+
+      return;
+    }
+
+
+    try {
+
+      // =================================================
+      // LOAD CURRENT BOOK
+      // =================================================
+
+      const bookResponse =
+        await apiFetch(
+          `/api/library/${bookId}`
+        );
+
+      const book =
+        bookResponse.book ||
+        bookResponse.data ||
+        bookResponse;
+
+
+      if (!book || !book._id) {
+
+        throw new Error(
+          'Book could not be loaded'
+        );
+      }
+
+
+      console.log(
+        'Book loaded for editing:',
+        book
+      );
+
+
+      // =================================================
+      // CLEAR OLD MESSAGE
+      // =================================================
+
+      if (universalMsg) {
+        universalMsg.textContent = '';
+        universalMsg.style.display = 'none';
+      }
+
+
+      // =================================================
+      // MODAL TITLE
+      // =================================================
+
+      if (universalTitle) {
+
+        universalTitle.textContent =
+          `Edit Book: ${book.title || ''}`;
+      }
+
+
+      // =================================================
+      // EDIT FORM
+      // =================================================
+
+      universalForm.innerHTML = `
+
+        <div class="mb-4">
+
+          <label for="editBookTitle">
+            Title
+          </label>
+
+          <input
+            id="editBookTitle"
+            name="title"
+            type="text"
+            required
+            value="${escapeAttr(book.title || '')}"
+          >
+
+        </div>
+
+
+        <div class="mb-4">
+
+          <label for="editBookAuthor">
+            Author
+          </label>
+
+          <input
+            id="editBookAuthor"
+            name="author"
+            type="text"
+            required
+            value="${escapeAttr(book.author || '')}"
+          >
+
+        </div>
+
+
+        <div class="mb-4">
+
+          <label for="editBookYear">
+            Year
+          </label>
+
+          <input
+            id="editBookYear"
+            name="year"
+            type="number"
+            min="1000"
+            max="9999"
+            value="${escapeAttr(
+              book.year || new Date().getFullYear()
+            )}"
+          >
+
+        </div>
+
+
+        <div class="mb-4">
+
+          <label for="editBookGenre">
+            Genre
+          </label>
+
+          <input
+            id="editBookGenre"
+            name="genre"
+            type="text"
+            required
+            value="${escapeAttr(
+              book.genre || 'General'
+            )}"
+          >
+
+        </div>
+
+
+        <div class="mb-4">
+
+          <label for="editBookClass">
+            Class
+          </label>
+
+          <select
+            id="editBookClass"
+            name="className"
+            required
+          >
+
+            <option value="">
+              Select a class
+            </option>
+
+            <optgroup label="Pre-Primary">
+
+              <option value="PP1">PP1</option>
+              <option value="PP2">PP2</option>
+
+            </optgroup>
+
+            <optgroup label="Lower Primary">
+
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+
+            </optgroup>
+
+            <optgroup label="Upper Primary">
+
+              <option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option>
+              <option value="Grade 6">Grade 6</option>
+
+            </optgroup>
+
+            <optgroup label="Junior Secondary">
+
+              <option value="Grade 7">Grade 7</option>
+              <option value="Grade 8">Grade 8</option>
+
+            </optgroup>
+
+            <optgroup label="Secondary">
+
+              <option value="Form 1">Form 1</option>
+              <option value="Form 2">Form 2</option>
+              <option value="Form 3">Form 3</option>
+              <option value="Form 4">Form 4</option>
+
+            </optgroup>
+
+          </select>
+
+        </div>
+
+
+        <div class="mb-4">
+
+          <label for="editBookStatus">
+            Status
+          </label>
+
+          <select
+            id="editBookStatus"
+            name="status"
+            required
+          >
+
+            <option value="available">
+              Available
+            </option>
+
+            <option value="unavailable">
+              Unavailable
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="mb-4">
+
+          <label for="editBookCopies">
+            Total Copies
+          </label>
+
+          <input
+            id="editBookCopies"
+            name="copies"
+            type="number"
+            min="1"
+            required
+            value="${escapeAttr(
+              book.copies ||
+              book.available ||
+              1
+            )}"
+          >
+
+        </div>
+
+
+        <div
+          id="edit-book-form-msg"
+          style="display:none;"
+        ></div>
+
+
+        <div class="flex items-center justify-end gap-3">
+
+          <button
+            type="button"
+            class="cancel-btn"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="submit-btn"
+          >
+            <i class="fas fa-save mr-2"></i>
+            Save Changes
+          </button>
+
+        </div>
+      `;
+
+
+      // =================================================
+      // SET CURRENT VALUES
+      // =================================================
+
+      const classSelect =
+        universalForm.querySelector(
+          '#editBookClass'
+        );
+
+      const statusSelect =
+        universalForm.querySelector(
+          '#editBookStatus'
+        );
+
+
+      if (classSelect && book.className) {
+        classSelect.value =
+          book.className;
+      }
+
+
+      if (statusSelect && book.status) {
+        statusSelect.value =
+          book.status;
+      }
+
+
+      // =================================================
+      // SHOW MODAL
+      // =================================================
+
+      showModal(universalModal);
+
+
+      // =================================================
+      // REPLACE FORM TO REMOVE OLD HANDLERS
+      // =================================================
+
+      const newForm =
+        universalForm.cloneNode(true);
+
+      universalForm.parentNode.replaceChild(
+        newForm,
+        universalForm
+      );
+
+
+      const finalForm =
+        document.getElementById(
+          'universal-edit-form'
+        );
+
+
+      const formMsg =
+        finalForm.querySelector(
+          '#edit-book-form-msg'
+        );
+
+
+      const cancelBtn =
+        finalForm.querySelector(
+          '.cancel-btn'
+        );
+
+
+      const submitBtn =
+        finalForm.querySelector(
+          '.submit-btn'
+        );
+
+
+      // =================================================
+      // CANCEL
+      // =================================================
+
+      if (cancelBtn) {
+
+        cancelBtn.onclick = (ev) => {
+
+          ev.preventDefault();
+
+          hideModal(universalModal);
+        };
+      }
+
+
+      // =================================================
+      // SUBMIT UPDATE
+      // =================================================
+
+      finalForm.onsubmit = async (ev) => {
+
+        ev.preventDefault();
+
+
+        if (submitBtn) {
+
+          submitBtn.disabled = true;
+
+          submitBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+        }
+
+
+        if (formMsg) {
+
+          formMsg.textContent = '';
+
+          formMsg.style.display = 'none';
+        }
+
+
+        try {
+
+          const formData =
+            new FormData(finalForm);
+
+
+          const title =
+            String(
+              formData.get('title') || ''
+            ).trim();
+
+
+          const author =
+            String(
+              formData.get('author') || ''
+            ).trim();
+
+
+          const year =
+            parseInt(
+              formData.get('year')
+            );
+
+
+          const genre =
+            String(
+              formData.get('genre') || ''
+            ).trim();
+
+
+          const className =
+            String(
+              formData.get('className') || ''
+            ).trim();
+
+
+          const status =
+            String(
+              formData.get('status') || 'available'
+            ).trim()
+              .toLowerCase();
+
+
+          const copies =
+            parseInt(
+              formData.get('copies')
+            );
+
+
+          // =================================================
+          // VALIDATION
+          // =================================================
+
+          if (!title) {
+            throw new Error(
+              'Book title is required'
+            );
+          }
+
+
+          if (!author) {
+            throw new Error(
+              'Author is required'
+            );
+          }
+
+
+          if (!genre) {
+            throw new Error(
+              'Genre is required'
+            );
+          }
+
+
+          if (!className) {
+            throw new Error(
+              'Class is required'
+            );
+          }
+
+
+          if (
+            !Number.isFinite(year) ||
+            year < 1000 ||
+            year > 9999
+          ) {
+            throw new Error(
+              'Please enter a valid year'
+            );
+          }
+
+
+          if (
+            !Number.isFinite(copies) ||
+            copies < 1
+          ) {
+            throw new Error(
+              'Copies must be at least 1'
+            );
+          }
+
+
+          // =================================================
+          // UPDATE BOOK
+          // =================================================
+
+          const updated =
+            await apiFetch(
+              `/api/library/${bookId}`,
+              {
+                method: 'PUT',
+
+                headers: {
+                  'Content-Type':
+                    'application/json'
+                },
+
+                body: JSON.stringify({
+
+                  title,
+
+                  author,
+
+                  year,
+
+                  className,
+
+                  genre,
+
+                  status,
+
+                  copies
+
+                })
+              }
+            );
+
+
+          console.log(
+            'Book updated successfully:',
+            updated
+          );
+
+
+          if (formMsg) {
+
+            formMsg.textContent =
+              'Book updated successfully!';
+
+            formMsg.className =
+              'mt-3 text-sm text-green-600';
+
+            formMsg.style.display =
+              'block';
+          }
+
+
+          showNotification(
+            'Book updated successfully',
+            'success'
+          );
+
+
+          // =================================================
+          // REFRESH LIBRARY
+          // =================================================
+
+          setTimeout(() => {
+
+            hideModal(
+              universalModal
+            );
+
+            loadLibraryWithFilters()
+              .catch(console.error);
+
+          }, 700);
+
+
+        } catch (error) {
+
+          console.error(
+            'Error updating book:',
+            error
+          );
+
+
+          if (formMsg) {
+
+            formMsg.textContent =
+              error.message ||
+              'Failed to update book';
+
+            formMsg.className =
+              'mt-3 text-sm text-red-600';
+
+            formMsg.style.display =
+              'block';
+
+            formMsg.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+          }
+
+
+          showNotification(
+            error.message ||
+            'Failed to update book',
+            'error'
+          );
+
+
+        } finally {
+
+          if (submitBtn) {
+
+            submitBtn.disabled = false;
+
+            submitBtn.innerHTML =
+              '<i class="fas fa-save mr-2"></i>Save Changes';
+          }
+        }
+      };
+
+
+    } catch (error) {
+
+      console.error(
+        'Error loading book for edit:',
+        error
+      );
+
+      showNotification(
+        error.message ||
+        'Failed to load book',
+        'error'
+      );
+    }
+  }
+
+
+  // =====================================================
   // Handle Issue button: heavy logic (modal, students, submit)
-  // -------------------------
+  // =====================================================
   async function handleIssueButtonClick(actionBtn) {
     const bookId = actionBtn.getAttribute('data-id');
     const genre = actionBtn.getAttribute('data-genre') || 'General';
@@ -249,175 +1122,468 @@ console.log('Library script loaded');
       return;
     }
 
-    if (universalMsg) { universalMsg.textContent = ''; universalMsg.style.display = 'none'; }
-    if (universalTitle) universalTitle.textContent = `Issue Book: ${bookTitle || ''}`;
+    if (universalMsg) {
+      universalMsg.textContent = '';
+      universalMsg.style.display = 'none';
+    }
 
-    // prepare form html as in your big logic
-    const defaultDue = new Date(); defaultDue.setDate(defaultDue.getDate() + 14);
-    const defaultDueStr = defaultDue.toISOString().split('T')[0];
+    if (universalTitle) {
+      universalTitle.textContent =
+        `Issue Book: ${bookTitle || ''}`;
+    }
+
+    const defaultDue = new Date();
+    defaultDue.setDate(
+      defaultDue.getDate() + 14
+    );
+
+    const defaultDueStr =
+      defaultDue.toISOString().split('T')[0];
 
     universalForm.innerHTML = `
-      <input type="hidden" name="bookId" value="${escapeAttr(bookId)}">
-      <input type="hidden" name="genre" value="${escapeAttr(genre)}">
+      <input
+        type="hidden"
+        name="bookId"
+        value="${escapeAttr(bookId)}"
+      >
+
+      <input
+        type="hidden"
+        name="genre"
+        value="${escapeAttr(genre)}"
+      >
+
       <div class="mb-4">
-          <label for="classSelect">Class</label>
-          <select id="classSelect" name="class" required>
-            <option value="">Select a class</option>
-            <optgroup label="Pre-Primary">
-              <option value="PP1">PP1</option>
-              <option value="PP2">PP2</option>
-            </optgroup>
-            <optgroup label="Lower Primary">
-              <option value="Grade 1">Grade 1</option>
-              <option value="Grade 2">Grade 2</option>
-              <option value="Grade 3">Grade 3</option>
-            </optgroup>
-            <optgroup label="Upper Primary">
-              <option value="Grade 4">Grade 4</option>
-              <option value="Grade 5">Grade 5</option>
-              <option value="Grade 6">Grade 6</option>
-            </optgroup>
-            <optgroup label="Junior Secondary">
-              <option value="Grade 7">Grade 7</option>
-              <option value="Grade 8">Grade 8</option>
-            </optgroup>
-            <optgroup label="Secondary">
-              <option value="Form 1">Form 1</option>
-              <option value="Form 2">Form 2</option>
-              <option value="Form 3">Form 3</option>
-              <option value="Form 4">Form 4</option>
-            </optgroup>
-          </select>
+        <label for="classSelect">Class</label>
+
+        <select
+          id="classSelect"
+          name="class"
+          required
+        >
+          <option value="">Select a class</option>
+
+          <optgroup label="Pre-Primary">
+            <option value="PP1">PP1</option>
+            <option value="PP2">PP2</option>
+          </optgroup>
+
+          <optgroup label="Lower Primary">
+            <option value="Grade 1">Grade 1</option>
+            <option value="Grade 2">Grade 2</option>
+            <option value="Grade 3">Grade 3</option>
+          </optgroup>
+
+          <optgroup label="Upper Primary">
+            <option value="Grade 4">Grade 4</option>
+            <option value="Grade 5">Grade 5</option>
+            <option value="Grade 6">Grade 6</option>
+          </optgroup>
+
+          <optgroup label="Junior Secondary">
+            <option value="Grade 7">Grade 7</option>
+            <option value="Grade 8">Grade 8</option>
+          </optgroup>
+
+          <optgroup label="Secondary">
+            <option value="Form 1">Form 1</option>
+            <option value="Form 2">Form 2</option>
+            <option value="Form 3">Form 3</option>
+            <option value="Form 4">Form 4</option>
+          </optgroup>
+        </select>
       </div>
+
       <div class="mb-4">
-          <label for="studentSelect">Student</label>
-          <select id="studentSelect" name="studentId" required disabled>
-            <option value="">Select a class first</option>
-          </select>
+        <label for="studentSelect">Student</label>
+
+        <select
+          id="studentSelect"
+          name="studentId"
+          required
+          disabled
+        >
+          <option value="">
+            Select a class first
+          </option>
+        </select>
       </div>
+
       <div class="mb-4">
-          <label for="dueDate">Due Date</label>
-          <input id="dueDate" name="dueDate" type="date" required value="${defaultDueStr}">
+        <label for="dueDate">Due Date</label>
+
+        <input
+          id="dueDate"
+          name="dueDate"
+          type="date"
+          required
+          value="${defaultDueStr}"
+        >
       </div>
-      <div id="issue-form-msg" style="display:none;"></div>
+
+      <div
+        id="issue-form-msg"
+        style="display:none;"
+      ></div>
+
       <div class="flex items-center justify-end gap-3">
-        <button type="button" class="cancel-btn">Cancel</button>
-        <button type="submit" class="submit-btn"><i class="fas fa-book-reader mr-2"></i>Issue Book</button>
+
+        <button
+          type="button"
+          class="cancel-btn"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="submit-btn"
+        >
+          <i class="fas fa-book-reader mr-2"></i>
+          Issue Book
+        </button>
+
       </div>
     `;
 
-    // show modal
     showModal(universalModal);
 
-    // wire class -> students
-    const classSelect = universalForm.querySelector('#classSelect');
-    const studentSelect = universalForm.querySelector('#studentSelect');
+    const classSelect =
+      universalForm.querySelector(
+        '#classSelect'
+      );
+
+    const studentSelect =
+      universalForm.querySelector(
+        '#studentSelect'
+      );
 
     async function onClassChangePopulateStudents() {
-      const cls = classSelect.value;
+
+      const cls =
+        classSelect.value;
+
       studentSelect.disabled = true;
-      studentSelect.innerHTML = `<option value="">Loading students...</option>`;
+
+      studentSelect.innerHTML =
+        `<option value="">Loading students...</option>`;
+
       try {
-        // convert to API format e.g., 'Grade 1'
+
         const formatted = cls;
-        // fetch students
-        const res = await apiFetch(`/students/class/${encodeURIComponent(formatted)}`);
-        const students = Array.isArray(res) ? res : (res.data || []);
+
+        const res =
+          await apiFetch(
+            `/students/class/${encodeURIComponent(formatted)}`
+          );
+
+        const students =
+          Array.isArray(res)
+            ? res
+            : (res.data || []);
+
         studentSelect.innerHTML = '';
+
         if (students.length === 0) {
-          studentSelect.innerHTML = `<option value="">No students found</option>`;
+
+          studentSelect.innerHTML =
+            `<option value="">No students found</option>`;
+
         } else {
-          const defaultOpt = document.createElement('option');
+
+          const defaultOpt =
+            document.createElement('option');
+
           defaultOpt.value = '';
-          defaultOpt.textContent = 'Select a student';
+          defaultOpt.textContent =
+            'Select a student';
+
           defaultOpt.disabled = true;
           defaultOpt.selected = true;
-          studentSelect.appendChild(defaultOpt);
+
+          studentSelect.appendChild(
+            defaultOpt
+          );
+
           students.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s._id || s.id || '';
-            opt.textContent = s.name || s.displayName || s.email || (s._id || '').slice(0,6);
-            if (s.email) opt.setAttribute('data-email', s.email);
-            studentSelect.appendChild(opt);
+
+            const opt =
+              document.createElement('option');
+
+            opt.value =
+              s._id ||
+              s.id ||
+              '';
+
+            opt.textContent =
+              s.name ||
+              s.displayName ||
+              s.email ||
+              (s._id || '').slice(0, 6);
+
+            if (s.email) {
+              opt.setAttribute(
+                'data-email',
+                s.email
+              );
+            }
+
+            studentSelect.appendChild(
+              opt
+            );
           });
         }
+
       } catch (err) {
-        console.error('Error fetching students for class', err);
-        studentSelect.innerHTML = `<option value="">Error loading students</option>`;
+
+        console.error(
+          'Error fetching students for class',
+          err
+        );
+
+        studentSelect.innerHTML =
+          `<option value="">Error loading students</option>`;
+
       } finally {
+
         studentSelect.disabled = false;
       }
     }
 
-    classSelect.addEventListener('change', onClassChangePopulateStudents);
+    classSelect.addEventListener(
+      'change',
+      onClassChangePopulateStudents
+    );
 
-    // prevent duplicate submit handlers by replacing form node
-    const newForm = universalForm.cloneNode(true);
-    universalForm.parentNode.replaceChild(newForm, universalForm);
+    const newForm =
+      universalForm.cloneNode(true);
 
-    // Reassign refs
-    const finalForm = document.getElementById('universal-edit-form');
-    const formMsg = document.getElementById('issue-form-msg');
-    const cancelBtn = finalForm.querySelector('.cancel-btn');
-    const submitBtn = finalForm.querySelector('.submit-btn');
+    universalForm.parentNode.replaceChild(
+      newForm,
+      universalForm
+    );
 
-    // Cancel:
-    if (cancelBtn) cancelBtn.onclick = (ev) => { ev.preventDefault(); hideModal(universalModal); };
+    const finalForm =
+      document.getElementById(
+        'universal-edit-form'
+      );
 
-    finalForm.onsubmit = async (ev) => {
-      ev.preventDefault();
-      // disable
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.setAttribute('data-submitting','true'); submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Issuing...'; }
-      if (formMsg) { formMsg.textContent=''; formMsg.style.display='none'; }
+    const formMsg =
+      document.getElementById(
+        'issue-form-msg'
+      );
 
-      try {
-        const f = new FormData(finalForm);
-        const bookIdVal = f.get('bookId');
-        const borrowerId = f.get('studentId');
-        const borrowerOption = finalForm.querySelector('#studentSelect option:checked');
-        const borrowerName = borrowerOption ? borrowerOption.textContent : '';
-        const borrowerEmail = borrowerOption ? borrowerOption.getAttribute('data-email') || '' : '';
-        const dueDate = f.get('dueDate');
-        const clsVal = finalForm.querySelector('#classSelect')?.value || '';
+    const cancelBtn =
+      finalForm.querySelector(
+        '.cancel-btn'
+      );
 
-        if (!borrowerId || !dueDate) {
-          throw new Error('Please select a student and due date');
+    const submitBtn =
+      finalForm.querySelector(
+        '.submit-btn'
+      );
+
+    if (cancelBtn) {
+      cancelBtn.onclick = (ev) => {
+        ev.preventDefault();
+        hideModal(universalModal);
+      };
+    }
+
+    finalForm.onsubmit =
+      async (ev) => {
+
+        ev.preventDefault();
+
+        if (submitBtn) {
+
+          submitBtn.disabled = true;
+
+          submitBtn.setAttribute(
+            'data-submitting',
+            'true'
+          );
+
+          submitBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin mr-2"></i>Issuing...';
         }
-        const token = localStorage.getItem('token');
-        if (!token) throw new Error('Authentication required');
 
-        // call API
-        const resp = await fetch(`${BASE}/api/library/${bookIdVal}/issue`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
-            borrowerName,
-            borrowerId,
-            borrowerEmail,
-            dueDate,
-            className: clsVal,
-            genre
-          })
-        });
+        if (formMsg) {
 
-        const data = await resp.json().catch(()=>({}));
-        if (!resp.ok) {
-          throw new Error(data.error || data.message || `Failed to issue (status ${resp.status})`);
+          formMsg.textContent = '';
+
+          formMsg.style.display =
+            'none';
         }
 
-        if (formMsg) { formMsg.textContent = 'Book issued successfully!'; formMsg.className = 'mt-3 text-sm text-green-600'; formMsg.style.display='block'; }
-        setTimeout(() => {
-          hideModal(universalModal);
-          loadLibraryWithFilters().catch(console.error);
-          if (submitBtn) { submitBtn.disabled = false; submitBtn.removeAttribute('data-submitting'); submitBtn.innerHTML = '<i class="fas fa-book-reader mr-2"></i>Issue Book'; }
-        }, 900);
-      } catch (error) {
-        console.error('Error issuing book:', error);
-        if (formMsg) { formMsg.textContent = error.message || 'An error occurred'; formMsg.className = 'mt-3 text-sm text-red-600'; formMsg.style.display='block'; formMsg.scrollIntoView({behavior:'smooth',block:'center'}); }
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.removeAttribute('data-submitting'); submitBtn.innerHTML = '<i class="fas fa-book-reader mr-2"></i>Issue Book'; }
-      }
-    };
+        try {
+
+          const f =
+            new FormData(finalForm);
+
+          const bookIdVal =
+            f.get('bookId');
+
+          const borrowerId =
+            f.get('studentId');
+
+          const borrowerOption =
+            finalForm.querySelector(
+              '#studentSelect option:checked'
+            );
+
+          const borrowerName =
+            borrowerOption
+              ? borrowerOption.textContent
+              : '';
+
+          const borrowerEmail =
+            borrowerOption
+              ? borrowerOption.getAttribute(
+                  'data-email'
+                ) || ''
+              : '';
+
+          const dueDate =
+            f.get('dueDate');
+
+          const clsVal =
+            finalForm.querySelector(
+              '#classSelect'
+            )?.value || '';
+
+          if (!borrowerId || !dueDate) {
+            throw new Error(
+              'Please select a student and due date'
+            );
+          }
+
+          const token =
+            localStorage.getItem(
+              'token'
+            );
+
+          if (!token) {
+            throw new Error(
+              'Authentication required'
+            );
+          }
+
+          const resp =
+            await fetch(
+              `${BASE}/api/library/${bookIdVal}/issue`,
+              {
+                method: 'POST',
+
+                headers: {
+                  'Content-Type':
+                    'application/json',
+
+                  'Authorization':
+                    `Bearer ${token}`
+                },
+
+                body: JSON.stringify({
+                  borrowerName,
+                  borrowerId,
+                  borrowerEmail,
+                  dueDate,
+                  className: clsVal,
+                  genre
+                })
+              }
+            );
+
+          const data =
+            await resp.json()
+              .catch(() => ({}));
+
+          if (!resp.ok) {
+
+            throw new Error(
+              data.error ||
+              data.message ||
+              `Failed to issue (status ${resp.status})`
+            );
+          }
+
+          if (formMsg) {
+
+            formMsg.textContent =
+              'Book issued successfully!';
+
+            formMsg.className =
+              'mt-3 text-sm text-green-600';
+
+            formMsg.style.display =
+              'block';
+          }
+
+          setTimeout(() => {
+
+            hideModal(
+              universalModal
+            );
+
+            loadLibraryWithFilters()
+              .catch(console.error);
+
+            if (submitBtn) {
+
+              submitBtn.disabled =
+                false;
+
+              submitBtn.removeAttribute(
+                'data-submitting'
+              );
+
+              submitBtn.innerHTML =
+                '<i class="fas fa-book-reader mr-2"></i>Issue Book';
+            }
+
+          }, 900);
+
+        } catch (error) {
+
+          console.error(
+            'Error issuing book:',
+            error
+          );
+
+          if (formMsg) {
+
+            formMsg.textContent =
+              error.message ||
+              'An error occurred';
+
+            formMsg.className =
+              'mt-3 text-sm text-red-600';
+
+            formMsg.style.display =
+              'block';
+
+            formMsg.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+          }
+
+          if (submitBtn) {
+
+            submitBtn.disabled =
+              false;
+
+            submitBtn.removeAttribute(
+              'data-submitting'
+            );
+
+            submitBtn.innerHTML =
+              '<i class="fas fa-book-reader mr-2"></i>Issue Book';
+          }
+        }
+      };
   }
+
 
   // -------------------------
   // Fees / Attendance / library stat integration (optional)
