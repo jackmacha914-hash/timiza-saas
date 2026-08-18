@@ -1,22 +1,11 @@
 const mongoose = require('mongoose');
 const Discipline = require('../models/Discipline');
+const User = require('../models/User');
 
-
-// =====================================================
-// CREATE DISCIPLINE CASE
-// =====================================================
 
 const createDisciplineCase = async (req, res) => {
 
     try {
-
-        console.log('======================================');
-        console.log('[DISCIPLINE CREATE]');
-        console.log('User:', req.user);
-        console.log('School:', req.school);
-        console.log('Body:', req.body);
-        console.log('======================================');
-
 
         const {
             student,
@@ -31,6 +20,170 @@ const createDisciplineCase = async (req, res) => {
             resolutionNotes
         } = req.body;
 
+        console.log("======================================");
+        console.log("[DISCIPLINE CREATE]");
+        console.log("User:", req.user);
+        console.log("Body:", req.body);
+        console.log("======================================");
+
+
+        // ---------------------------------------------
+        // REQUIRED FIELDS
+        // ---------------------------------------------
+
+        if (!student) {
+            return res.status(400).json({
+                message: "Student is required"
+            });
+        }
+
+        if (!category) {
+            return res.status(400).json({
+                message: "Discipline category is required"
+            });
+        }
+
+        if (!description) {
+            return res.status(400).json({
+                message: "Incident description is required"
+            });
+        }
+
+        if (!incidentDate) {
+            return res.status(400).json({
+                message: "Incident date is required"
+            });
+        }
+
+
+        // ---------------------------------------------
+        // VALIDATE STUDENT ID
+        // ---------------------------------------------
+
+        if (!mongoose.Types.ObjectId.isValid(student)) {
+
+            return res.status(400).json({
+                message: "Invalid student ID."
+            });
+
+        }
+
+
+        // ---------------------------------------------
+        // FIND STUDENT
+        // ---------------------------------------------
+
+        const studentUser = await User.findOne({
+            _id: student,
+            school: req.user.school
+        });
+
+        if (!studentUser) {
+
+            return res.status(404).json({
+                message: "Student not found in this school."
+            });
+
+        }
+
+
+        // ---------------------------------------------
+        // CREATE DISCIPLINE CASE
+        // ---------------------------------------------
+
+        const discipline = await Discipline.create({
+
+            school: req.user.school,
+
+            student: studentUser._id,
+
+            admissionNumber:
+                admissionNumber ||
+                studentUser.admissionNumber,
+
+            className,
+
+            category,
+
+            severity:
+                severity || "low",
+
+            description,
+
+            incidentDate,
+
+            reportedBy:
+                req.user.name ||
+                req.user.fullName ||
+                req.user.email ||
+                "Administrator",
+
+            actionTaken,
+
+            status:
+                status || "reported",
+
+            resolutionNotes
+
+        });
+
+
+        // ---------------------------------------------
+        // POPULATE STUDENT
+        // ---------------------------------------------
+
+        const populated =
+            await Discipline.findById(
+                discipline._id
+            ).populate(
+                "student",
+                "name fullName email admissionNumber"
+            );
+
+
+        // ---------------------------------------------
+        // RESPONSE
+        // ---------------------------------------------
+
+        return res.status(201).json({
+
+            message:
+                "Discipline case recorded successfully",
+
+            discipline:
+                populated
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "======================================"
+        );
+
+        console.error(
+            "[DISCIPLINE CREATE ERROR]"
+        );
+
+        console.error(error);
+
+        console.error(
+            "======================================"
+        );
+
+        return res.status(500).json({
+
+            message:
+                "Failed to create discipline case",
+
+            error:
+                error.message
+
+        });
+
+    }
+
+};
 
         // -------------------------------------------------
         // SCHOOL
