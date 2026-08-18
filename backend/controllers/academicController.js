@@ -1,205 +1,222 @@
 const mongoose = require("mongoose");
 
-/*
-|--------------------------------------------------------------------------
-| MODELS
-|--------------------------------------------------------------------------
-*/
-
-const Subject = require("../models/Subject");
 const ReportCard = require("../models/ReportCard");
 
-/*
-|--------------------------------------------------------------------------
-| OPTIONAL MODELS
-|--------------------------------------------------------------------------
-|
-| Some Timiza installations may use different model names.
-| We safely load them so the controller does not crash if a model
-| does not exist.
-|--------------------------------------------------------------------------
-*/
-
-let ClassModel = null;
+let Subject = null;
+let Mark = null;
+let Class = null;
 let Student = null;
 let Exam = null;
-let Mark = null;
-let Grade = null;
+
+
+/* =====================================================
+   OPTIONAL MODELS
+===================================================== */
 
 try {
-    ClassModel = require("../models/Class");
-} catch (err) {
+    Subject = require("../models/Subject");
+} catch (error) {
     console.warn(
-        "[ACADEMIC] Class model not found."
-    );
-}
-
-try {
-    Student = require("../models/Student");
-} catch (err) {
-    console.warn(
-        "[ACADEMIC] Student model not found."
-    );
-}
-
-try {
-    Exam = require("../models/Exam");
-} catch (err) {
-    console.warn(
-        "[ACADEMIC] Exam model not found."
+        "[ACADEMIC] Subject model unavailable:",
+        error.message
     );
 }
 
 try {
     Mark = require("../models/Mark");
-} catch (err) {
+} catch (error) {
     console.warn(
-        "[ACADEMIC] Mark model not found."
+        "[ACADEMIC] Mark model unavailable:",
+        error.message
     );
 }
 
 try {
-    Grade = require("../models/Grade");
-} catch (err) {
+    Class = require("../models/Class");
+} catch (error) {
     console.warn(
-        "[ACADEMIC] Grade model not found."
+        "[ACADEMIC] Class model unavailable:",
+        error.message
+    );
+}
+
+try {
+    Student = require("../models/Student");
+} catch (error) {
+    console.warn(
+        "[ACADEMIC] Student model unavailable:",
+        error.message
+    );
+}
+
+try {
+    Exam = require("../models/Exam");
+} catch (error) {
+    console.warn(
+        "[ACADEMIC] Exam model unavailable:",
+        error.message
     );
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| HELPERS
-|--------------------------------------------------------------------------
-*/
+/* =====================================================
+   ADMIN AUTHORIZATION
+===================================================== */
 
-/**
- * Get the current school ID.
- *
- * Supports:
- *
- * req.school
- * req.school._id
- * req.user.school
- * req.user.schoolId
- */
+function adminOnly(req, res, next) {
+
+    if (!req.user) {
+
+        return res.status(401).json({
+            success: false,
+            message: "Authentication required."
+        });
+
+    }
+
+    if (req.user.role !== "admin") {
+
+        return res.status(403).json({
+            success: false,
+            message: "Admin access required."
+        });
+
+    }
+
+    next();
+
+}
+
+
+/* =====================================================
+   SCHOOL ID
+===================================================== */
+
 function getSchoolId(req) {
 
-    const school =
+    return (
+        req.user?.school ||
+        req.user?.schoolId ||
         req.school?._id ||
         req.school?.id ||
-        req.school;
+        null
+    );
 
-    const userSchool =
-        req.user?.school?._id ||
-        req.user?.school?.id ||
-        req.user?.school ||
-        req.user?.schoolId;
-
-    const schoolId =
-        school ||
-        userSchool;
-
-    if (!schoolId) {
-        return null;
-    }
-
-    return schoolId;
 }
 
 
-/**
- * Convert a possible MongoDB ID into an ObjectId.
- */
-function toObjectId(id) {
+/* =====================================================
+   SAFE COUNT
+===================================================== */
 
-    if (!id) {
-        return null;
+async function safeCount(model, filter = {}) {
+
+    if (!model) {
+        return 0;
     }
 
-    if (id instanceof mongoose.Types.ObjectId) {
-        return id;
+    try {
+
+        return await model.countDocuments(filter);
+
+    } catch (error) {
+
+        console.warn(
+            "[ACADEMIC COUNT]",
+            error.message
+        );
+
+        return 0;
+
     }
+
+}
+
+
+/* =====================================================
+   NUMBER HELPER
+===================================================== */
+
+function toNumber(value) {
 
     if (
-        typeof id === "string" &&
-        mongoose.Types.ObjectId.isValid(id)
+        value === null ||
+        value === undefined ||
+        value === ""
     ) {
-        return new mongoose.Types.ObjectId(id);
+
+        return null;
+
     }
 
-    return id;
-}
-
-
-/**
- * Safely convert a value to a number.
- */
-function number(value) {
-
-    const parsed =
+    const number =
         Number(value);
 
-    return Number.isFinite(parsed)
-        ? parsed
-        : 0;
+    return Number.isFinite(number)
+        ? number
+        : null;
 
 }
 
 
-/**
- * Round numbers to two decimal places.
- */
-function round(value) {
+/* =====================================================
+   ROUND
+===================================================== */
 
-    return Math.round(
-        number(value) * 100
-    ) / 100;
+function round(value, decimals = 2) {
 
-}
+    if (
+        value === null ||
+        value === undefined ||
+        !Number.isFinite(Number(value))
+    ) {
 
-
-/**
- * Extract a numeric score from a mark/result object.
- */
-function extractScore(item) {
-
-    if (!item) {
         return null;
+
     }
 
-    const possibleValues = [
+    const factor =
+        Math.pow(10, decimals);
 
-        item.score,
+    return Math.round(
+        Number(value) * factor
+    ) / factor;
 
-        item.marks,
+}
 
-        item.mark,
 
-        item.average,
+/* =====================================================
+   GET MARK VALUE
+===================================================== */
 
-        item.percentage,
+function getObtainedMark(mark) {
 
-        item.totalMarks,
+    const candidates = [
 
-        item.obtainedMarks,
+        mark?.score,
 
-        item.obtained,
+        mark?.marks,
 
-        item.value
+        mark?.mark,
+
+        mark?.obtainedMarks,
+
+        mark?.obtained,
+
+        mark?.totalScore,
+
+        mark?.value
 
     ];
 
-    for (const value of possibleValues) {
+    for (const value of candidates) {
 
-        if (
-            value !== undefined &&
-            value !== null &&
-            value !== "" &&
-            Number.isFinite(Number(value))
-        ) {
+        const number =
+            toNumber(value);
 
-            return Number(value);
+        if (number !== null) {
+
+            return number;
 
         }
 
@@ -210,203 +227,922 @@ function extractScore(item) {
 }
 
 
-/**
- * Convert a score to a percentage.
- */
-function percentageFromItem(item) {
+/* =====================================================
+   GET MAX MARK
+===================================================== */
 
-    if (!item) {
+function getMaximumMark(mark) {
+
+    const candidates = [
+
+        mark?.totalMarks,
+
+        mark?.maxMarks,
+
+        mark?.maximumMarks,
+
+        mark?.outOf,
+
+        mark?.maxScore,
+
+        mark?.total,
+
+        mark?.exam?.totalMarks
+
+    ];
+
+    for (const value of candidates) {
+
+        const number =
+            toNumber(value);
+
+        if (
+            number !== null &&
+            number > 0
+        ) {
+
+            return number;
+
+        }
+
+    }
+
+    /*
+     * If the Mark collection stores marks
+     * directly as percentages, use 100.
+     */
+
+    return 100;
+
+}
+
+
+/* =====================================================
+   GET PERCENTAGE
+===================================================== */
+
+function getPercentage(mark) {
+
+    const obtained =
+        getObtainedMark(mark);
+
+    if (obtained === null) {
+
+        return null;
+
+    }
+
+    const maximum =
+        getMaximumMark(mark);
+
+    if (
+        maximum === null ||
+        maximum <= 0
+    ) {
+
+        return null;
+
+    }
+
+    /*
+     * If maximum is 100, this is already
+     * a percentage.
+     */
+
+    return (
+        obtained / maximum
+    ) * 100;
+
+}
+
+
+/* =====================================================
+   EXTRACT ID
+===================================================== */
+
+function extractId(value) {
+
+    if (!value) {
         return null;
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Already a percentage
-    |--------------------------------------------------------------------------
-    */
-
     if (
-        item.percentage !== undefined &&
-        item.percentage !== null &&
-        Number.isFinite(Number(item.percentage))
+        typeof value === "string" ||
+        typeof value === "number"
     ) {
 
-        return Math.max(
-            0,
-            Math.min(
-                100,
-                Number(item.percentage)
-            )
-        );
+        return String(value);
 
     }
 
+    if (value._id) {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Average is normally already percentage-based in Timiza
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        item.average !== undefined &&
-        item.average !== null &&
-        Number.isFinite(Number(item.average))
-    ) {
-
-        return Math.max(
-            0,
-            Math.min(
-                100,
-                Number(item.average)
-            )
-        );
+        return String(value._id);
 
     }
 
+    if (value.id) {
 
-    const score =
-        extractScore(item);
-
-    if (score === null) {
-        return null;
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | If maximum marks are available, calculate percentage.
-    |--------------------------------------------------------------------------
-    */
-
-    const maxMarks =
-        item.maxMarks ??
-        item.maximumMarks ??
-        item.total ??
-        item.outOf ??
-        item.maxScore;
-
-    if (
-        maxMarks !== undefined &&
-        maxMarks !== null &&
-        Number(maxMarks) > 0
-    ) {
-
-        return Math.max(
-            0,
-            Math.min(
-                100,
-                (score / Number(maxMarks)) * 100
-            )
-        );
+        return String(value.id);
 
     }
 
+    return null;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Otherwise assume the score is already 0–100.
-    |--------------------------------------------------------------------------
-    */
+}
 
-    return Math.max(
-        0,
-        Math.min(
-            100,
-            score
-        )
+
+/* =====================================================
+   EXTRACT NAME
+===================================================== */
+
+function extractName(value, fallback = "-") {
+
+    if (!value) {
+
+        return fallback;
+
+    }
+
+    if (typeof value === "string") {
+
+        return value;
+
+    }
+
+    return (
+        value.name ||
+        value.subjectName ||
+        value.className ||
+        value.title ||
+        fallback
     );
 
 }
 
 
-/**
- * Convert percentage into a grade.
- *
- * You can change these boundaries to match your school's grading system.
- */
-function calculateGrade(score) {
+/* =====================================================
+   MARK SUBJECT INFORMATION
+===================================================== */
 
-    const value =
-        number(score);
+function getSubjectInfo(mark) {
 
+    const source =
 
-    if (value >= 80) {
-        return "A";
-    }
-
-    if (value >= 70) {
-        return "B";
-    }
-
-    if (value >= 60) {
-        return "C";
-    }
-
-    if (value >= 50) {
-        return "D";
-    }
-
-    return "E";
-
-}
-
-
-/**
- * Return a normalized school filter.
- */
-function schoolFilter(schoolId) {
-
-    if (!schoolId) {
-        return {};
-    }
+        mark.subject ||
+        mark.subjectId ||
+        mark.course ||
+        mark.courseId ||
+        null;
 
     return {
-        school: schoolId
+
+        id:
+            extractId(source),
+
+        name:
+            extractName(
+                source,
+                mark.subjectName ||
+                mark.subject ||
+                "Unknown Subject"
+            )
+
     };
 
 }
 
 
-/**
- * Safely count documents.
- */
-async function safeCount(Model, filter = {}) {
+/* =====================================================
+   MARK CLASS INFORMATION
+===================================================== */
 
-    if (!Model) {
-        return 0;
+function getClassInfo(mark) {
+
+    const source =
+
+        mark.class ||
+        mark.classId ||
+        mark.classroom ||
+        mark.classroomId ||
+        mark.section ||
+        mark.sectionId ||
+        null;
+
+    return {
+
+        id:
+            extractId(source),
+
+        name:
+            extractName(
+                source,
+                mark.className ||
+                mark.classroomName ||
+                mark.sectionName ||
+                "Unknown Class"
+            )
+
+    };
+
+}
+
+
+/* =====================================================
+   MARK STUDENT INFORMATION
+===================================================== */
+
+function getStudentInfo(mark) {
+
+    const source =
+
+        mark.student ||
+        mark.studentId ||
+        mark.user ||
+        mark.userId ||
+        null;
+
+    return {
+
+        id:
+            extractId(source),
+
+        name:
+            extractName(
+                source,
+                mark.studentName ||
+                mark.name ||
+                "Unknown Student"
+            )
+
+    };
+
+}
+
+
+/* =====================================================
+   NORMALIZE MARKS
+===================================================== */
+
+function normalizeMarks(marks) {
+
+    return marks
+        .map(mark => {
+
+            const percentage =
+                getPercentage(mark);
+
+            if (percentage === null) {
+
+                return null;
+
+            }
+
+            const subject =
+                getSubjectInfo(mark);
+
+            const classroom =
+                getClassInfo(mark);
+
+            const student =
+                getStudentInfo(mark);
+
+            return {
+
+                raw: mark,
+
+                percentage:
+                    Math.max(
+                        0,
+                        Math.min(
+                            100,
+                            percentage
+                        )
+                    ),
+
+                subjectId:
+                    subject.id,
+
+                subjectName:
+                    subject.name,
+
+                classId:
+                    classroom.id,
+
+                className:
+                    classroom.name,
+
+                studentId:
+                    student.id,
+
+                studentName:
+                    student.name,
+
+                year:
+                    mark.year ||
+                    mark.academicYear ||
+                    mark.session ||
+                    null,
+
+                term:
+                    mark.term ||
+                    mark.termName ||
+                    null,
+
+                examName:
+                    mark.examName ||
+                    mark.exam?.name ||
+                    mark.exam?.title ||
+                    "Assessment"
+
+            };
+
+        })
+        .filter(Boolean);
+
+}
+
+
+/* =====================================================
+   GET SCHOOL MARKS
+===================================================== */
+
+async function getSchoolMarks(schoolId) {
+
+    if (!Mark) {
+
+        return [];
+
     }
 
     try {
 
-        return await Model.countDocuments(
-            filter
-        );
+        const filter =
+            schoolId
+                ? { school: schoolId }
+                : {};
 
-    } catch (err) {
+        return await Mark
+            .find(filter)
+            .lean();
+
+    } catch (error) {
 
         console.error(
-            "[ACADEMIC COUNT]",
-            err.message
+            "[ACADEMIC MARKS]",
+            error
         );
 
-        return 0;
+        return [];
 
     }
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| GET ACADEMIC DASHBOARD
-|--------------------------------------------------------------------------
-|
-| GET /api/academic/dashboard
-|
-|--------------------------------------------------------------------------
-*/
+/* =====================================================
+   SUBJECT PERFORMANCE
+===================================================== */
+
+function calculateSubjectPerformance(marks) {
+
+    const groups = new Map();
+
+    marks.forEach(mark => {
+
+        const key =
+            mark.subjectId ||
+            mark.subjectName;
+
+        if (!key) {
+            return;
+        }
+
+        if (!groups.has(key)) {
+
+            groups.set(
+                key,
+                {
+                    subjectId:
+                        mark.subjectId,
+
+                    subject:
+                        mark.subjectName,
+
+                    total: 0,
+
+                    count: 0,
+
+                    students:
+                        new Set()
+                }
+            );
+
+        }
+
+        const group =
+            groups.get(key);
+
+        group.total +=
+            mark.percentage;
+
+        group.count += 1;
+
+        if (mark.studentId) {
+
+            group.students.add(
+                mark.studentId
+            );
+
+        }
+
+    });
+
+    return Array
+        .from(groups.values())
+        .map(group => ({
+
+            subjectId:
+                group.subjectId,
+
+            subject:
+                group.subject,
+
+            average:
+                round(
+                    group.total /
+                    group.count
+                ),
+
+            marks:
+                group.count,
+
+            students:
+                group.students.size
+
+        }))
+        .sort(
+            (a, b) =>
+                b.average - a.average
+        );
+
+}
+
+
+/* =====================================================
+   CLASS PERFORMANCE
+===================================================== */
+
+function calculateClassPerformance(marks) {
+
+    const groups = new Map();
+
+    marks.forEach(mark => {
+
+        const key =
+            mark.classId ||
+            mark.className;
+
+        if (!key) {
+            return;
+        }
+
+        if (!groups.has(key)) {
+
+            groups.set(
+                key,
+                {
+                    classId:
+                        mark.classId,
+
+                    className:
+                        mark.className,
+
+                    total: 0,
+
+                    count: 0,
+
+                    students:
+                        new Set()
+                }
+            );
+
+        }
+
+        const group =
+            groups.get(key);
+
+        group.total +=
+            mark.percentage;
+
+        group.count += 1;
+
+        if (mark.studentId) {
+
+            group.students.add(
+                mark.studentId
+            );
+
+        }
+
+    });
+
+    return Array
+        .from(groups.values())
+        .map(group => ({
+
+            classId:
+                group.classId,
+
+            className:
+                group.className,
+
+            average:
+                round(
+                    group.total /
+                    group.count
+                ),
+
+            marks:
+                group.count,
+
+            students:
+                group.students.size
+
+        }))
+        .sort(
+            (a, b) =>
+                b.average - a.average
+        );
+
+}
+
+
+/* =====================================================
+   GRADE CALCULATION
+===================================================== */
+
+function calculateGrade(percentage) {
+
+    if (percentage >= 80) {
+        return "A";
+    }
+
+    if (percentage >= 70) {
+        return "B";
+    }
+
+    if (percentage >= 60) {
+        return "C";
+    }
+
+    if (percentage >= 50) {
+        return "D";
+    }
+
+    if (percentage >= 40) {
+        return "E";
+    }
+
+    return "F";
+
+}
+
+
+/* =====================================================
+   GRADE DISTRIBUTION
+===================================================== */
+
+function calculateGradeDistribution(marks) {
+
+    const grades = {
+
+        A: 0,
+
+        B: 0,
+
+        C: 0,
+
+        D: 0,
+
+        E: 0,
+
+        F: 0
+
+    };
+
+    marks.forEach(mark => {
+
+        const grade =
+            calculateGrade(
+                mark.percentage
+            );
+
+        grades[grade]++;
+
+    });
+
+    return Object
+        .entries(grades)
+        .map(
+            ([grade, count]) => ({
+
+                grade,
+
+                count
+
+            })
+        );
+
+}
+
+
+/* =====================================================
+   OVERALL AVERAGE
+===================================================== */
+
+function calculateOverallAverage(marks) {
+
+    if (!marks.length) {
+
+        return 0;
+
+    }
+
+    const total =
+        marks.reduce(
+            (sum, mark) =>
+                sum + mark.percentage,
+            0
+        );
+
+    return round(
+        total / marks.length
+    );
+
+}
+
+
+/* =====================================================
+   UNIQUE STUDENTS
+===================================================== */
+
+function countUniqueStudents(marks) {
+
+    const students =
+        new Set();
+
+    marks.forEach(mark => {
+
+        if (mark.studentId) {
+
+            students.add(
+                mark.studentId
+            );
+
+        }
+
+    });
+
+    return students.size;
+
+}
+
+
+/* =====================================================
+   EXAM / TERM TREND
+===================================================== */
+
+function calculateExamTrend(marks) {
+
+    const groups =
+        new Map();
+
+    marks.forEach(mark => {
+
+        const year =
+            mark.year || "Current";
+
+        const term =
+            mark.term || "All";
+
+        const key =
+            `${year}|${term}`;
+
+        if (!groups.has(key)) {
+
+            groups.set(
+                key,
+                {
+                    year,
+
+                    term,
+
+                    total: 0,
+
+                    count: 0,
+
+                    students:
+                        new Set()
+                }
+            );
+
+        }
+
+        const group =
+            groups.get(key);
+
+        group.total +=
+            mark.percentage;
+
+        group.count++;
+
+        if (mark.studentId) {
+
+            group.students.add(
+                mark.studentId
+            );
+
+        }
+
+    });
+
+    return Array
+        .from(groups.values())
+        .map(group => ({
+
+            year:
+                group.year,
+
+            term:
+                group.term,
+
+            average:
+                round(
+                    group.total /
+                    group.count
+                ),
+
+            marks:
+                group.count,
+
+            studentsAssessed:
+                group.students.size
+
+        }))
+        .sort((a, b) => {
+
+            const yearA =
+                String(a.year);
+
+            const yearB =
+                String(b.year);
+
+            if (yearA !== yearB) {
+
+                return yearA.localeCompare(
+                    yearB
+                );
+
+            }
+
+            return String(a.term)
+                .localeCompare(
+                    String(b.term)
+                );
+
+        });
+
+}
+
+
+/* =====================================================
+   STATUS DISTRIBUTION
+===================================================== */
+
+async function getStatusDistribution(schoolFilter) {
+
+    try {
+
+        return await ReportCard.aggregate([
+
+            {
+                $match:
+                    schoolFilter
+            },
+
+            {
+                $group: {
+
+                    _id:
+                        "$status",
+
+                    count: {
+                        $sum: 1
+                    }
+
+                }
+            },
+
+            {
+                $project: {
+
+                    _id: 0,
+
+                    status:
+                        "$_id",
+
+                    count: 1
+
+                }
+
+            }
+
+        ]);
+
+    } catch (error) {
+
+        console.error(
+            "[ACADEMIC STATUS]",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+/* =====================================================
+   YEAR DISTRIBUTION
+===================================================== */
+
+async function getYearDistribution(schoolFilter) {
+
+    try {
+
+        return await ReportCard.aggregate([
+
+            {
+                $match:
+                    schoolFilter
+            },
+
+            {
+                $group: {
+
+                    _id:
+                        "$year",
+
+                    count: {
+                        $sum: 1
+                    }
+
+                }
+
+            },
+
+            {
+                $sort: {
+                    _id: 1
+                }
+
+            },
+
+            {
+                $project: {
+
+                    _id: 0,
+
+                    year:
+                        "$_id",
+
+                    count: 1
+
+                }
+
+            }
+
+        ]);
+
+    } catch (error) {
+
+        console.error(
+            "[ACADEMIC YEAR]",
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
 
 async function getAcademicDashboard(req, res) {
 
@@ -415,125 +1151,54 @@ async function getAcademicDashboard(req, res) {
         const schoolId =
             getSchoolId(req);
 
-
-        if (!schoolId) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "School could not be determined."
-
-            });
-
-        }
+        const schoolFilter =
+            schoolId
+                ? { school: schoolId }
+                : {};
 
 
-        const school =
-            toObjectId(schoolId);
+        /* ---------------------------------------------
+           BASIC COUNTS
+        --------------------------------------------- */
 
+        const [
 
-        /*
-        |--------------------------------------------------------------------------
-        | BASIC COUNTS
-        |--------------------------------------------------------------------------
-        */
+            totalSubjects,
 
-        const totalSubjects =
-            await safeCount(
+            totalClasses,
+
+            students,
+
+            reportCards
+
+        ] = await Promise.all([
+
+            safeCount(
                 Subject,
-                schoolFilter(school)
-            );
+                schoolFilter
+            ),
 
+            safeCount(
+                Class,
+                schoolFilter
+            ),
 
-        const totalClasses =
-            await safeCount(
-                ClassModel,
-                schoolFilter(school)
-            );
-
-
-        const students =
-            await safeCount(
+            safeCount(
                 Student,
-                schoolFilter(school)
-            );
+                schoolFilter
+            ),
 
-
-        const reportCards =
-            await safeCount(
+            safeCount(
                 ReportCard,
-                schoolFilter(school)
-            );
+                schoolFilter
+            )
+
+        ]);
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | SUBJECT ALLOCATIONS
-        |--------------------------------------------------------------------------
-        |
-        | If subjects contain classes/teachers arrays, calculate allocations
-        | from them.
-        |--------------------------------------------------------------------------
-        */
-
-        let allocations = 0;
-
-        if (Subject) {
-
-            try {
-
-                const subjects =
-                    await Subject.find(
-                        schoolFilter(school)
-                    )
-                    .select(
-                        "classes teachers"
-                    )
-                    .lean();
-
-                for (const subject of subjects) {
-
-                    if (
-                        Array.isArray(
-                            subject.classes
-                        )
-                    ) {
-
-                        allocations +=
-                            subject.classes.length;
-
-                    } else if (
-                        Array.isArray(
-                            subject.teachers
-                        )
-                    ) {
-
-                        allocations +=
-                            subject.teachers.length;
-
-                    }
-
-                }
-
-            } catch (err) {
-
-                console.error(
-                    "[ACADEMIC ALLOCATIONS]",
-                    err.message
-                );
-
-            }
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | ACTIVE EXAMS
-        |--------------------------------------------------------------------------
-        */
+        /* ---------------------------------------------
+           EXAMS
+        --------------------------------------------- */
 
         let exams = 0;
 
@@ -544,64 +1209,166 @@ async function getAcademicDashboard(req, res) {
                 exams =
                     await Exam.countDocuments({
 
-                        ...schoolFilter(school),
+                        ...schoolFilter,
 
-                        $or: [
-
-                            {
-                                status:
-                                    "active"
-                            },
-
-                            {
-                                status:
-                                    "published"
-                            },
-
-                            {
-                                isActive:
-                                    true
-                            }
-
-                        ]
+                        status: {
+                            $in: [
+                                "active",
+                                "scheduled"
+                            ]
+                        }
 
                     });
 
-            } catch (err) {
+            } catch (error) {
 
-                console.error(
-                    "[ACADEMIC EXAMS]",
-                    err.message
-                );
+                exams =
+                    await safeCount(
+                        Exam,
+                        schoolFilter
+                    );
 
             }
 
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | REPORT CARD AVERAGE
-        |--------------------------------------------------------------------------
-        |
-        | ReportCard schema supplied by you currently does not have an
-        | average field, so we calculate it from available academic data
-        | where possible.
-        |--------------------------------------------------------------------------
-        */
+        /* ---------------------------------------------
+           MARKS
+        --------------------------------------------- */
 
-        const analytics =
-            await buildAcademicAnalytics(
-                req
+        const rawMarks =
+            await getSchoolMarks(
+                schoolId
+            );
+
+        const marks =
+            normalizeMarks(
+                rawMarks
             );
 
 
-        const average =
-            analytics.overallAverage;
+        /* ---------------------------------------------
+           CALCULATIONS
+        --------------------------------------------- */
 
+        const average =
+            calculateOverallAverage(
+                marks
+            );
 
         const studentsAssessed =
-            analytics.studentsAssessed;
+            countUniqueStudents(
+                marks
+            );
+
+
+        /* ---------------------------------------------
+           ALLOCATIONS
+        --------------------------------------------- */
+
+        let allocations = 0;
+
+        if (Subject) {
+
+            try {
+
+                const subjects =
+                    await Subject
+                        .find(schoolFilter)
+                        .select(
+                            "classes teachers"
+                        )
+                        .lean();
+
+                allocations =
+                    subjects.reduce(
+                        (total, subject) => {
+
+                            return (
+                                total +
+                                (
+                                    Array.isArray(
+                                        subject.classes
+                                    )
+                                        ? subject.classes.length
+                                        : 0
+                                )
+                            );
+
+                        },
+                        0
+                    );
+
+            } catch (error) {
+
+                allocations = 0;
+
+            }
+
+        }
+
+
+        /* ---------------------------------------------
+           TERMS
+        --------------------------------------------- */
+
+        const terms =
+            await ReportCard.aggregate([
+
+                {
+                    $match:
+                        schoolFilter
+                },
+
+                {
+                    $group: {
+
+                        _id: {
+
+                            year: "$year",
+
+                            term: "$term"
+
+                        },
+
+                        count: {
+                            $sum: 1
+                        }
+
+                    }
+
+                },
+
+                {
+                    $sort: {
+
+                        "_id.year": -1,
+
+                        "_id.term": 1
+
+                    }
+
+                },
+
+                {
+                    $project: {
+
+                        _id: 0,
+
+                        year:
+                            "$_id.year",
+
+                        term:
+                            "$_id.term",
+
+                        count: 1
+
+                    }
+
+                }
+
+            ]);
 
 
         return res.json({
@@ -616,36 +1383,26 @@ async function getAcademicDashboard(req, res) {
 
             exams,
 
+            average,
+
             reportCards,
 
             students,
 
             studentsAssessed,
 
-            average: round(average),
+            marksRecorded:
+                marks.length,
 
-            schoolAverage:
-                round(average),
-
-            subjectPerformance:
-                analytics.subjectPerformance,
-
-            classPerformance:
-                analytics.classPerformance,
-
-            gradeDistribution:
-                analytics.gradeDistribution,
-
-            trend:
-                analytics.trend
+            terms
 
         });
 
-    } catch (err) {
+    } catch (error) {
 
         console.error(
             "[ACADEMIC DASHBOARD]",
-            err
+            error
         );
 
         return res.status(500).json({
@@ -653,11 +1410,11 @@ async function getAcademicDashboard(req, res) {
             success: false,
 
             message:
-                "Failed to load academic dashboard.",
+                "Unable to load academic dashboard.",
 
             error:
                 process.env.NODE_ENV === "development"
-                    ? err.message
+                    ? error.message
                     : undefined
 
         });
@@ -667,15 +1424,9 @@ async function getAcademicDashboard(req, res) {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| GET ACADEMIC ANALYTICS
-|--------------------------------------------------------------------------
-|
-| GET /api/academic/analytics
-|
-|--------------------------------------------------------------------------
-*/
+/* =====================================================
+   ACADEMIC ANALYTICS
+===================================================== */
 
 async function getAcademicAnalytics(req, res) {
 
@@ -684,26 +1435,168 @@ async function getAcademicAnalytics(req, res) {
         const schoolId =
             getSchoolId(req);
 
-
-        if (!schoolId) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "School could not be determined."
-
-            });
-
-        }
+        const schoolFilter =
+            schoolId
+                ? { school: schoolId }
+                : {};
 
 
-        const analytics =
-            await buildAcademicAnalytics(
-                req
+        /* ---------------------------------------------
+           MARKS
+        --------------------------------------------- */
+
+        const rawMarks =
+            await getSchoolMarks(
+                schoolId
             );
 
+        const marks =
+            normalizeMarks(
+                rawMarks
+            );
+
+
+        /* ---------------------------------------------
+           PERFORMANCE
+        --------------------------------------------- */
+
+        const subjectPerformance =
+            calculateSubjectPerformance(
+                marks
+            );
+
+        const classPerformance =
+            calculateClassPerformance(
+                marks
+            );
+
+        const gradeDistribution =
+            calculateGradeDistribution(
+                marks
+            );
+
+        const examTrend =
+            calculateExamTrend(
+                marks
+            );
+
+
+        /* ---------------------------------------------
+           OVERALL
+        --------------------------------------------- */
+
+        const average =
+            calculateOverallAverage(
+                marks
+            );
+
+        const studentsAssessed =
+            countUniqueStudents(
+                marks
+            );
+
+
+        /* ---------------------------------------------
+           REPORT CARDS
+        --------------------------------------------- */
+
+        const reportCardStats =
+            await ReportCard.aggregate([
+
+                {
+                    $match:
+                        schoolFilter
+                },
+
+                {
+                    $group: {
+
+                        _id: {
+
+                            year:
+                                "$year",
+
+                            term:
+                                "$term"
+
+                        },
+
+                        count: {
+                            $sum: 1
+                        },
+
+                        students: {
+
+                            $addToSet:
+                                "$studentId"
+
+                        }
+
+                    }
+
+                },
+
+                {
+                    $sort: {
+
+                        "_id.year": 1,
+
+                        "_id.term": 1
+
+                    }
+
+                },
+
+                {
+                    $project: {
+
+                        _id: 0,
+
+                        year:
+                            "$_id.year",
+
+                        term:
+                            "$_id.term",
+
+                        count: 1,
+
+                        studentsAssessed: {
+
+                            $size:
+                                "$students"
+
+                        }
+
+                    }
+
+                }
+
+            ]);
+
+
+        /* ---------------------------------------------
+           STATUS
+        --------------------------------------------- */
+
+        const statusDistribution =
+            await getStatusDistribution(
+                schoolFilter
+            );
+
+
+        /* ---------------------------------------------
+           YEARS
+        --------------------------------------------- */
+
+        const yearDistribution =
+            await getYearDistribution(
+                schoolFilter
+            );
+
+
+        /* ---------------------------------------------
+           RESPONSE
+        --------------------------------------------- */
 
         return res.json({
 
@@ -711,60 +1604,57 @@ async function getAcademicAnalytics(req, res) {
 
             data: {
 
-                overallAverage:
-                    analytics.overallAverage,
+                average,
 
-                studentsAssessed:
-                    analytics.studentsAssessed,
+                marksRecorded:
+                    marks.length,
 
-                totalMarks:
-                    analytics.totalMarks,
+                studentsAssessed,
 
-                highestScore:
-                    analytics.highestScore,
+                subjectPerformance,
 
-                lowestScore:
-                    analytics.lowestScore
+                classPerformance,
+
+                gradeDistribution,
+
+                examTrend,
+
+                reportCardStats,
+
+                statusDistribution,
+
+                yearDistribution
 
             },
 
-            subjectPerformance:
-                analytics.subjectPerformance,
+            average,
 
-            classPerformance:
-                analytics.classPerformance,
+            marksRecorded:
+                marks.length,
 
-            gradeDistribution:
-                analytics.gradeDistribution,
+            studentsAssessed,
 
-            trend:
-                analytics.trend,
+            subjectPerformance,
 
-            /*
-            |--------------------------------------------------------------------------
-            | Compatibility aliases
-            |--------------------------------------------------------------------------
-            */
+            classPerformance,
 
-            subjectPerformanceData:
-                analytics.subjectPerformance,
+            gradeDistribution,
 
-            classPerformanceData:
-                analytics.classPerformance,
+            examTrend,
 
-            gradeDistributionData:
-                analytics.gradeDistribution,
+            reportCardStats,
 
-            trendData:
-                analytics.trend
+            statusDistribution,
+
+            yearDistribution
 
         });
 
-    } catch (err) {
+    } catch (error) {
 
         console.error(
             "[ACADEMIC ANALYTICS]",
-            err
+            error
         );
 
         return res.status(500).json({
@@ -772,11 +1662,11 @@ async function getAcademicAnalytics(req, res) {
             success: false,
 
             message:
-                "Failed to load academic analytics.",
+                "Unable to load academic analytics.",
 
             error:
                 process.env.NODE_ENV === "development"
-                    ? err.message
+                    ? error.message
                     : undefined
 
         });
@@ -786,838 +1676,13 @@ async function getAcademicAnalytics(req, res) {
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| BUILD ACADEMIC ANALYTICS
-|--------------------------------------------------------------------------
-*/
-
-async function buildAcademicAnalytics(req) {
-
-    const schoolId =
-        getSchoolId(req);
-
-    const school =
-        toObjectId(schoolId);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | RESULT CONTAINERS
-    |--------------------------------------------------------------------------
-    */
-
-    const subjectMap =
-        new Map();
-
-    const classMap =
-        new Map();
-
-    const gradeMap =
-        new Map();
-
-    const trendMap =
-        new Map();
-
-    const studentScores =
-        new Map();
-
-
-    let totalMarks = 0;
-
-    let totalScore = 0;
-
-    let highestScore = 0;
-
-    let lowestScore = 100;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | LOAD MARKS
-    |--------------------------------------------------------------------------
-    */
-
-    if (Mark) {
-
-        try {
-
-            const marks =
-                await Mark.find(
-                    schoolFilter(school)
-                )
-                .lean();
-
-
-            for (const mark of marks) {
-
-                const score =
-                    percentageFromItem(mark);
-
-
-                if (
-                    score === null ||
-                    !Number.isFinite(score)
-                ) {
-
-                    continue;
-
-                }
-
-
-                totalMarks++;
-
-                totalScore += score;
-
-                highestScore =
-                    Math.max(
-                        highestScore,
-                        score
-                    );
-
-                lowestScore =
-                    Math.min(
-                        lowestScore,
-                        score
-                    );
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | STUDENT
-                |--------------------------------------------------------------------------
-                */
-
-                const studentId =
-                    mark.studentId ||
-                    mark.student ||
-                    mark.studentID ||
-                    mark.userId;
-
-
-                if (studentId) {
-
-                    studentScores.set(
-                        String(studentId),
-                        score
-                    );
-
-                }
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | SUBJECT
-                |--------------------------------------------------------------------------
-                */
-
-                const subjectId =
-                    mark.subjectId ||
-                    mark.subject ||
-                    mark.subjectID;
-
-
-                const subjectName =
-                    mark.subjectName ||
-                    (
-                        typeof mark.subject === "object"
-                            ? mark.subject?.name
-                            : null
-                    ) ||
-                    "Unknown Subject";
-
-
-                const subjectKey =
-                    String(
-                        subjectId ||
-                        subjectName
-                    );
-
-
-                if (
-                    !subjectMap.has(
-                        subjectKey
-                    )
-                ) {
-
-                    subjectMap.set(
-                        subjectKey,
-                        {
-                            id:
-                                subjectId ||
-                                null,
-
-                            name:
-                                subjectName,
-
-                            total: 0,
-
-                            score: 0,
-
-                            count: 0
-                        }
-                    );
-
-                }
-
-
-                const subject =
-                    subjectMap.get(
-                        subjectKey
-                    );
-
-
-                subject.total += 1;
-
-                subject.score += score;
-
-                subject.count += 1;
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | CLASS
-                |--------------------------------------------------------------------------
-                */
-
-                const classId =
-                    mark.classId ||
-                    mark.class ||
-                    mark.classID;
-
-
-                const className =
-                    mark.className ||
-                    (
-                        typeof mark.class === "object"
-                            ? mark.class?.name
-                            : null
-                    ) ||
-                    "Unknown Class";
-
-
-                const classKey =
-                    String(
-                        classId ||
-                        className
-                    );
-
-
-                if (
-                    !classMap.has(
-                        classKey
-                    )
-                ) {
-
-                    classMap.set(
-                        classKey,
-                        {
-                            id:
-                                classId ||
-                                null,
-
-                            name:
-                                className,
-
-                            score: 0,
-
-                            count: 0
-                        }
-                    );
-
-                }
-
-
-                const classData =
-                    classMap.get(
-                        classKey
-                    );
-
-
-                classData.score += score;
-
-                classData.count += 1;
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | GRADE
-                |--------------------------------------------------------------------------
-                */
-
-                const grade =
-                    calculateGrade(
-                        score
-                    );
-
-
-                if (
-                    !gradeMap.has(
-                        grade
-                    )
-                ) {
-
-                    gradeMap.set(
-                        grade,
-                        0
-                    );
-
-                }
-
-
-                gradeMap.set(
-                    grade,
-                    gradeMap.get(
-                        grade
-                    ) + 1
-                );
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | TREND
-                |--------------------------------------------------------------------------
-                */
-
-                const date =
-                    mark.date ||
-                    mark.createdAt ||
-                    mark.updatedAt;
-
-
-                let period =
-                    "Current";
-
-
-                if (date) {
-
-                    const d =
-                        new Date(date);
-
-
-                    if (
-                        !Number.isNaN(
-                            d.getTime()
-                        )
-                    ) {
-
-                        period =
-                            d.toLocaleDateString(
-                                "en-US",
-                                {
-                                    month:
-                                        "short",
-
-                                    year:
-                                        "numeric"
-                                }
-                            );
-
-                    }
-
-                }
-
-
-                if (
-                    !trendMap.has(
-                        period
-                    )
-                ) {
-
-                    trendMap.set(
-                        period,
-                        {
-                            score: 0,
-
-                            count: 0
-                        }
-                    );
-
-                }
-
-
-                const trend =
-                    trendMap.get(
-                        period
-                    );
-
-
-                trend.score += score;
-
-                trend.count += 1;
-
-            }
-
-        } catch (err) {
-
-            console.error(
-                "[ACADEMIC MARKS]",
-                err.message
-            );
-
-        }
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | FALLBACK: REPORT CARDS
-    |--------------------------------------------------------------------------
-    |
-    | Your current ReportCard model does not explicitly contain marks.
-    | However, some generated report cards may contain useful HTML content.
-    |
-    | We therefore inspect report cards only when Mark data is unavailable.
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        totalMarks === 0 &&
-        ReportCard
-    ) {
-
-        try {
-
-            const reports =
-                await ReportCard.find(
-                    schoolFilter(school)
-                )
-                .select(
-                    "studentId studentName year term status htmlContent createdAt"
-                )
-                .lean();
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Report cards may contain average values in HTML.
-            |--------------------------------------------------------------------------
-            */
-
-            for (const report of reports) {
-
-                const html =
-                    String(
-                        report.htmlContent ||
-                        ""
-                    );
-
-
-                if (!html) {
-                    continue;
-                }
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Attempt to extract common average formats:
-                |
-                | Average: 75
-                | Average: 75%
-                | Overall Average: 75
-                |--------------------------------------------------------------------------
-                */
-
-                const match =
-                    html.match(
-                        /(?:overall\s+)?average\s*[:\-]?\s*(\d+(?:\.\d+)?)\s*%?/i
-                    );
-
-
-                if (!match) {
-                    continue;
-                }
-
-
-                const score =
-                    Number(match[1]);
-
-
-                if (
-                    !Number.isFinite(score)
-                ) {
-
-                    continue;
-
-                }
-
-
-                if (
-                    score < 0 ||
-                    score > 100
-                ) {
-
-                    continue;
-
-                }
-
-
-                totalMarks++;
-
-                totalScore += score;
-
-                highestScore =
-                    Math.max(
-                        highestScore,
-                        score
-                    );
-
-                lowestScore =
-                    Math.min(
-                        lowestScore,
-                        score
-                    );
-
-
-                if (
-                    report.studentId
-                ) {
-
-                    studentScores.set(
-                        String(
-                            report.studentId
-                        ),
-                        score
-                    );
-
-                }
-
-
-                const grade =
-                    calculateGrade(
-                        score
-                    );
-
-
-                gradeMap.set(
-                    grade,
-                    (
-                        gradeMap.get(
-                            grade
-                        ) || 0
-                    ) + 1
-                );
-
-
-                const period =
-                    report.term
-                        ? String(
-                            report.term
-                        )
-                        : "Current";
-
-
-                if (
-                    !trendMap.has(
-                        period
-                    )
-                ) {
-
-                    trendMap.set(
-                        period,
-                        {
-                            score: 0,
-
-                            count: 0
-                        }
-                    );
-
-                }
-
-
-                const trend =
-                    trendMap.get(
-                        period
-                    );
-
-
-                trend.score += score;
-
-                trend.count += 1;
-
-            }
-
-        } catch (err) {
-
-            console.error(
-                "[ACADEMIC REPORT FALLBACK]",
-                err.message
-            );
-
-        }
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SUBJECT PERFORMANCE
-    |--------------------------------------------------------------------------
-    */
-
-    const subjectPerformance =
-        Array.from(
-            subjectMap.values()
-        )
-        .map(subject => ({
-
-            id:
-                subject.id,
-
-            name:
-                subject.name,
-
-            average:
-                round(
-                    subject.score /
-                    Math.max(
-                        subject.count,
-                        1
-                    )
-                ),
-
-            assessments:
-                subject.count
-
-        }))
-        .sort(
-            (a, b) =>
-                b.average -
-                a.average
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLASS PERFORMANCE
-    |--------------------------------------------------------------------------
-    */
-
-    const classPerformance =
-        Array.from(
-            classMap.values()
-        )
-        .map(classData => ({
-
-            id:
-                classData.id,
-
-            name:
-                classData.name,
-
-            average:
-                round(
-                    classData.score /
-                    Math.max(
-                        classData.count,
-                        1
-                    )
-                ),
-
-            assessments:
-                classData.count
-
-        }))
-        .sort(
-            (a, b) =>
-                b.average -
-                a.average
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GRADE DISTRIBUTION
-    |--------------------------------------------------------------------------
-    */
-
-    const gradeOrder = [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E"
-    ];
-
-
-    const gradeDistribution =
-        gradeOrder.map(
-            grade => ({
-
-                grade,
-
-                count:
-                    gradeMap.get(
-                        grade
-                    ) || 0
-
-            })
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | TREND
-    |--------------------------------------------------------------------------
-    */
-
-    const trend =
-        Array.from(
-            trendMap.entries()
-        )
-        .map(
-            ([period, value]) => ({
-
-                period,
-
-                average:
-                    round(
-                        value.score /
-                        Math.max(
-                            value.count,
-                            1
-                        )
-                    ),
-
-                assessments:
-                    value.count
-
-            })
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SORT TREND CHRONOLOGICALLY WHERE POSSIBLE
-    |--------------------------------------------------------------------------
-    */
-
-    trend.sort(
-        (a, b) => {
-
-            if (
-                a.period === "Current"
-            ) {
-                return 1;
-            }
-
-            if (
-                b.period === "Current"
-            ) {
-                return -1;
-            }
-
-            const aDate =
-                new Date(
-                    `1 ${a.period}`
-                );
-
-            const bDate =
-                new Date(
-                    `1 ${b.period}`
-                );
-
-            if (
-                !Number.isNaN(
-                    aDate.getTime()
-                ) &&
-                !Number.isNaN(
-                    bDate.getTime()
-                )
-            ) {
-
-                return (
-                    aDate -
-                    bDate
-                );
-
-            }
-
-            return 0;
-
-        }
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | OVERALL AVERAGE
-    |--------------------------------------------------------------------------
-    */
-
-    const overallAverage =
-        totalMarks > 0
-            ? round(
-                totalScore /
-                totalMarks
-            )
-            : 0;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | STUDENTS ASSESSED
-    |--------------------------------------------------------------------------
-    */
-
-    const studentsAssessed =
-        studentScores.size;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | NORMALIZE EMPTY MINIMUM
-    |--------------------------------------------------------------------------
-    */
-
-    if (totalMarks === 0) {
-
-        lowestScore = 0;
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | RETURN
-    |--------------------------------------------------------------------------
-    */
-
-    return {
-
-        overallAverage,
-
-        studentsAssessed,
-
-        totalMarks,
-
-        highestScore:
-            round(highestScore),
-
-        lowestScore:
-            round(lowestScore),
-
-        subjectPerformance,
-
-        classPerformance,
-
-        gradeDistribution,
-
-        trend
-
-    };
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| EXPORTS
-|--------------------------------------------------------------------------
-*/
+/* =====================================================
+   EXPORT
+===================================================== */
 
 module.exports = {
+
+    adminOnly,
 
     getAcademicDashboard,
 
