@@ -1,167 +1,267 @@
-const express = require("express");
+const jwt = require("jsonwebtoken");
 
-const router = express.Router();
-
-
-// =====================================================
-// AUTHENTICATION MIDDLEWARE
-// =====================================================
-
-const {
-    protect,
-    authorize
-} = require("../middleware/authMiddleware");
+const User = require("../models/User");
 
 
 // =====================================================
-// MIDDLEWARE VALIDATION
-// =====================================================
-
-if (typeof protect !== "function") {
-
-    throw new TypeError(
-        "authMiddleware.protect must be a function. Check backend/middleware/authMiddleware.js exports."
-    );
-
-}
-
-if (typeof authorize !== "function") {
-
-    throw new TypeError(
-        "authMiddleware.authorize must be a function. Check backend/middleware/authMiddleware.js exports."
-    );
-
-}
-
-
-// =====================================================
-// SUBJECT CONTROLLER
-// =====================================================
-
-const {
-    getSubjects,
-    createSubject,
-    updateSubject,
-    deleteSubject
-} = require("../controllers/subjectController");
-
-
-// =====================================================
-// CONTROLLER VALIDATION
-// =====================================================
-
-if (typeof getSubjects !== "function") {
-
-    throw new TypeError(
-        "subjectController.getSubjects must be a function."
-    );
-
-}
-
-if (typeof createSubject !== "function") {
-
-    throw new TypeError(
-        "subjectController.createSubject must be a function."
-    );
-
-}
-
-if (typeof updateSubject !== "function") {
-
-    throw new TypeError(
-        "subjectController.updateSubject must be a function."
-    );
-
-}
-
-if (typeof deleteSubject !== "function") {
-
-    throw new TypeError(
-        "subjectController.deleteSubject must be a function."
-    );
-
-}
-
-
-// =====================================================
-// SUBJECT ROUTES
+// PROTECT
 // =====================================================
 //
-// All routes require authentication.
-//
-// Only users with the "admin" role can:
-// - View subjects
-// - Create subjects
-// - Update subjects
-// - Delete subjects
+// Verifies the JWT token and attaches the authenticated
+// user to req.user.
 //
 // =====================================================
 
-router.use(protect);
+const protect = async (req, res, next) => {
+
+    try {
+
+        let token = null;
+
+
+        // -------------------------------------------------
+        // GET TOKEN FROM AUTHORIZATION HEADER
+        // -------------------------------------------------
+
+        const authorization =
+            req.headers.authorization;
+
+
+        if (
+            authorization &&
+            authorization.startsWith("Bearer ")
+        ) {
+
+            token =
+                authorization.split(" ")[1];
+
+        }
+
+
+        // -------------------------------------------------
+        // NO TOKEN
+        // -------------------------------------------------
+
+        if (!token) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    "Not authorized. No token provided."
+
+            });
+
+        }
+
+
+        // -------------------------------------------------
+        // VERIFY TOKEN
+        // -------------------------------------------------
+
+        const decoded =
+            jwt.verify(
+                token,
+                process.env.JWT_SECRET
+            );
+
+
+        // -------------------------------------------------
+        // GET USER
+        // -------------------------------------------------
+
+        const user =
+            await User.findById(decoded.id)
+                .select("-password");
+
+
+        if (!user) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    "User account not found."
+
+            });
+
+        }
+
+
+        // -------------------------------------------------
+        // ATTACH USER TO REQUEST
+        // -------------------------------------------------
+
+        req.user = user;
+
+
+        // -------------------------------------------------
+        // CONTINUE
+        // -------------------------------------------------
+
+        next();
+
+
+    } catch (error) {
+
+        console.error(
+            "[AUTH PROTECT]",
+            error
+        );
+
+
+        // JWT errors
+
+        if (
+            error.name === "JsonWebTokenError" ||
+            error.name === "TokenExpiredError"
+        ) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    "Not authorized. Invalid or expired token."
+
+            });
+
+        }
+
+
+        // Other errors
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                "Authentication failed."
+
+        });
+
+    }
+
+};
 
 
 // =====================================================
-// GET SUBJECTS
+// AUTHORIZE
 // =====================================================
 //
-// GET /api/subjects
+// Usage:
+//
+// authorize("admin")
+//
+// authorize("admin", "teacher")
 //
 // =====================================================
 
-router.get(
-    "/",
-    authorize("admin"),
-    getSubjects
-);
+const authorize = (...roles) => {
+
+    return (req, res, next) => {
+
+        try {
+
+            // ---------------------------------------------
+            // USER MUST BE AUTHENTICATED
+            // ---------------------------------------------
+
+            if (!req.user) {
+
+                return res.status(401).json({
+
+                    success: false,
+
+                    message:
+                        "Not authorized."
+
+                });
+
+            }
 
 
-// =====================================================
-// CREATE SUBJECT
-// =====================================================
-//
-// POST /api/subjects
-//
-// =====================================================
+            // ---------------------------------------------
+            // GET USER ROLE
+            // ---------------------------------------------
 
-router.post(
-    "/",
-    authorize("admin"),
-    createSubject
-);
+            const userRole =
+                String(
+                    req.user.role || ""
+                )
+                    .trim()
+                    .toLowerCase();
 
 
-// =====================================================
-// UPDATE SUBJECT
-// =====================================================
-//
-// PUT /api/subjects/:id
-//
-// =====================================================
+            // ---------------------------------------------
+            // NORMALIZE ALLOWED ROLES
+            // ---------------------------------------------
 
-router.put(
-    "/:id",
-    authorize("admin"),
-    updateSubject
-);
+            const allowedRoles =
+                roles.map(role =>
+                    String(role)
+                        .trim()
+                        .toLowerCase()
+                );
 
 
-// =====================================================
-// DELETE SUBJECT
-// =====================================================
-//
-// DELETE /api/subjects/:id
-//
-// =====================================================
+            // ---------------------------------------------
+            // CHECK ROLE
+            // ---------------------------------------------
 
-router.delete(
-    "/:id",
-    authorize("admin"),
-    deleteSubject
-);
+            if (
+                !allowedRoles.includes(userRole)
+            ) {
+
+                return res.status(403).json({
+
+                    success: false,
+
+                    message:
+                        "You do not have permission to perform this action."
+
+                });
+
+            }
+
+
+            // ---------------------------------------------
+            // AUTHORIZED
+            // ---------------------------------------------
+
+            next();
+
+
+        } catch (error) {
+
+            console.error(
+                "[AUTH AUTHORIZE]",
+                error
+            );
+
+            return res.status(500).json({
+
+                success: false,
+
+                message:
+                    "Authorization failed."
+
+            });
+
+        }
+
+    };
+
+};
 
 
 // =====================================================
 // EXPORT
 // =====================================================
 
-module.exports = router;
+module.exports = {
+    protect,
+    authorize
+};
