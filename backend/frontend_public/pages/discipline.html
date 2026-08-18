@@ -318,6 +318,153 @@
 
 </div>
 
+    <!-- =====================================================
+     STUDENT DISCIPLINE HISTORY MODAL
+===================================================== -->
+
+<div
+    id="studentHistoryModal"
+    class="modal"
+    style="display:none;"
+>
+
+    <div class="modal-overlay"></div>
+
+    <div class="modal-content student-history-modal">
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-label">
+                    STUDENT MANAGEMENT
+                </span>
+
+                <h2>
+                    <i class="fas fa-user-clock"></i>
+                    Discipline History
+                </h2>
+
+                <p id="historyStudentInfo">
+                    Loading student...
+                </p>
+
+            </div>
+
+            <button
+                id="closeStudentHistoryModal"
+                class="modal-close"
+                type="button"
+            >
+                <i class="fas fa-times"></i>
+            </button>
+
+        </div>
+
+
+        <!-- HISTORY SUMMARY -->
+
+        <div class="history-summary-grid">
+
+            <div class="history-summary-card">
+
+                <span>Total Cases</span>
+
+                <strong id="historyTotalCases">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="history-summary-card">
+
+                <span>Minor</span>
+
+                <strong id="historyMinorCases">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="history-summary-card">
+
+                <span>Serious</span>
+
+                <strong id="historySeriousCases">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="history-summary-card">
+
+                <span>Resolved</span>
+
+                <strong id="historyResolvedCases">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="history-summary-card">
+
+                <span>Open</span>
+
+                <strong id="historyOpenCases">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- HISTORY TIMELINE -->
+
+        <div class="student-history-section">
+
+            <div class="history-section-header">
+
+                <div>
+
+                    <h3>
+                        Discipline History
+                    </h3>
+
+                    <p>
+                        Complete history of disciplinary incidents.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="studentHistoryTimeline"
+                class="student-history-timeline"
+            >
+
+                <div class="loading-state">
+
+                    <i class="fas fa-spinner fa-spin"></i>
+
+                    Loading discipline history...
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 
 
 <!-- =====================================================
