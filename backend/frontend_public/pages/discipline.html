@@ -375,19 +375,24 @@
 
             <div class="form-group">
 
-                <label>
-                    Student ID
-                    <span>*</span>
-                </label>
+    <label for="student">
+        Student
+        <span>*</span>
+    </label>
 
-                <input
-                    type="text"
-                    id="student"
-                    required
-                    placeholder="Enter student ID"
-                >
+    <select
+        id="student"
+        name="student"
+        required
+    >
 
-            </div>
+        <option value="">
+            Loading students...
+        </option>
+
+    </select>
+
+</div>
 
 
 
