@@ -1006,9 +1006,7 @@ function renderDiscipline() {
 function createDisciplineCard(item) {
 
     const card =
-        document.createElement(
-            "article"
-        );
+        document.createElement("article");
 
 
     card.className =
@@ -1018,13 +1016,15 @@ function createDisciplineCard(item) {
     const student =
         item.student?.name ||
         item.student?.fullName ||
+        item.studentName ||
         "Unknown Student";
 
 
     const studentId =
         item.student?._id ||
         item.student?.id ||
-        item.student;
+        item.studentId ||
+        "";
 
 
     const severity =
@@ -1056,18 +1056,14 @@ function createDisciplineCard(item) {
                 <div>
 
                     <h3>
-                        ${escapeHtml(
-                            student
-                        )}
+                        ${escapeHtml(student)}
                     </h3>
 
                     <span>
-
                         ${escapeHtml(
                             item.admissionNumber ||
                             "No admission number"
                         )}
-
                     </span>
 
                 </div>
@@ -1075,9 +1071,7 @@ function createDisciplineCard(item) {
 
                 <span class="status-badge">
 
-                    ${escapeHtml(
-                        status
-                    )}
+                    ${escapeHtml(status)}
 
                 </span>
 
@@ -1093,8 +1087,7 @@ function createDisciplineCard(item) {
                     <strong>
 
                         ${escapeHtml(
-                            item.category ||
-                            ""
+                            item.category || ""
                         )}
 
                     </strong>
@@ -1157,25 +1150,52 @@ function createDisciplineCard(item) {
                 </span>
 
 
-                <button
-                    type="button"
-                    class="view-history-btn"
-                    data-student-id="${escapeHtml(
-                        studentId || ""
-                    )}"
-                >
+                ${
+                    studentId
+                        ? `
+                            <button
+                                type="button"
+                                class="view-history-btn"
+                                data-student-id="${escapeHtml(studentId)}"
+                            >
 
-                    <i class="fas fa-clock-rotate-left"></i>
+                                <i class="fas fa-clock-rotate-left"></i>
 
-                    View Student History
+                                View History
 
-                </button>
+                            </button>
+                        `
+                        : ""
+                }
 
             </div>
 
         </div>
 
     `;
+
+
+    const historyButton =
+        card.querySelector(
+            ".view-history-btn"
+        );
+
+
+    if (historyButton) {
+
+        historyButton.addEventListener(
+            "click",
+            () => {
+
+                openStudentHistory(
+                    studentId,
+                    student
+                );
+
+            }
+        );
+
+    }
 
 
     return card;
@@ -1186,7 +1206,10 @@ function createDisciplineCard(item) {
 // OPEN STUDENT HISTORY
 // =====================================================
 
-function openStudentHistory(studentId) {
+async function openStudentHistory(
+    studentId,
+    studentName = "Student"
+) {
 
     const modal =
         document.getElementById(
@@ -1194,68 +1217,576 @@ function openStudentHistory(studentId) {
         );
 
 
-    if (!modal) {
+    const content =
+        document.getElementById(
+            "studentHistoryContent"
+        );
+
+
+    if (!modal || !content) {
+        return;
+    }
+
+
+    modal.style.display = "flex";
+
+    document.body.classList.add(
+        "modal-open"
+    );
+
+
+    content.innerHTML = `
+
+        <div class="history-loading">
+
+            <i class="fas fa-spinner fa-spin"></i>
+
+            <p>
+                Loading ${escapeHtml(studentName)}'s history...
+            </p>
+
+        </div>
+
+    `;
+
+
+    try {
+
+        /*
+         * We already have disciplineCases loaded.
+         * Therefore we can build the history immediately
+         * without requiring another API endpoint.
+         */
+
+        const history =
+            disciplineCases.filter(
+                item => {
+
+                    const id =
+                        item.student?._id ||
+                        item.student?.id ||
+                        item.studentId;
+
+
+                    return String(id) ===
+                        String(studentId);
+
+                }
+            );
+
+
+        /*
+         * If the API returns the student as an
+         * object/string in different formats,
+         * also try admission/name matching.
+         */
+
+        if (!history.length) {
+
+            content.innerHTML =
+                buildStudentHistory(
+                    history,
+                    studentName
+                );
+
+            return;
+
+        }
+
+
+        content.innerHTML =
+            buildStudentHistory(
+                history,
+                studentName
+            );
+
+
+    } catch (error) {
 
         console.error(
-            "[DISCIPLINE] Student history modal not found"
+            "[STUDENT HISTORY]",
+            error
         );
 
-        return;
+
+        content.innerHTML = `
+
+            <div class="history-empty">
+
+                <i class="fas fa-exclamation-circle"></i>
+
+                <h3>
+                    Unable to load history
+                </h3>
+
+                <p>
+                    ${escapeHtml(
+                        error.message
+                    )}
+                </p>
+
+            </div>
+
+        `;
 
     }
 
+}
 
-    const cases =
-        disciplineCases.filter(
-            item => {
+// =====================================================
+// BUILD STUDENT HISTORY
+// =====================================================
 
-                const id =
-                    item.student?._id ||
-                    item.student?.id ||
-                    item.student;
+function buildStudentHistory(
+    history,
+    studentName
+) {
 
-
-                return String(id) ===
-                    String(studentId);
-
-            }
-        );
+    const total =
+        history.length;
 
 
-    if (!cases.length) {
-
-        showToast(
-            "No discipline history found for this student.",
-            "error"
-        );
-
-        return;
-
-    }
+    const minor =
+        history.filter(
+            item =>
+                item.severity === "low" ||
+                item.severity === "medium"
+        ).length;
 
 
-    const first =
-        cases[0];
+    const serious =
+        history.filter(
+            item =>
+                item.severity === "high" ||
+                item.severity === "critical"
+        ).length;
 
 
-    const student =
-        first.student?.name ||
-        first.student?.fullName ||
-        "Unknown Student";
+    const resolved =
+        history.filter(
+            item =>
+                item.status === "resolved"
+        ).length;
 
 
-    const admission =
-        first.admissionNumber ||
-        "";
+    const open =
+        history.filter(
+            item =>
+                item.status !== "resolved" &&
+                item.status !== "dismissed"
+        ).length;
 
 
-    const className =
-        first.className ||
-        getStudentClass(
-            first.student || {}
-        ) ||
-        "";
+    const firstRecord =
+        history[0];
 
+
+    const studentClass =
+        firstRecord?.className ||
+        firstRecord?.student?.className ||
+        firstRecord?.student?.class ||
+        "Class not available";
+
+
+    return `
+
+        <!-- STUDENT -->
+
+        <div class="history-student">
+
+            <div class="history-student-avatar">
+
+                <i class="fas fa-user"></i>
+
+            </div>
+
+
+            <div class="history-student-info">
+
+                <h3>
+                    ${escapeHtml(
+                        studentName
+                    )}
+                </h3>
+
+                <p>
+                    ${escapeHtml(
+                        studentClass
+                    )}
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- SUMMARY -->
+
+        <div class="discipline-history-summary">
+
+            <div class="history-summary-card">
+
+                <span>
+                    Total Cases
+                </span>
+
+                <strong>
+                    ${total}
+                </strong>
+
+            </div>
+
+
+            <div class="history-summary-card minor">
+
+                <span>
+                    Minor
+                </span>
+
+                <strong>
+                    ${minor}
+                </strong>
+
+            </div>
+
+
+            <div class="history-summary-card serious">
+
+                <span>
+                    Serious
+                </span>
+
+                <strong>
+                    ${serious}
+                </strong>
+
+            </div>
+
+
+            <div class="history-summary-card resolved">
+
+                <span>
+                    Resolved
+                </span>
+
+                <strong>
+                    ${resolved}
+                </strong>
+
+            </div>
+
+
+            <div class="history-summary-card open">
+
+                <span>
+                    Open
+                </span>
+
+                <strong>
+                    ${open}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- HISTORY -->
+
+        <div class="history-header">
+
+            <div>
+
+                <h2>
+                    Discipline History
+                </h2>
+
+                <p>
+                    Complete history of disciplinary incidents.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        ${
+            !history.length
+
+                ? `
+
+                    <div class="history-empty">
+
+                        <i class="fas fa-circle-check"></i>
+
+                        <h3>
+                            No discipline incidents
+                        </h3>
+
+                        <p>
+                            This student has no recorded discipline cases.
+                        </p>
+
+                    </div>
+
+                `
+
+                : `
+
+                    <div class="discipline-timeline">
+
+                        ${history
+                            .slice()
+                            .sort(
+                                (
+                                    a,
+                                    b
+                                ) =>
+                                    new Date(
+                                        b.incidentDate
+                                    ) -
+                                    new Date(
+                                        a.incidentDate
+                                    )
+                            )
+                            .map(
+                                item =>
+                                    buildHistoryItem(
+                                        item
+                                    )
+                            )
+                            .join("")
+                        }
+
+                    </div>
+
+                `
+        }
+
+    `;
+
+}
+
+// =====================================================
+// HISTORY TIMELINE ITEM
+// =====================================================
+
+function buildHistoryItem(item) {
+
+    const severity =
+        item.severity ||
+        "low";
+
+
+    const status =
+        item.status ||
+        "reported";
+
+
+    const statusClass =
+        status
+            .replaceAll(
+                "_",
+                "-"
+            );
+
+
+    return `
+
+        <div class="discipline-history-item">
+
+            <span class="history-date">
+
+                ${formatDate(
+                    item.incidentDate
+                )}
+
+            </span>
+
+
+            <div class="history-incident">
+
+
+                <div class="history-incident-header">
+
+                    <div>
+
+                        <h4>
+
+                            ${escapeHtml(
+                                item.category ||
+                                "Discipline Incident"
+                            )}
+
+                        </h4>
+
+                    </div>
+
+
+                    <div class="history-badges">
+
+                        <span
+                            class="history-status ${escapeHtml(statusClass)}"
+                        >
+
+                            ${escapeHtml(
+                                formatStatus(status)
+                            )}
+
+                        </span>
+
+
+                        <span
+                            class="history-severity ${escapeHtml(severity)}"
+                        >
+
+                            ${escapeHtml(
+                                severity
+                            )}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <p class="history-incident-description">
+
+                    ${escapeHtml(
+                        item.description ||
+                        "No description provided."
+                    )}
+
+                </p>
+
+
+                <div class="history-details">
+
+
+                    ${
+                        item.resolution
+                            ? `
+                                <div class="history-detail">
+
+                                    <strong>
+                                        Resolution
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        item.resolution
+                                    )}
+
+                                </div>
+                            `
+                            : ""
+                    }
+
+
+                    ${
+                        item.followUpDate
+                            ? `
+                                <div class="history-detail">
+
+                                    <strong>
+                                        Follow-up Date
+                                    </strong>
+
+                                    ${formatDate(
+                                        item.followUpDate
+                                    )}
+
+                                </div>
+                            `
+                            : ""
+                    }
+
+
+                    ${
+                        item.parentNotified !== undefined
+                            ? `
+                                <div class="history-detail">
+
+                                    <strong>
+                                        Parent Notification
+                                    </strong>
+
+                                    ${
+                                        item.parentNotified
+                                            ? "Parent notified"
+                                            : "Not notified"
+                                    }
+
+                                </div>
+                            `
+                            : ""
+                    }
+
+
+                    ${
+                        item.investigationNotes
+                            ? `
+                                <div class="history-detail">
+
+                                    <strong>
+                                        Investigation Notes
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        item.investigationNotes
+                                    )}
+
+                                </div>
+                            `
+                            : ""
+                    }
+
+                </div>
+
+
+                ${
+                    item.actionTaken
+                        ? `
+
+                            <div class="history-action">
+
+                                <strong>
+                                    Action Taken:
+                                </strong>
+
+                                ${escapeHtml(
+                                    item.actionTaken
+                                )}
+
+                            </div>
+
+                        `
+                        : ""
+                }
+
+
+                <div class="history-handler">
+
+                    <strong>
+                        Handled by:
+                    </strong>
+
+                    ${escapeHtml(
+                        item.handledBy ||
+                        item.reportedBy ||
+                        "Administrator"
+                    )}
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    `;
+
+}
 
     // =================================================
     // STUDENT HEADER
