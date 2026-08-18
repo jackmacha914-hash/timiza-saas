@@ -1973,40 +1973,46 @@ async function createDiscipline(event) {
 
 }
 
-
 // =====================================================
-// MODAL
+// OPEN DISCIPLINE MODAL
 // =====================================================
 
 function openDisciplineModal() {
 
     const modal =
-        document.getElementById(
-            "disciplineModal"
-        );
-
+        document.getElementById("disciplineModal");
 
     if (!modal) {
+        console.error(
+            "[DISCIPLINE MODAL] #disciplineModal was not found in HTML"
+        );
+
+        showToast(
+            "Discipline modal could not be found.",
+            "error"
+        );
+
         return;
     }
 
-
-    modal.style.display =
-        "flex";
-
-
-    document.body.classList.add(
-        "modal-open"
+    console.log(
+        "[DISCIPLINE MODAL] Opening..."
     );
 
+    // Make modal visible
+    modal.classList.add("is-open");
 
+    modal.style.display = "flex";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
+
+    document.body.classList.add("modal-open");
+
+    // Set today's date
     const incidentDate =
-        document.getElementById(
-            "incidentDate"
-        );
+        document.getElementById("incidentDate");
 
-
-    if (incidentDate) {
+    if (incidentDate && !incidentDate.value) {
 
         incidentDate.value =
             new Date()
@@ -2014,61 +2020,46 @@ function openDisciplineModal() {
                 .split("T")[0];
 
     }
-
 }
 
-
 // =====================================================
-// CLOSE MODAL
+// CLOSE DISCIPLINE MODAL
 // =====================================================
 
 function closeDisciplineModal() {
 
     const modal =
-        document.getElementById(
-            "disciplineModal"
-        );
-
+        document.getElementById("disciplineModal");
 
     if (!modal) {
         return;
     }
 
+    modal.classList.remove("is-open");
 
-    modal.style.display =
-        "none";
-
+    modal.style.display = "none";
+    modal.style.visibility = "hidden";
+    modal.style.opacity = "0";
 
     document.body.classList.remove(
         "modal-open"
     );
 
+    document
+        .getElementById("disciplineForm")
+        ?.reset();
 
-    document.getElementById(
-        "disciplineForm"
-    )?.reset();
-
-
-    // Reset student/class selectors
-
+    // Reset class
     const classSelect =
-        document.getElementById(
-            "classFilter"
-        );
-
-
-    const studentSelect =
-        document.getElementById(
-            "student"
-        );
-
+        document.getElementById("classFilter");
 
     if (classSelect) {
-
         classSelect.value = "";
-
     }
 
+    // Reset student
+    const studentSelect =
+        document.getElementById("student");
 
     if (studentSelect) {
 
@@ -2078,14 +2069,9 @@ function closeDisciplineModal() {
             </option>
         `;
 
-        studentSelect.disabled =
-            true;
-
+        studentSelect.disabled = true;
     }
-
 }
-
-
 // =====================================================
 // STATISTICS
 // =====================================================
