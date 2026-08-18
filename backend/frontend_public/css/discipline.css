@@ -1816,3 +1816,470 @@ body.modal-open {
     }
 
 }
+
+/* =====================================================
+   RECORD DISCIPLINE MODAL
+===================================================== */
+
+#disciplineModal {
+
+    position: fixed;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    z-index: 99999;
+
+}
+
+
+/* -----------------------------------------------------
+   MODAL OVERLAY
+----------------------------------------------------- */
+
+#disciplineModal .modal-overlay {
+
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background: rgba(
+        15,
+        23,
+        42,
+        0.65
+    );
+
+    z-index: 1;
+
+}
+
+
+/* -----------------------------------------------------
+   MODAL CONTENT
+----------------------------------------------------- */
+
+#disciplineModal .modal-content {
+
+    position: relative;
+
+    z-index: 2;
+
+    width: min(
+        650px,
+        calc(100vw - 30px)
+    );
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    background: #ffffff;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 25px 70px rgba(
+            0,
+            0,
+            0,
+            0.30
+        );
+
+    box-sizing: border-box;
+
+}
+
+
+/* -----------------------------------------------------
+   MODAL HEADER
+----------------------------------------------------- */
+
+#disciplineModal .modal-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    padding: 22px 24px;
+
+    border-bottom: 1px solid #e5e7eb;
+
+}
+
+
+#disciplineModal .modal-label {
+
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #64748b;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+}
+
+
+#disciplineModal .modal-header h2 {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin: 0;
+
+    color: #111827;
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+}
+
+
+/* -----------------------------------------------------
+   CLOSE BUTTON
+----------------------------------------------------- */
+
+#disciplineModal .modal-close {
+
+    width: 38px;
+    height: 38px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: #f1f5f9;
+
+    color: #475569;
+
+    cursor: pointer;
+
+    font-size: 16px;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+
+#disciplineModal .modal-close:hover {
+
+    background: #fee2e2;
+
+    color: #dc2626;
+
+    transform: rotate(90deg);
+
+}
+
+
+/* -----------------------------------------------------
+   FORM
+----------------------------------------------------- */
+
+#disciplineModal #disciplineForm {
+
+    padding: 24px;
+
+}
+
+
+#disciplineModal .form-group {
+
+    margin-bottom: 18px;
+
+}
+
+
+#disciplineModal label {
+
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #374151;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+}
+
+
+#disciplineModal label span {
+
+    color: #dc2626;
+
+}
+
+
+/* -----------------------------------------------------
+   FORM GRID
+----------------------------------------------------- */
+
+#disciplineModal .form-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: 16px;
+
+}
+
+
+/* -----------------------------------------------------
+   INPUTS
+----------------------------------------------------- */
+
+#disciplineModal input,
+#disciplineModal select,
+#disciplineModal textarea {
+
+    width: 100%;
+
+    box-sizing: border-box;
+
+    padding: 11px 13px;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    color: #111827;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+#disciplineModal input:focus,
+#disciplineModal select:focus,
+#disciplineModal textarea:focus {
+
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(
+            37,
+            99,
+            235,
+            0.12
+        );
+
+}
+
+
+#disciplineModal textarea {
+
+    min-height: 100px;
+
+    resize: vertical;
+
+}
+
+
+/* -----------------------------------------------------
+   MODAL ACTIONS
+----------------------------------------------------- */
+
+#disciplineModal .modal-actions {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 20px;
+
+    padding-top: 18px;
+
+    border-top: 1px solid #e5e7eb;
+
+}
+
+
+/* -----------------------------------------------------
+   BUTTONS
+----------------------------------------------------- */
+
+#disciplineModal .secondary-btn,
+#disciplineModal .primary-btn {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 42px;
+
+    padding: 10px 18px;
+
+    border-radius: 9px;
+
+    font-family: inherit;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+}
+
+
+#disciplineModal .secondary-btn {
+
+    border: 1px solid #d1d5db;
+
+    background: #ffffff;
+
+    color: #374151;
+
+}
+
+
+#disciplineModal .secondary-btn:hover {
+
+    background: #f8fafc;
+
+}
+
+
+#disciplineModal .primary-btn {
+
+    border: none;
+
+    background: #2563eb;
+
+    color: #ffffff;
+
+}
+
+
+#disciplineModal .primary-btn:hover {
+
+    background: #1d4ed8;
+
+}
+
+
+/* -----------------------------------------------------
+   MOBILE
+----------------------------------------------------- */
+
+@media (max-width: 640px) {
+
+    #disciplineModal {
+
+        padding: 10px;
+
+    }
+
+
+    #disciplineModal .modal-content {
+
+        width: 100%;
+
+        max-height: 95vh;
+
+        border-radius: 12px;
+
+    }
+
+
+    #disciplineModal .modal-header {
+
+        padding: 18px;
+
+    }
+
+
+    #disciplineModal #disciplineForm {
+
+        padding: 18px;
+
+    }
+
+
+    #disciplineModal .form-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    #disciplineModal .modal-actions {
+
+        flex-direction: column-reverse;
+
+        align-items: stretch;
+
+    }
+
+
+    #disciplineModal
+    .modal-actions button {
+
+        width: 100%;
+
+    }
+
+}
