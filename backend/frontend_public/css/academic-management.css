@@ -257,6 +257,168 @@ body{
     color:#2563eb;
 }
 
+/* =====================================================
+   SUBJECT MODAL
+===================================================== */
+
+.subject-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+
+    padding: 20px;
+}
+
+.subject-modal.active {
+    display: flex;
+}
+
+.subject-modal-content {
+    width: 100%;
+    max-width: 520px;
+
+    background: #ffffff;
+
+    border-radius: 14px;
+
+    padding: 25px;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+
+    animation: subjectModalIn 0.2s ease;
+}
+
+@keyframes subjectModalIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+.subject-modal-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+    margin-bottom: 25px;
+}
+
+.subject-modal-header h2 {
+    margin: 0;
+
+    font-size: 22px;
+
+    font-weight: 700;
+}
+
+.subject-modal-header p {
+    margin-top: 5px;
+
+    color: #6b7280;
+
+    font-size: 14px;
+}
+
+.modal-close {
+    border: none;
+
+    background: transparent;
+
+    font-size: 20px;
+
+    cursor: pointer;
+
+    color: #6b7280;
+}
+
+.modal-close:hover {
+    color: #111827;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    font-weight: 600;
+
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+
+    padding: 11px 13px;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 8px;
+
+    outline: none;
+
+    font-size: 14px;
+
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.1);
+}
+
+.modal-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+
+    margin-top: 25px;
+}
+
+.subject-code {
+    font-weight: 600;
+
+    font-family: monospace;
+}
+
+.empty-state {
+    padding: 35px 20px;
+
+    color: #6b7280;
+}
+
+.error-state {
+    padding: 30px 20px;
+
+    color: #dc2626;
+}
+
 /* ===========================
    CHARTS
 =========================== */
