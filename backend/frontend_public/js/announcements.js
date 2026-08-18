@@ -25,8 +25,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initializeAnnouncementPage() {
 
+    /* ---------------------------------------------
+       NEW ANNOUNCEMENT BUTTON
+    --------------------------------------------- */
+
+    const createButton =
+        document.getElementById(
+            "createAnnouncementBtn"
+        );
+
+    if (createButton) {
+
+        createButton.addEventListener(
+            "click",
+            openAnnouncementForm
+        );
+
+    }
+
+
+    /* ---------------------------------------------
+       ANNOUNCEMENT FORM
+    --------------------------------------------- */
+
     const form =
-        document.getElementById("announcementForm");
+        document.getElementById(
+            "announcementForm"
+        );
 
     if (form) {
 
@@ -36,6 +61,11 @@ function initializeAnnouncementPage() {
         );
 
     }
+
+
+    /* ---------------------------------------------
+       REFRESH BUTTON
+    --------------------------------------------- */
 
     const refreshButton =
         document.getElementById(
@@ -47,10 +77,85 @@ function initializeAnnouncementPage() {
         loadAnnouncements
     );
 
+
+    /* ---------------------------------------------
+       LOAD ANNOUNCEMENTS
+    --------------------------------------------- */
+
     loadAnnouncements();
 
 }
 
+/* =====================================================
+   OPEN ANNOUNCEMENT FORM
+===================================================== */
+
+function openAnnouncementForm() {
+
+    const modal =
+        document.getElementById(
+            "announcementModal"
+        );
+
+    if (!modal) {
+
+        console.error(
+            "[ANNOUNCEMENTS] announcementModal not found."
+        );
+
+        return;
+
+    }
+
+    modal.style.display = "flex";
+
+    document.body.classList.add(
+        "modal-open"
+    );
+
+
+    const textarea =
+        document.getElementById(
+            "announcementText"
+        );
+
+    setTimeout(() => {
+
+        textarea?.focus();
+
+    }, 100);
+
+}
+
+
+/* =====================================================
+   CLOSE ANNOUNCEMENT FORM
+===================================================== */
+
+function closeAnnouncementForm() {
+
+    const modal =
+        document.getElementById(
+            "announcementModal"
+        );
+
+    if (!modal) return;
+
+    modal.style.display = "none";
+
+    document.body.classList.remove(
+        "modal-open"
+    );
+
+
+    const form =
+        document.getElementById(
+            "announcementForm"
+        );
+
+    form?.reset();
+
+}
 
 /* =====================================================
    TOKEN
