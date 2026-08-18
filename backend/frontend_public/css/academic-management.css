@@ -261,45 +261,336 @@ body{
    SUBJECT MODAL
 ===================================================== */
 
-.subject-modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+body.modal-open {
+    overflow: hidden;
+}
 
-    display: none;
 
+/* -----------------------------------------------------
+   MODAL CONTENT
+----------------------------------------------------- */
+
+.academic-modal-content {
+    width: min(600px, 94vw);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+
+/* -----------------------------------------------------
+   MODAL HEADER
+----------------------------------------------------- */
+
+.academic-modal-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+/* -----------------------------------------------------
+   SUBJECT FORM
+----------------------------------------------------- */
+
+.subject-form {
+    width: 100%;
+}
+
+
+.form-intro {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+
+.form-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+
+    display: flex;
     align-items: center;
     justify-content: center;
 
-    z-index: 9999;
+    background: #eff6ff;
+    color: #2563eb;
 
-    padding: 20px;
+    font-size: 20px;
 }
 
-.subject-modal.active {
+
+.form-intro h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+}
+
+
+.form-intro p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+
+/* -----------------------------------------------------
+   FORM GRID
+----------------------------------------------------- */
+
+.form-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 20px;
+}
+
+
+.form-full {
+    grid-column: 1 / -1;
+}
+
+
+/* -----------------------------------------------------
+   FORM GROUP
+----------------------------------------------------- */
+
+.form-group {
     display: flex;
+    flex-direction: column;
+    gap: 7px;
 }
 
-.subject-modal-content {
+
+.form-group label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #374151;
+}
+
+
+.required {
+    color: #dc2626;
+}
+
+
+.form-group small {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+
+/* -----------------------------------------------------
+   INPUT ICON
+----------------------------------------------------- */
+
+.input-icon {
+    position: relative;
+}
+
+
+.input-icon > i {
+    position: absolute;
+
+    left: 14px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: #9ca3af;
+
+    pointer-events: none;
+}
+
+
+.input-icon input,
+.input-icon select {
     width: 100%;
-    max-width: 520px;
 
-    background: #ffffff;
+    min-height: 46px;
 
-    border-radius: 14px;
+    padding: 11px 14px 11px 42px;
 
-    padding: 25px;
+    border: 1px solid #d1d5db;
 
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    border-radius: 9px;
 
-    animation: subjectModalIn 0.2s ease;
+    background: #fff;
+
+    color: #111827;
+
+    font-size: 14px;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
 }
 
-@keyframes subjectModalIn {
+
+.input-icon input:focus,
+.input-icon select:focus {
+    border-color: #2563eb;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(37, 99, 235, 0.12);
+}
+
+
+/* -----------------------------------------------------
+   FORM MESSAGE
+----------------------------------------------------- */
+
+.form-message {
+    padding: 12px 14px;
+
+    margin-bottom: 20px;
+
+    border-radius: 8px;
+
+    font-size: 14px;
+
+    font-weight: 500;
+}
+
+
+.form-message.error {
+    background: #fef2f2;
+
+    border: 1px solid #fecaca;
+
+    color: #b91c1c;
+}
+
+
+.form-message.success {
+    background: #f0fdf4;
+
+    border: 1px solid #bbf7d0;
+
+    color: #15803d;
+}
+
+
+/* -----------------------------------------------------
+   FORM ACTIONS
+----------------------------------------------------- */
+
+.subject-form-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+
+    margin-top: 30px;
+
+    padding-top: 20px;
+
+    border-top: 1px solid #e5e7eb;
+}
+
+
+.subject-form-actions button {
+    min-width: 130px;
+}
+
+
+/* -----------------------------------------------------
+   TOAST
+----------------------------------------------------- */
+
+.academic-toast-container {
+    position: fixed;
+
+    top: 20px;
+
+    right: 20px;
+
+    z-index: 100000;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+    width: min(380px, calc(100vw - 40px));
+}
+
+
+.academic-toast {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 14px 16px;
+
+    border-radius: 10px;
+
+    background: #fff;
+
+    box-shadow:
+        0 10px 30px
+        rgba(0, 0, 0, 0.12);
+
+    border: 1px solid #e5e7eb;
+
+    font-size: 14px;
+
+    animation:
+        academicToastIn
+        0.25s ease;
+}
+
+
+.academic-toast span {
+    flex: 1;
+}
+
+
+.academic-toast.success {
+    color: #166534;
+
+    border-left:
+        4px solid #22c55e;
+}
+
+
+.academic-toast.error {
+    color: #991b1b;
+
+    border-left:
+        4px solid #ef4444;
+}
+
+
+.academic-toast button {
+    border: 0;
+
+    background: transparent;
+
+    cursor: pointer;
+
+    color: #6b7280;
+
+    padding: 4px;
+}
+
+
+@keyframes academicToastIn {
 
     from {
         opacity: 0;
-        transform: translateY(-15px);
+        transform: translateY(-10px);
     }
 
     to {
@@ -309,116 +600,39 @@ body{
 
 }
 
-.subject-modal-header {
-    display: flex;
 
-    justify-content: space-between;
+/* -----------------------------------------------------
+   MOBILE
+----------------------------------------------------- */
 
-    align-items: flex-start;
+@media (max-width: 640px) {
 
-    margin-bottom: 25px;
+    .academic-modal-content {
+        width: 95vw;
+        max-height: 92vh;
+    }
+
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+
+    .form-full {
+        grid-column: auto;
+    }
+
+
+    .subject-form-actions {
+        flex-direction: column-reverse;
+    }
+
+
+    .subject-form-actions button {
+        width: 100%;
+    }
+
 }
-
-.subject-modal-header h2 {
-    margin: 0;
-
-    font-size: 22px;
-
-    font-weight: 700;
-}
-
-.subject-modal-header p {
-    margin-top: 5px;
-
-    color: #6b7280;
-
-    font-size: 14px;
-}
-
-.modal-close {
-    border: none;
-
-    background: transparent;
-
-    font-size: 20px;
-
-    cursor: pointer;
-
-    color: #6b7280;
-}
-
-.modal-close:hover {
-    color: #111827;
-}
-
-.form-group {
-    margin-bottom: 18px;
-}
-
-.form-group label {
-    display: block;
-
-    margin-bottom: 7px;
-
-    font-weight: 600;
-
-    font-size: 14px;
-}
-
-.form-group input,
-.form-group select {
-    width: 100%;
-
-    padding: 11px 13px;
-
-    border: 1px solid #d1d5db;
-
-    border-radius: 8px;
-
-    outline: none;
-
-    font-size: 14px;
-
-    box-sizing: border-box;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-    border-color: #2563eb;
-
-    box-shadow:
-        0 0 0 3px
-        rgba(37, 99, 235, 0.1);
-}
-
-.modal-actions {
-    display: flex;
-
-    justify-content: flex-end;
-
-    gap: 10px;
-
-    margin-top: 25px;
-}
-
-.subject-code {
-    font-weight: 600;
-
-    font-family: monospace;
-}
-
-.empty-state {
-    padding: 35px 20px;
-
-    color: #6b7280;
-}
-
-.error-state {
-    padding: 30px 20px;
-
-    color: #dc2626;
-}
-
 /* ===========================
    CHARTS
 =========================== */
