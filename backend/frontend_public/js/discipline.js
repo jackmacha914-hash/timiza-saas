@@ -106,6 +106,16 @@ function initializeDiscipline() {
             handleStudentChange
         );
 
+    // close student history modal
+    document
+    .getElementById(
+        "closeStudentHistoryModal"
+    )
+    ?.addEventListener(
+        "click",
+        closeStudentHistory
+    );
+
 
     // LOAD DATA
 
@@ -834,7 +844,6 @@ function renderDiscipline() {
             "disciplineList"
         );
 
-
     if (!list) {
         return;
     }
@@ -886,14 +895,12 @@ function renderDiscipline() {
 
                 const matchesSeverity =
                     !severity ||
-                    item.severity ===
-                    severity;
+                    item.severity === severity;
 
 
                 const matchesStatus =
                     !status ||
-                    item.status ===
-                    status;
+                    item.status === status;
 
 
                 return (
@@ -934,20 +941,63 @@ function renderDiscipline() {
     }
 
 
+    // =================================================
+    // CREATE CARDS
+    // =================================================
+
     filtered.forEach(
         item => {
 
             list.appendChild(
-                createDisciplineCard(
-                    item
-                )
+                createDisciplineCard(item)
             );
 
         }
     );
 
-}
 
+    // =================================================
+    // HISTORY BUTTONS
+    // =================================================
+
+    document
+        .querySelectorAll(
+            ".view-history-btn"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const studentId =
+                            button.dataset.studentId;
+
+
+                        if (!studentId) {
+
+                            showToast(
+                                "Unable to identify this student.",
+                                "error"
+                            );
+
+                            return;
+
+                        }
+
+
+                        openStudentHistory(
+                            studentId
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+}
 
 // =====================================================
 // DISCIPLINE CARD
@@ -969,6 +1019,12 @@ function createDisciplineCard(item) {
         item.student?.name ||
         item.student?.fullName ||
         "Unknown Student";
+
+
+    const studentId =
+        item.student?._id ||
+        item.student?.id ||
+        item.student;
 
 
     const severity =
@@ -1089,12 +1145,31 @@ function createDisciplineCard(item) {
 
             <div class="record-footer">
 
-                Reported by
+                <span>
 
-                ${escapeHtml(
-                    item.reportedBy ||
-                    "Administrator"
-                )}
+                    Reported by
+
+                    ${escapeHtml(
+                        item.reportedBy ||
+                        "Administrator"
+                    )}
+
+                </span>
+
+
+                <button
+                    type="button"
+                    class="view-history-btn"
+                    data-student-id="${escapeHtml(
+                        studentId || ""
+                    )}"
+                >
+
+                    <i class="fas fa-clock-rotate-left"></i>
+
+                    View Student History
+
+                </button>
 
             </div>
 
@@ -1104,6 +1179,493 @@ function createDisciplineCard(item) {
 
 
     return card;
+
+}
+
+// =====================================================
+// OPEN STUDENT HISTORY
+// =====================================================
+
+function openStudentHistory(studentId) {
+
+    const modal =
+        document.getElementById(
+            "studentHistoryModal"
+        );
+
+
+    if (!modal) {
+
+        console.error(
+            "[DISCIPLINE] Student history modal not found"
+        );
+
+        return;
+
+    }
+
+
+    const cases =
+        disciplineCases.filter(
+            item => {
+
+                const id =
+                    item.student?._id ||
+                    item.student?.id ||
+                    item.student;
+
+
+                return String(id) ===
+                    String(studentId);
+
+            }
+        );
+
+
+    if (!cases.length) {
+
+        showToast(
+            "No discipline history found for this student.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const first =
+        cases[0];
+
+
+    const student =
+        first.student?.name ||
+        first.student?.fullName ||
+        "Unknown Student";
+
+
+    const admission =
+        first.admissionNumber ||
+        "";
+
+
+    const className =
+        first.className ||
+        getStudentClass(
+            first.student || {}
+        ) ||
+        "";
+
+
+    // =================================================
+    // STUDENT HEADER
+    // =================================================
+
+    const header =
+        document.getElementById(
+            "studentHistoryHeader"
+        );
+
+
+    if (header) {
+
+        header.innerHTML = `
+
+            <div class="history-student-avatar">
+
+                <i class="fas fa-user"></i>
+
+            </div>
+
+            <div>
+
+                <h3>
+                    ${escapeHtml(student)}
+                </h3>
+
+                <p>
+
+                    ${escapeHtml(
+                        className
+                    )}
+
+                    ${
+                        admission
+                            ? `
+                                •
+                                ${escapeHtml(
+                                    admission
+                                )}
+                            `
+                            : ""
+                    }
+
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+
+    // =================================================
+    // STATISTICS
+    // =================================================
+
+    const minor =
+        cases.filter(
+            item =>
+                item.severity === "low"
+        ).length;
+
+
+    const serious =
+        cases.filter(
+            item =>
+                item.severity === "high" ||
+                item.severity === "critical"
+        ).length;
+
+
+    const resolved =
+        cases.filter(
+            item =>
+                item.status === "resolved"
+        ).length;
+
+
+    const open =
+        cases.length -
+        resolved;
+
+
+    const summary =
+        document.getElementById(
+            "studentHistorySummary"
+        );
+
+
+    if (summary) {
+
+        summary.innerHTML = `
+
+            <div class="history-stat">
+
+                <span>
+                    Total Cases
+                </span>
+
+                <strong>
+                    ${cases.length}
+                </strong>
+
+            </div>
+
+
+            <div class="history-stat">
+
+                <span>
+                    Minor
+                </span>
+
+                <strong>
+                    ${minor}
+                </strong>
+
+            </div>
+
+
+            <div class="history-stat">
+
+                <span>
+                    Serious
+                </span>
+
+                <strong>
+                    ${serious}
+                </strong>
+
+            </div>
+
+
+            <div class="history-stat">
+
+                <span>
+                    Resolved
+                </span>
+
+                <strong>
+                    ${resolved}
+                </strong>
+
+            </div>
+
+
+            <div class="history-stat">
+
+                <span>
+                    Open
+                </span>
+
+                <strong>
+                    ${open}
+                </strong>
+
+            </div>
+
+        `;
+
+    }
+
+
+    // =================================================
+    // TIMELINE
+    // =================================================
+
+    const timeline =
+        document.getElementById(
+            "studentHistoryTimeline"
+        );
+
+
+    if (timeline) {
+
+        timeline.innerHTML = "";
+
+
+        cases
+            .slice()
+            .sort(
+                (a, b) =>
+                    new Date(
+                        b.incidentDate
+                    ) -
+                    new Date(
+                        a.incidentDate
+                    )
+            )
+            .forEach(
+                item => {
+
+                    const entry =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    entry.className =
+                        "timeline-item";
+
+
+                    entry.innerHTML = `
+
+                        <div class="timeline-dot"></div>
+
+
+                        <div class="timeline-content">
+
+                            <div class="timeline-date">
+
+                                ${formatDate(
+                                    item.incidentDate
+                                )}
+
+                            </div>
+
+
+                            <h4>
+
+                                ${escapeHtml(
+                                    item.category ||
+                                    "Discipline Incident"
+                                )}
+
+                            </h4>
+
+
+                            <div class="timeline-meta">
+
+                                <span>
+
+                                    ${escapeHtml(
+                                        formatStatus(
+                                            item.status
+                                        )
+                                    )}
+
+                                </span>
+
+
+                                <span>
+
+                                    ${escapeHtml(
+                                        item.severity ||
+                                        "low"
+                                    )}
+
+                                </span>
+
+                            </div>
+
+
+                            <p>
+
+                                ${escapeHtml(
+                                    item.description ||
+                                    ""
+                                )}
+
+                            </p>
+
+
+                            ${
+                                item.actionTaken
+                                    ? `
+                                        <div class="history-detail">
+
+                                            <strong>
+                                                Action Taken:
+                                            </strong>
+
+                                            ${escapeHtml(
+                                                item.actionTaken
+                                            )}
+
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+
+                            ${
+                                item.investigationNotes
+                                    ? `
+                                        <div class="history-detail">
+
+                                            <strong>
+                                                Investigation Notes:
+                                            </strong>
+
+                                            ${escapeHtml(
+                                                item.investigationNotes
+                                            )}
+
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+
+                            ${
+                                item.resolution
+                                    ? `
+                                        <div class="history-detail">
+
+                                            <strong>
+                                                Resolution:
+                                            </strong>
+
+                                            ${escapeHtml(
+                                                item.resolution
+                                            )}
+
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+
+                            ${
+                                item.followUpDate
+                                    ? `
+                                        <div class="history-detail">
+
+                                            <strong>
+                                                Follow-up:
+                                            </strong>
+
+                                            ${formatDate(
+                                                item.followUpDate
+                                            )}
+
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+
+                            ${
+                                item.reportedBy
+                                    ? `
+                                        <div class="history-detail">
+
+                                            <strong>
+                                                Handled by:
+                                            </strong>
+
+                                            ${escapeHtml(
+                                                item.reportedBy
+                                            )}
+
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+
+                    `;
+
+
+                    timeline.appendChild(
+                        entry
+                    );
+
+                }
+            );
+
+    }
+
+
+    // =================================================
+    // SHOW MODAL
+    // =================================================
+
+    modal.style.display =
+        "flex";
+
+
+    document.body.classList.add(
+        "modal-open"
+    );
+
+}
+
+// =====================================================
+// CLOSE STUDENT HISTORY
+// =====================================================
+
+function closeStudentHistory() {
+
+    const modal =
+        document.getElementById(
+            "studentHistoryModal"
+        );
+
+
+    if (!modal) {
+        return;
+    }
+
+
+    modal.style.display =
+        "none";
+
+
+    document.body.classList.remove(
+        "modal-open"
+    );
 
 }
 
