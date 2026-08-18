@@ -1,267 +1,141 @@
-const jwt = require("jsonwebtoken");
+const express = require("express");
 
-const User = require("../models/User");
+const router = express.Router();
 
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATION
+|--------------------------------------------------------------------------
+| Use the same authentication middleware used by server.js.
+|--------------------------------------------------------------------------
+*/
 
-// =====================================================
-// PROTECT
-// =====================================================
-//
-// Verifies the JWT token and attaches the authenticated
-// user to req.user.
-//
-// =====================================================
-
-const protect = async (req, res, next) => {
-
-    try {
-
-        let token = null;
+const { protect } = require("../middleware/auth");
 
 
-        // -------------------------------------------------
-        // GET TOKEN FROM AUTHORIZATION HEADER
-        // -------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| SUBJECT CONTROLLERS
+|--------------------------------------------------------------------------
+*/
 
-        const authorization =
-            req.headers.authorization;
-
-
-        if (
-            authorization &&
-            authorization.startsWith("Bearer ")
-        ) {
-
-            token =
-                authorization.split(" ")[1];
-
-        }
+const {
+    getSubjects,
+    createSubject,
+    updateSubject,
+    deleteSubject
+} = require("../controllers/subjectController");
 
 
-        // -------------------------------------------------
-        // NO TOKEN
-        // -------------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| ADMIN AUTHORIZATION
+|--------------------------------------------------------------------------
+| Only users with the admin role can manage subjects.
+|--------------------------------------------------------------------------
+*/
 
-        if (!token) {
+function adminOnly(req, res, next) {
 
-            return res.status(401).json({
+    if (!req.user) {
 
-                success: false,
-
-                message:
-                    "Not authorized. No token provided."
-
-            });
-
-        }
-
-
-        // -------------------------------------------------
-        // VERIFY TOKEN
-        // -------------------------------------------------
-
-        const decoded =
-            jwt.verify(
-                token,
-                process.env.JWT_SECRET
-            );
-
-
-        // -------------------------------------------------
-        // GET USER
-        // -------------------------------------------------
-
-        const user =
-            await User.findById(decoded.id)
-                .select("-password");
-
-
-        if (!user) {
-
-            return res.status(401).json({
-
-                success: false,
-
-                message:
-                    "User account not found."
-
-            });
-
-        }
-
-
-        // -------------------------------------------------
-        // ATTACH USER TO REQUEST
-        // -------------------------------------------------
-
-        req.user = user;
-
-
-        // -------------------------------------------------
-        // CONTINUE
-        // -------------------------------------------------
-
-        next();
-
-
-    } catch (error) {
-
-        console.error(
-            "[AUTH PROTECT]",
-            error
-        );
-
-
-        // JWT errors
-
-        if (
-            error.name === "JsonWebTokenError" ||
-            error.name === "TokenExpiredError"
-        ) {
-
-            return res.status(401).json({
-
-                success: false,
-
-                message:
-                    "Not authorized. Invalid or expired token."
-
-            });
-
-        }
-
-
-        // Other errors
-
-        return res.status(500).json({
-
+        return res.status(401).json({
             success: false,
-
-            message:
-                "Authentication failed."
-
+            message: "Authentication required."
         });
 
     }
 
-};
+    if (req.user.role !== "admin") {
+
+        return res.status(403).json({
+            success: false,
+            message: "Admin access required."
+        });
+
+    }
+
+    next();
+
+}
 
 
-// =====================================================
-// AUTHORIZE
-// =====================================================
-//
-// Usage:
-//
-// authorize("admin")
-//
-// authorize("admin", "teacher")
-//
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATION FOR ALL SUBJECT ROUTES
+|--------------------------------------------------------------------------
+*/
 
-const authorize = (...roles) => {
-
-    return (req, res, next) => {
-
-        try {
-
-            // ---------------------------------------------
-            // USER MUST BE AUTHENTICATED
-            // ---------------------------------------------
-
-            if (!req.user) {
-
-                return res.status(401).json({
-
-                    success: false,
-
-                    message:
-                        "Not authorized."
-
-                });
-
-            }
+router.use(protect);
 
 
-            // ---------------------------------------------
-            // GET USER ROLE
-            // ---------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| GET SUBJECTS
+|--------------------------------------------------------------------------
+| GET /api/academic/subjects
+|--------------------------------------------------------------------------
+*/
 
-            const userRole =
-                String(
-                    req.user.role || ""
-                )
-                    .trim()
-                    .toLowerCase();
-
-
-            // ---------------------------------------------
-            // NORMALIZE ALLOWED ROLES
-            // ---------------------------------------------
-
-            const allowedRoles =
-                roles.map(role =>
-                    String(role)
-                        .trim()
-                        .toLowerCase()
-                );
+router.get(
+    "/subjects",
+    adminOnly,
+    getSubjects
+);
 
 
-            // ---------------------------------------------
-            // CHECK ROLE
-            // ---------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| CREATE SUBJECT
+|--------------------------------------------------------------------------
+| POST /api/academic/subjects
+|--------------------------------------------------------------------------
+*/
 
-            if (
-                !allowedRoles.includes(userRole)
-            ) {
-
-                return res.status(403).json({
-
-                    success: false,
-
-                    message:
-                        "You do not have permission to perform this action."
-
-                });
-
-            }
+router.post(
+    "/subjects",
+    adminOnly,
+    createSubject
+);
 
 
-            // ---------------------------------------------
-            // AUTHORIZED
-            // ---------------------------------------------
+/*
+|--------------------------------------------------------------------------
+| UPDATE SUBJECT
+|--------------------------------------------------------------------------
+| PUT /api/academic/subjects/:id
+|--------------------------------------------------------------------------
+*/
 
-            next();
-
-
-        } catch (error) {
-
-            console.error(
-                "[AUTH AUTHORIZE]",
-                error
-            );
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    "Authorization failed."
-
-            });
-
-        }
-
-    };
-
-};
+router.put(
+    "/subjects/:id",
+    adminOnly,
+    updateSubject
+);
 
 
-// =====================================================
-// EXPORT
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| DELETE SUBJECT
+|--------------------------------------------------------------------------
+| DELETE /api/academic/subjects/:id
+|--------------------------------------------------------------------------
+*/
 
-module.exports = {
-    protect,
-    authorize
-};
+router.delete(
+    "/subjects/:id",
+    adminOnly,
+    deleteSubject
+);
+
+
+/*
+--------------------------------------------------------------------------
+ EXPORT
+--------------------------------------------------------------------------
+ IMPORTANT:
+ Express app.use() requires this to be an actual router function.
+--------------------------------------------------------------------------
+*/
+
+module.exports = router;
