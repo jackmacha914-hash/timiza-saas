@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Discipline | Timiza EduAnalytics
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="../css/discipline.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="discipline-page">
+
+
+    <!-- HEADER -->
+
+    <header class="discipline-header">
+
+        <div class="header-left">
+
+            <button
+                class="back-btn"
+                type="button"
+                onclick="history.back()"
+            >
+
+                <i class="fas fa-arrow-left"></i>
+
+            </button>
+
+
+            <div>
+
+                <span class="page-label">
+                    STUDENT MANAGEMENT
+                </span>
+
+                <h1>
+
+                    <i class="fas fa-gavel"></i>
+
+                    Discipline
+
+                </h1>
+
+                <p>
+                    Record and manage student discipline cases.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <button
+            id="openDisciplineBtn"
+            class="primary-btn"
+            type="button"
+        >
+
+            <i class="fas fa-plus"></i>
+
+            Record Incident
+
+        </button>
+
+    </header>
+
+
+
+    <!-- SUMMARY -->
+
+    <section class="summary-grid">
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon blue">
+
+                <i class="fas fa-folder-open"></i>
+
+            </div>
+
+            <div>
+
+                <span>Total Cases</span>
+
+                <strong id="totalCases">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon orange">
+
+                <i class="fas fa-search"></i>
+
+            </div>
+
+            <div>
+
+                <span>Under Investigation</span>
+
+                <strong id="investigationCases">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon red">
+
+                <i class="fas fa-triangle-exclamation"></i>
+
+            </div>
+
+            <div>
+
+                <span>High / Critical</span>
+
+                <strong id="seriousCases">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon green">
+
+                <i class="fas fa-circle-check"></i>
+
+            </div>
+
+            <div>
+
+                <span>Resolved</span>
+
+                <strong id="resolvedCases">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- PANEL -->
+
+    <section class="discipline-panel">
+
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Discipline Records
+                </h2>
+
+                <p>
+                    Monitor and manage student disciplinary incidents.
+                </p>
+
+            </div>
+
+
+            <button
+                id="refreshDisciplineBtn"
+                class="refresh-btn"
+                type="button"
+            >
+
+                <i class="fas fa-sync-alt"></i>
+
+            </button>
+
+        </div>
+
+
+
+        <!-- FILTERS -->
+
+        <div class="filters">
+
+
+            <div class="search-box">
+
+                <i class="fas fa-search"></i>
+
+                <input
+                    type="search"
+                    id="disciplineSearch"
+                    placeholder="Search student or incident..."
+                >
+
+            </div>
+
+
+            <select id="severityFilter">
+
+                <option value="">
+                    All Severity
+                </option>
+
+                <option value="low">
+                    Low
+                </option>
+
+                <option value="medium">
+                    Medium
+                </option>
+
+                <option value="high">
+                    High
+                </option>
+
+                <option value="critical">
+                    Critical
+                </option>
+
+            </select>
+
+
+            <select id="statusFilter">
+
+                <option value="">
+                    All Status
+                </option>
+
+                <option value="reported">
+                    Reported
+                </option>
+
+                <option value="under_investigation">
+                    Under Investigation
+                </option>
+
+                <option value="hearing_scheduled">
+                    Hearing Scheduled
+                </option>
+
+                <option value="action_taken">
+                    Action Taken
+                </option>
+
+                <option value="resolved">
+                    Resolved
+                </option>
+
+                <option value="dismissed">
+                    Dismissed
+                </option>
+
+            </select>
+
+        </div>
+
+
+
+        <!-- LIST -->
+
+        <div
+            id="disciplineList"
+            class="discipline-list"
+        >
+
+            <div class="loading-state">
+
+                <i class="fas fa-spinner fa-spin"></i>
+
+                Loading discipline records...
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+
+<!-- =====================================================
+     CREATE CASE MODAL
+===================================================== -->
+
+<div
+    id="disciplineModal"
+    class="modal"
+    style="display:none;"
+>
+
+
+    <div class="modal-overlay"></div>
+
+
+    <div class="modal-content">
+
+
+        <div class="modal-header">
+
+            <div>
+
+                <span class="modal-label">
+                    DISCIPLINE MANAGEMENT
+                </span>
+
+                <h2>
+
+                    <i class="fas fa-gavel"></i>
+
+                    Record Discipline Incident
+
+                </h2>
+
+            </div>
+
+
+            <button
+                id="closeDisciplineModal"
+                class="modal-close"
+                type="button"
+            >
+
+                <i class="fas fa-times"></i>
+
+            </button>
+
+        </div>
+
+
+
+        <form id="disciplineForm">
+
+
+            <div class="form-group">
+
+                <label>
+                    Student ID
+                    <span>*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="student"
+                    required
+                    placeholder="Enter student ID"
+                >
+
+            </div>
+
+
+
+            <div class="form-grid">
+
+
+                <div class="form-group">
+
+                    <label>
+                        Admission Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="admissionNumber"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Class
+                    </label>
+
+                    <input
+                        type="text"
+                        id="className"
+                    >
+
+                </div>
+
+            </div>
+
+
+
+            <div class="form-grid">
+
+
+                <div class="form-group">
+
+                    <label>
+                        Incident Category
+                        <span>*</span>
+                    </label>
+
+                    <select
+                        id="category"
+                        required
+                    >
+
+                        <option value="">
+                            Select category
+                        </option>
+
+                        <option>
+                            Late Coming
+                        </option>
+
+                        <option>
+                            Absenteeism
+                        </option>
+
+                        <option>
+                            Bullying
+                        </option>
+
+                        <option>
+                            Fighting
+                        </option>
+
+                        <option>
+                            Disrespect
+                        </option>
+
+                        <option>
+                            Theft
+                        </option>
+
+                        <option>
+                            Property Damage
+                        </option>
+
+                        <option>
+                            Academic Misconduct
+                        </option>
+
+                        <option>
+                            Uniform Violation
+                        </option>
+
+                        <option>
+                            Substance Violation
+                        </option>
+
+                        <option>
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <div class="form-group">
+
+                    <label>
+                        Severity
+                    </label>
+
+                    <select id="severity">
+
+                        <option value="low">
+                            Low
+                        </option>
+
+                        <option value="medium">
+                            Medium
+                        </option>
+
+                        <option value="high">
+                            High
+                        </option>
+
+                        <option value="critical">
+                            Critical
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="form-group">
+
+                <label>
+                    Incident Date
+                    <span>*</span>
+                </label>
+
+                <input
+                    type="date"
+                    id="incidentDate"
+                    required
+                >
+
+            </div>
+
+
+
+            <div class="form-group">
+
+                <label>
+                    Description
+                    <span>*</span>
+                </label>
+
+                <textarea
+                    id="description"
+                    rows="5"
+                    maxlength="3000"
+                    required
+                    placeholder="Describe what happened..."
+                ></textarea>
+
+            </div>
+
+
+
+            <div class="form-group">
+
+                <label>
+                    Action Taken
+                </label>
+
+                <textarea
+                    id="actionTaken"
+                    rows="3"
+                    maxlength="2000"
+                    placeholder="Describe any action taken..."
+                ></textarea>
+
+            </div>
+
+
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    id="cancelDisciplineBtn"
+                >
+
+                    Cancel
+
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                    id="saveDisciplineBtn"
+                >
+
+                    <i class="fas fa-save"></i>
+
+                    Save Incident
+
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<div
+    id="disciplineToastContainer"
+    class="toast-container"
+></div>
+
+
+
+<script src="../js/discipline.js"></script>
+
+</body>
+
+</html>
