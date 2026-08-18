@@ -9,6 +9,14 @@ const createDisciplineCase = async (req, res) => {
 
     try {
 
+        console.log('======================================');
+        console.log('[DISCIPLINE CREATE]');
+        console.log('User:', req.user);
+        console.log('School:', req.school);
+        console.log('Body:', req.body);
+        console.log('======================================');
+
+
         const {
             student,
             admissionNumber,
@@ -23,65 +31,147 @@ const createDisciplineCase = async (req, res) => {
         } = req.body;
 
 
-        if (!student) {
+        // -------------------------------------------------
+        // SCHOOL
+        // -------------------------------------------------
+
+        const schoolId =
+            req.school?._id ||
+            req.school ||
+            req.user?.school;
+
+
+        if (!schoolId) {
+
             return res.status(400).json({
-                message: 'Student is required'
+
+                message:
+                    'School could not be determined.'
+
             });
+
         }
+
+
+        // -------------------------------------------------
+        // STUDENT
+        // -------------------------------------------------
+
+        if (!student) {
+
+            return res.status(400).json({
+
+                message:
+                    'Student is required.'
+
+            });
+
+        }
+
+
+        if (
+            !mongoose.Types.ObjectId.isValid(student)
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    'Invalid student ID.'
+
+            });
+
+        }
+
+
+        // -------------------------------------------------
+        // REQUIRED FIELDS
+        // -------------------------------------------------
 
         if (!category) {
+
             return res.status(400).json({
-                message: 'Discipline category is required'
+
+                message:
+                    'Discipline category is required.'
+
             });
+
         }
+
 
         if (!description) {
+
             return res.status(400).json({
-                message: 'Incident description is required'
+
+                message:
+                    'Incident description is required.'
+
             });
+
         }
+
 
         if (!incidentDate) {
+
             return res.status(400).json({
-                message: 'Incident date is required'
+
+                message:
+                    'Incident date is required.'
+
             });
+
         }
 
+
+        // -------------------------------------------------
+        // CREATE
+        // -------------------------------------------------
 
         const discipline =
             await Discipline.create({
 
-                school: req.user.school,
+                school:
+                    schoolId,
 
-                student,
+                student:
+                    student,
 
-                admissionNumber,
+                admissionNumber:
+                    admissionNumber || '',
 
-                className,
+                className:
+                    className || '',
 
                 category,
 
-                severity: severity || 'low',
+                severity:
+                    severity || 'low',
 
                 description,
 
                 incidentDate,
 
                 reportedBy:
-                    req.user.name ||
-                    req.user.fullName ||
-                    req.user.email ||
+                    req.user?.name ||
+                    req.user?.fullName ||
+                    req.user?.email ||
                     'Administrator',
 
-                actionTaken,
+                actionTaken:
+                    actionTaken || '',
 
                 status:
                     status || 'reported',
 
-                resolutionNotes
+                resolutionNotes:
+                    resolutionNotes || ''
 
             });
 
+
+        // -------------------------------------------------
+        // POPULATE STUDENT
+        // -------------------------------------------------
 
         const populated =
             await Discipline.findById(
@@ -92,7 +182,9 @@ const createDisciplineCase = async (req, res) => {
             );
 
 
-        res.status(201).json({
+        return res.status(201).json({
+
+            success: true,
 
             message:
                 'Discipline case recorded successfully',
@@ -102,14 +194,29 @@ const createDisciplineCase = async (req, res) => {
 
         });
 
+
     } catch (error) {
 
         console.error(
-            '[DISCIPLINE CREATE]',
+            '======================================'
+        );
+
+        console.error(
+            '[DISCIPLINE CREATE ERROR]'
+        );
+
+        console.error(
             error
         );
 
-        res.status(500).json({
+        console.error(
+            '======================================'
+        );
+
+
+        return res.status(500).json({
+
+            success: false,
 
             message:
                 'Failed to create discipline case',
