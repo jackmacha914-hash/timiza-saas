@@ -276,12 +276,11 @@ function initializeSubjectControls() {
         );
 
     document
-        .getElementById("addSubjectBtn")
-        ?.addEventListener(
-            "click",
-            openAddSubjectModal
-        );
-
+    .getElementById("openAddSubjectBtn")
+    ?.addEventListener(
+        "click",
+        openAddSubjectModal
+    );
 }
 
 
