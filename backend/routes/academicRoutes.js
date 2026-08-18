@@ -7,11 +7,10 @@ const { protect } = require("../middleware/auth");
 const ReportCard = require("../models/ReportCard");
 
 let Subject = null;
-let Mark = null;
+let Grade = null;
 let Class = null;
 let Student = null;
 let Exam = null;
-let Grade = null;
 
 
 /* =====================================================
@@ -28,10 +27,12 @@ try {
 }
 
 try {
-    Mark = require("../models/Mark");
+    // IMPORTANT:
+    // Your model is Grade, not Mark.
+    Grade = require("../models/Grade");
 } catch (error) {
     console.warn(
-        "[ACADEMIC] Mark model unavailable:",
+        "[ACADEMIC] Grade model unavailable:",
         error.message
     );
 }
@@ -63,19 +64,6 @@ try {
     );
 }
 
-/*
-   IMPORTANT:
-   Your actual marks are stored in Grade.score.
-*/
-try {
-    Grade = require("../models/Grade");
-} catch (error) {
-    console.warn(
-        "[ACADEMIC] Grade model unavailable:",
-        error.message
-    );
-}
-
 
 /* =====================================================
    ADMIN AUTHORIZATION
@@ -84,21 +72,17 @@ try {
 function adminOnly(req, res, next) {
 
     if (!req.user) {
-
         return res.status(401).json({
             success: false,
             message: "Authentication required."
         });
-
     }
 
     if (req.user.role !== "admin") {
-
         return res.status(403).json({
             success: false,
             message: "Admin access required."
         });
-
     }
 
     next();
@@ -116,9 +100,7 @@ async function safeCount(model, filter = {}) {
     }
 
     try {
-
         return await model.countDocuments(filter);
-
     } catch (error) {
 
         console.warn(
@@ -153,13 +135,17 @@ function getSchoolId(req) {
 
 function roundNumber(value, decimals = 2) {
 
-    if (value === null || value === undefined) {
+    if (
+        value === null ||
+        value === undefined ||
+        Number.isNaN(Number(value))
+    ) {
         return 0;
     }
 
-    const factor = Math.pow(10, decimals);
-
-    return Math.round(value * factor) / factor;
+    return Number(
+        Number(value).toFixed(decimals)
+    );
 }
 
 
@@ -179,11 +165,13 @@ router.get(
 
         try {
 
-            const schoolId = getSchoolId(req);
+            const schoolId =
+                getSchoolId(req);
 
-            const schoolFilter = schoolId
-                ? { school: schoolId }
-                : {};
+            const schoolFilter =
+                schoolId
+                    ? { school: schoolId }
+                    : {};
 
 
             /* =========================================
@@ -264,9 +252,54 @@ router.get(
 
 
             /* =========================================
-               ACTUAL GRADE AVERAGE
-               
-               Uses Grade.score
+               STUDENTS ASSESSED
+            ========================================= */
+
+            let studentsAssessed = 0;
+
+            if (Grade) {
+
+                try {
+
+                    const result =
+                        await Grade.aggregate([
+
+                            {
+                                $match:
+                                    schoolFilter
+                            },
+
+                            {
+                                $group: {
+
+                                    _id: "$student"
+
+                                }
+                            },
+
+                            {
+                                $count:
+                                    "students"
+
+                            }
+
+                        ]);
+
+                    studentsAssessed =
+                        result[0]?.students || 0;
+
+                } catch (error) {
+
+                    console.warn(
+                        "[ACADEMIC STUDENTS ASSESSED]",
+                        error.message
+                    );
+                }
+            }
+
+
+            /* =========================================
+               ACTUAL AVERAGE FROM Grade.score
             ========================================= */
 
             let average = 0;
@@ -275,18 +308,12 @@ router.get(
 
                 try {
 
-                    const averageResult =
+                    const result =
                         await Grade.aggregate([
 
                             {
-                                $match: {
-                                    ...schoolFilter,
-
-                                    score: {
-                                        $exists: true,
-                                        $ne: null
-                                    }
-                                }
+                                $match:
+                                    schoolFilter
                             },
 
                             {
@@ -303,116 +330,240 @@ router.get(
                                     }
 
                                 }
+
                             }
 
                         ]);
 
-
                     average =
                         roundNumber(
-                            averageResult[0]?.averageScore || 0
+                            result[0]?.averageScore || 0
                         );
 
                 } catch (error) {
 
-                    console.warn(
-                        "[ACADEMIC DASHBOARD AVERAGE]",
-                        error.message
+                    console.error(
+                        "[ACADEMIC AVERAGE]",
+                        error
                     );
-
-                    average = 0;
                 }
             }
 
 
             /* =========================================
-               REPORT CARD STATISTICS
+               TERMS FROM GRADES
             ========================================= */
 
-            const reportCardStats =
-                await ReportCard.aggregate([
+            let terms = [];
 
-                    {
-                        $match:
-                            schoolFilter
-                    },
+            if (Grade) {
 
-                    {
-                        $group: {
+                try {
 
-                            _id: null,
+                    terms =
+                        await Grade.aggregate([
 
-                            studentsAssessed: {
-                                $addToSet:
-                                    "$studentId"
+                            {
+                                $match:
+                                    schoolFilter
                             },
 
-                            totalReportCards: {
-                                $sum: 1
+                            {
+                                $group: {
+
+                                    _id: {
+
+                                        academicYear:
+                                            "$academicYear",
+
+                                        term:
+                                            "$term"
+
+                                    },
+
+                                    count: {
+                                        $sum: 1
+                                    },
+
+                                    average: {
+                                        $avg: "$score"
+                                    }
+
+                                }
+
+                            },
+
+                            {
+                                $sort: {
+
+                                    "_id.academicYear":
+                                        -1,
+
+                                    "_id.term":
+                                        1
+
+                                }
+
+                            },
+
+                            {
+                                $project: {
+
+                                    _id: 0,
+
+                                    year:
+                                        "$_id.academicYear",
+
+                                    term:
+                                        "$_id.term",
+
+                                    count: 1,
+
+                                    average: {
+                                        $round: [
+                                            "$average",
+                                            2
+                                        ]
+                                    }
+
+                                }
+
                             }
 
-                        }
-                    }
+                        ]);
 
-                ]);
+                } catch (error) {
 
-
-            const studentsAssessed =
-                reportCardStats[0]
-                    ?.studentsAssessed
-                    ?.length || 0;
+                    console.warn(
+                        "[ACADEMIC TERMS]",
+                        error.message
+                    );
+                }
+            }
 
 
             /* =========================================
-               TERMS
+               EXAM TREND FROM ACTUAL Grade.score
             ========================================= */
 
-            const terms =
-                await ReportCard.aggregate([
+            let examTrend = [];
 
-                    {
-                        $match:
-                            schoolFilter
-                    },
+            if (Grade) {
 
-                    {
-                        $group: {
+                try {
 
-                            _id: {
-                                year: "$year",
-                                term: "$term"
+                    examTrend =
+                        await Grade.aggregate([
+
+                            {
+                                $match:
+                                    schoolFilter
                             },
 
-                            count: {
-                                $sum: 1
+                            {
+                                $group: {
+
+                                    _id: {
+
+                                        academicYear:
+                                            "$academicYear",
+
+                                        term:
+                                            "$term"
+
+                                    },
+
+                                    average: {
+                                        $avg: "$score"
+                                    },
+
+                                    highestScore: {
+                                        $max: "$score"
+                                    },
+
+                                    lowestScore: {
+                                        $min: "$score"
+                                    },
+
+                                    totalScores: {
+                                        $sum: 1
+                                    },
+
+                                    students: {
+                                        $addToSet:
+                                            "$student"
+                                    }
+
+                                }
+
+                            },
+
+                            {
+                                $sort: {
+
+                                    "_id.academicYear":
+                                        1,
+
+                                    "_id.term":
+                                        1
+
+                                }
+
+                            },
+
+                            {
+                                $project: {
+
+                                    _id: 0,
+
+                                    year:
+                                        "$_id.academicYear",
+
+                                    term:
+                                        "$_id.term",
+
+                                    average: {
+                                        $round: [
+                                            "$average",
+                                            2
+                                        ]
+                                    },
+
+                                    highestScore: {
+                                        $round: [
+                                            "$highestScore",
+                                            2
+                                        ]
+                                    },
+
+                                    lowestScore: {
+                                        $round: [
+                                            "$lowestScore",
+                                            2
+                                        ]
+                                    },
+
+                                    totalScores: 1,
+
+                                    studentsAssessed: {
+                                        $size:
+                                            "$students"
+                                    }
+
+                                }
+
                             }
 
-                        }
-                    },
+                        ]);
 
-                    {
-                        $sort: {
-                            "_id.year": -1,
-                            "_id.term": 1
-                        }
-                    },
+                } catch (error) {
 
-                    {
-                        $project: {
-
-                            _id: 0,
-
-                            year: "$_id.year",
-
-                            term: "$_id.term",
-
-                            count: 1
-
-                        }
-
-                    }
-
-                ]);
+                    console.error(
+                        "[ACADEMIC EXAM TREND]",
+                        error
+                    );
+                }
+            }
 
 
             /* =========================================
@@ -431,9 +582,7 @@ router.get(
 
                 exams,
 
-                /*
-                   NOW CALCULATED FROM Grade.score
-                */
+                // REAL AVERAGE FROM Grade.score
                 average,
 
                 reportCards,
@@ -442,7 +591,10 @@ router.get(
 
                 studentsAssessed,
 
-                terms
+                terms,
+
+                // REAL TREND FROM Grade.score
+                examTrend
 
             });
 
@@ -461,7 +613,9 @@ router.get(
                     "Unable to load academic dashboard."
 
             });
+
         }
+
     }
 );
 
@@ -507,8 +661,13 @@ router.get(
                         $group: {
 
                             _id: {
-                                year: "$year",
-                                term: "$term"
+
+                                year:
+                                    "$year",
+
+                                term:
+                                    "$term"
+
                             },
 
                             count: {
@@ -525,8 +684,13 @@ router.get(
 
                     {
                         $sort: {
-                            "_id.year": 1,
-                            "_id.term": 1
+
+                            "_id.year":
+                                1,
+
+                            "_id.term":
+                                1
+
                         }
                     },
 
@@ -535,142 +699,20 @@ router.get(
 
                             _id: 0,
 
-                            year: "$_id.year",
+                            year:
+                                "$_id.year",
 
-                            term: "$_id.term",
+                            term:
+                                "$_id.term",
 
                             count: 1,
 
                             studentsAssessed: {
+
                                 $size:
                                     "$students"
+
                             }
-
-                        }
-
-                    }
-
-                ]);
-
-
-            /* =========================================
-               STUDENT REPORT CARD TOTAL
-            ========================================= */
-
-            const studentsAssessedResult =
-                await ReportCard.aggregate([
-
-                    {
-                        $match:
-                            schoolFilter
-                    },
-
-                    {
-                        $group: {
-
-                            _id: null,
-
-                            students: {
-                                $addToSet:
-                                    "$studentId"
-                            }
-
-                        }
-
-                    }
-
-                ]);
-
-
-            const studentsAssessed =
-                studentsAssessedResult[0]
-                    ?.students
-                    ?.length || 0;
-
-
-            /* =========================================
-               STATUS DISTRIBUTION
-            ========================================= */
-
-            const statusDistribution =
-                await ReportCard.aggregate([
-
-                    {
-                        $match:
-                            schoolFilter
-                    },
-
-                    {
-                        $group: {
-
-                            _id:
-                                "$status",
-
-                            count: {
-                                $sum: 1
-                            }
-
-                        }
-
-                    },
-
-                    {
-                        $project: {
-
-                            _id: 0,
-
-                            status: "$_id",
-
-                            count: 1
-
-                        }
-
-                    }
-
-                ]);
-
-
-            /* =========================================
-               YEAR DISTRIBUTION
-            ========================================= */
-
-            const yearDistribution =
-                await ReportCard.aggregate([
-
-                    {
-                        $match:
-                            schoolFilter
-                    },
-
-                    {
-                        $group: {
-
-                            _id:
-                                "$year",
-
-                            count: {
-                                $sum: 1
-                            }
-
-                        }
-
-                    },
-
-                    {
-                        $sort: {
-                            _id: 1
-                        }
-
-                    },
-
-                    {
-                        $project: {
-
-                            _id: 0,
-
-                            year: "$_id",
-
-                            count: 1
 
                         }
 
@@ -681,8 +723,6 @@ router.get(
 
             /* =========================================
                SUBJECT PERFORMANCE
-               
-               Uses Grade.score
             ========================================= */
 
             let subjectPerformance = [];
@@ -695,16 +735,8 @@ router.get(
                         await Grade.aggregate([
 
                             {
-                                $match: {
-
-                                    ...schoolFilter,
-
-                                    score: {
-                                        $exists: true,
-                                        $ne: null
-                                    }
-
-                                }
+                                $match:
+                                    schoolFilter
                             },
 
                             {
@@ -714,8 +746,15 @@ router.get(
                                         "$subject",
 
                                     average: {
-                                        $avg:
-                                            "$score"
+                                        $avg: "$score"
+                                    },
+
+                                    highest: {
+                                        $max: "$score"
+                                    },
+
+                                    lowest: {
+                                        $min: "$score"
                                     },
 
                                     count: {
@@ -723,6 +762,14 @@ router.get(
                                     }
 
                                 }
+
+                            },
+
+                            {
+                                $sort: {
+                                    average: -1
+                                }
+
                             },
 
                             {
@@ -740,15 +787,14 @@ router.get(
                                         ]
                                     },
 
+                                    highest: 1,
+
+                                    lowest: 1,
+
                                     count: 1
 
                                 }
-                            },
 
-                            {
-                                $sort: {
-                                    average: -1
-                                }
                             }
 
                         ]);
@@ -756,19 +802,15 @@ router.get(
                 } catch (error) {
 
                     console.warn(
-                        "[ACADEMIC SUBJECT PERFORMANCE]",
+                        "[SUBJECT PERFORMANCE]",
                         error.message
                     );
-
-                    subjectPerformance = [];
                 }
             }
 
 
             /* =========================================
                CLASS PERFORMANCE
-               
-               Uses Grade.score
             ========================================= */
 
             let classPerformance = [];
@@ -781,16 +823,8 @@ router.get(
                         await Grade.aggregate([
 
                             {
-                                $match: {
-
-                                    ...schoolFilter,
-
-                                    score: {
-                                        $exists: true,
-                                        $ne: null
-                                    }
-
-                                }
+                                $match:
+                                    schoolFilter
                             },
 
                             {
@@ -800,8 +834,15 @@ router.get(
                                         "$class",
 
                                     average: {
-                                        $avg:
-                                            "$score"
+                                        $avg: "$score"
+                                    },
+
+                                    highest: {
+                                        $max: "$score"
+                                    },
+
+                                    lowest: {
+                                        $min: "$score"
                                     },
 
                                     count: {
@@ -809,6 +850,14 @@ router.get(
                                     }
 
                                 }
+
+                            },
+
+                            {
+                                $sort: {
+                                    average: -1
+                                }
+
                             },
 
                             {
@@ -826,15 +875,14 @@ router.get(
                                         ]
                                     },
 
+                                    highest: 1,
+
+                                    lowest: 1,
+
                                     count: 1
 
                                 }
-                            },
 
-                            {
-                                $sort: {
-                                    average: -1
-                                }
                             }
 
                         ]);
@@ -842,19 +890,15 @@ router.get(
                 } catch (error) {
 
                     console.warn(
-                        "[ACADEMIC CLASS PERFORMANCE]",
+                        "[CLASS PERFORMANCE]",
                         error.message
                     );
-
-                    classPerformance = [];
                 }
             }
 
 
             /* =========================================
                GRADE DISTRIBUTION
-               
-               Based on Grade.score
             ========================================= */
 
             let gradeDistribution = [];
@@ -867,16 +911,8 @@ router.get(
                         await Grade.aggregate([
 
                             {
-                                $match: {
-
-                                    ...schoolFilter,
-
-                                    score: {
-                                        $exists: true,
-                                        $ne: null
-                                    }
-
-                                }
+                                $match:
+                                    schoolFilter
                             },
 
                             {
@@ -985,6 +1021,13 @@ router.get(
                             },
 
                             {
+                                $sort: {
+                                    _id: 1
+                                }
+
+                            },
+
+                            {
                                 $project: {
 
                                     _id: 0,
@@ -1003,94 +1046,15 @@ router.get(
                 } catch (error) {
 
                     console.warn(
-                        "[ACADEMIC GRADE DISTRIBUTION]",
+                        "[GRADE DISTRIBUTION]",
                         error.message
                     );
-
-                    gradeDistribution = [];
                 }
             }
 
 
             /* =========================================
-               OVERALL AVERAGE
-               
-               Uses Grade.score
-            ========================================= */
-
-            let overallAverage = 0;
-
-            if (Grade) {
-
-                try {
-
-                    const result =
-                        await Grade.aggregate([
-
-                            {
-                                $match: {
-
-                                    ...schoolFilter,
-
-                                    score: {
-                                        $exists: true,
-                                        $ne: null
-                                    }
-
-                                }
-                            },
-
-                            {
-                                $group: {
-
-                                    _id: null,
-
-                                    average: {
-                                        $avg:
-                                            "$score"
-                                    },
-
-                                    count: {
-                                        $sum: 1
-                                    }
-
-                                }
-                            }
-
-                        ]);
-
-                    overallAverage =
-                        roundNumber(
-                            result[0]?.average || 0
-                        );
-
-                } catch (error) {
-
-                    console.warn(
-                        "[ACADEMIC OVERALL AVERAGE]",
-                        error.message
-                    );
-
-                    overallAverage = 0;
-                }
-            }
-
-
-            /* =========================================
-               EXAM / TERM TREND
-               
-               Uses:
-                 Grade.academicYear
-                 Grade.term
-                 Grade.score
-               
-               Example:
-               
-               2025-2026 / Term 1
-               average = 67.45
-               
-               2025-2026 / Term 2
-               average = 71.23
+               REAL EXAM TREND
             ========================================= */
 
             let examTrend = [];
@@ -1103,26 +1067,8 @@ router.get(
                         await Grade.aggregate([
 
                             {
-                                $match: {
-
-                                    ...schoolFilter,
-
-                                    score: {
-                                        $exists: true,
-                                        $ne: null
-                                    },
-
-                                    academicYear: {
-                                        $exists: true,
-                                        $ne: null
-                                    },
-
-                                    term: {
-                                        $exists: true,
-                                        $ne: null
-                                    }
-
-                                }
+                                $match:
+                                    schoolFilter
                             },
 
                             {
@@ -1130,7 +1076,7 @@ router.get(
 
                                     _id: {
 
-                                        academicYear:
+                                        year:
                                             "$academicYear",
 
                                         term:
@@ -1139,11 +1085,18 @@ router.get(
                                     },
 
                                     average: {
-                                        $avg:
-                                            "$score"
+                                        $avg: "$score"
                                     },
 
-                                    gradesCount: {
+                                    highestScore: {
+                                        $max: "$score"
+                                    },
+
+                                    lowestScore: {
+                                        $min: "$score"
+                                    },
+
+                                    totalScores: {
                                         $sum: 1
                                     },
 
@@ -1157,12 +1110,25 @@ router.get(
                             },
 
                             {
+                                $sort: {
+
+                                    "_id.year":
+                                        1,
+
+                                    "_id.term":
+                                        1
+
+                                }
+
+                            },
+
+                            {
                                 $project: {
 
                                     _id: 0,
 
                                     year:
-                                        "$_id.academicYear",
+                                        "$_id.year",
 
                                     term:
                                         "$_id.term",
@@ -1174,32 +1140,26 @@ router.get(
                                         ]
                                     },
 
-                                    gradesCount: 1,
+                                    highestScore: {
+                                        $round: [
+                                            "$highestScore",
+                                            2
+                                        ]
+                                    },
+
+                                    lowestScore: {
+                                        $round: [
+                                            "$lowestScore",
+                                            2
+                                        ]
+                                    },
+
+                                    totalScores: 1,
 
                                     studentsAssessed: {
                                         $size:
                                             "$students"
-                                    },
-
-                                    /*
-                                       Keep this field too
-                                       in case your frontend
-                                       expects it.
-                                    */
-                                    reportCards: {
-                                        $literal: 0
                                     }
-
-                                }
-
-                            },
-
-                            {
-                                $sort: {
-
-                                    year: 1,
-
-                                    term: 1
 
                                 }
 
@@ -1209,14 +1169,202 @@ router.get(
 
                 } catch (error) {
 
-                    console.warn(
-                        "[ACADEMIC EXAM TREND]",
-                        error.message
+                    console.error(
+                        "[ACADEMIC ANALYTICS TREND]",
+                        error
                     );
-
-                    examTrend = [];
                 }
             }
+
+
+            /* =========================================
+               OVERALL AVERAGE
+            ========================================= */
+
+            let average = 0;
+
+            if (Grade) {
+
+                try {
+
+                    const result =
+                        await Grade.aggregate([
+
+                            {
+                                $match:
+                                    schoolFilter
+                            },
+
+                            {
+                                $group: {
+
+                                    _id: null,
+
+                                    average: {
+                                        $avg: "$score"
+                                    }
+
+                                }
+
+                            }
+
+                        ]);
+
+                    average =
+                        roundNumber(
+                            result[0]?.average || 0
+                        );
+
+                } catch (error) {
+
+                    console.warn(
+                        "[ACADEMIC ANALYTICS AVERAGE]",
+                        error.message
+                    );
+                }
+            }
+
+
+            /* =========================================
+               STUDENTS ASSESSED
+            ========================================= */
+
+            let studentsAssessed = 0;
+
+            if (Grade) {
+
+                try {
+
+                    const result =
+                        await Grade.aggregate([
+
+                            {
+                                $match:
+                                    schoolFilter
+                            },
+
+                            {
+                                $group: {
+
+                                    _id:
+                                        "$student"
+
+                                }
+
+                            },
+
+                            {
+                                $count:
+                                    "students"
+
+                            }
+
+                        ]);
+
+                    studentsAssessed =
+                        result[0]?.students || 0;
+
+                } catch (error) {
+
+                    console.warn(
+                        "[ACADEMIC ANALYTICS STUDENTS]",
+                        error.message
+                    );
+                }
+            }
+
+
+            /* =========================================
+               STATUS DISTRIBUTION
+            ========================================= */
+
+            const statusDistribution =
+                await ReportCard.aggregate([
+
+                    {
+                        $match:
+                            schoolFilter
+                    },
+
+                    {
+                        $group: {
+
+                            _id:
+                                "$status",
+
+                            count: {
+                                $sum: 1
+                            }
+
+                        }
+
+                    },
+
+                    {
+                        $project: {
+
+                            _id: 0,
+
+                            status:
+                                "$_id",
+
+                            count: 1
+
+                        }
+
+                    }
+
+                ]);
+
+
+            /* =========================================
+               YEAR DISTRIBUTION
+            ========================================= */
+
+            const yearDistribution =
+                await ReportCard.aggregate([
+
+                    {
+                        $match:
+                            schoolFilter
+                    },
+
+                    {
+                        $group: {
+
+                            _id:
+                                "$year",
+
+                            count: {
+                                $sum: 1
+                            }
+
+                        }
+
+                    },
+
+                    {
+                        $sort: {
+                            _id: 1
+                        }
+
+                    },
+
+                    {
+                        $project: {
+
+                            _id: 0,
+
+                            year:
+                                "$_id",
+
+                            count: 1
+
+                        }
+
+                    }
+
+                ]);
 
 
             /* =========================================
@@ -1229,11 +1377,7 @@ router.get(
 
                 data: {
 
-                    /*
-                       Actual Grade.score average
-                    */
-                    average:
-                        overallAverage,
+                    average,
 
                     subjectPerformance,
 
@@ -1253,14 +1397,11 @@ router.get(
 
                 },
 
-                /*
-                   Keep top-level properties because
-                   your existing frontend appears to
-                   use them.
-                */
+                // Keep these at the top level too
+                // because your frontend appears to
+                // read these properties directly.
 
-                average:
-                    overallAverage,
+                average,
 
                 subjectPerformance,
 
@@ -1295,7 +1436,9 @@ router.get(
                     "Unable to load academic analytics."
 
             });
+
         }
+
     }
 );
 
