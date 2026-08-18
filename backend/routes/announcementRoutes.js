@@ -12,36 +12,43 @@ const {
     authorize
 } = require('../middleware/auth');
 
-// ===============================
+
+// =====================================================
 // CREATE ANNOUNCEMENT
-// Teacher only
-// ===============================
+// Admin and Teacher
+// =====================================================
+
 router.post(
     '/',
     protect,
-    authorize('teacher'),
+    authorize('admin', 'teacher'),
     createAnnouncement
 );
 
-// ===============================
+
+// =====================================================
 // GET ANNOUNCEMENTS
 // Any authenticated user
-// ===============================
+// =====================================================
+
 router.get(
     '/',
     protect,
     getAnnouncements
 );
 
-// ===============================
+
+// =====================================================
 // DELETE ANNOUNCEMENT
-// Teacher only
-// ===============================
+// Admin and Teacher
+// =====================================================
+
 router.delete(
     '/:id',
     protect,
-    authorize('teacher'),
+    authorize('admin', 'teacher'),
     deleteAnnouncement
 );
+
 
 module.exports = router;
