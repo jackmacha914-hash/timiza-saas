@@ -3,107 +3,6 @@ const API =
 
 let disciplineCases = [];
 let students = [];
-
-
-// =====================================================
-// INITIALIZE
-// =====================================================
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initializeDiscipline
-);
-
-
-function initializeDiscipline() {
-
-    console.log(
-        "[DISCIPLINE] Initializing page..."
-    );
-
-
-    document
-        .getElementById("openDisciplineBtn")
-        ?.addEventListener(
-            "click",
-            openDisciplineModal
-        );
-
-
-    document
-        .getElementById("closeDisciplineModal")
-        ?.addEventListener(
-            "click",
-            closeDisciplineModal
-        );
-
-
-    document
-        .getElementById("cancelDisciplineBtn")
-        ?.addEventListener(
-            "click",
-            closeDisciplineModal
-        );
-
-
-    document
-        .getElementById("disciplineForm")
-        ?.addEventListener(
-            "submit",
-            createDiscipline
-        );
-
-
-    document
-        .getElementById("refreshDisciplineBtn")
-        ?.addEventListener(
-            "click",
-            loadDiscipline
-        );
-
-
-    document
-        .getElementById("disciplineSearch")
-        ?.addEventListener(
-            "input",
-            renderDiscipline
-        );
-
-
-    document
-        .getElementById("severityFilter")
-        ?.addEventListener(
-            "change",
-            renderDiscipline
-        );
-
-
-    document
-        .getElementById("statusFilter")
-        ?.addEventListener(
-            "change",
-            renderDiscipline
-        );
-
-    document
-    .getElementById("student")
-    ?.addEventListener(
-        "change",
-        handleStudentChange
-    );
-
-
-    loadDiscipline();
-    loadStudents();
-
-}
-
-// =====================================================
-// STUDENT / CLASS DATA
-// =====================================================
-
-let disciplineCases = [];
-let students = [];
 let classes = [];
 
 
@@ -189,6 +88,7 @@ function initializeDiscipline() {
 
 
     // CLASS CHANGE
+
     document
         .getElementById("classFilter")
         ?.addEventListener(
@@ -198,6 +98,7 @@ function initializeDiscipline() {
 
 
     // STUDENT CHANGE
+
     document
         .getElementById("student")
         ?.addEventListener(
@@ -206,434 +107,11 @@ function initializeDiscipline() {
         );
 
 
+    // LOAD DATA
+
     loadDiscipline();
 
     loadStudents();
-
-}
-
-
-// =====================================================
-// LOAD STUDENTS
-// =====================================================
-
-async function loadStudents() {
-
-    const select =
-        document.getElementById("student");
-
-    const classSelect =
-        document.getElementById("classFilter");
-
-
-    if (!select || !classSelect) {
-        return;
-    }
-
-
-    classSelect.innerHTML = `
-        <option value="">
-            Loading classes...
-        </option>
-    `;
-
-
-    select.innerHTML = `
-        <option value="">
-            Select class first
-        </option>
-    `;
-
-    select.disabled = true;
-
-
-    try {
-
-        console.log(
-            "[DISCIPLINE] Loading students..."
-        );
-
-
-        const response =
-            await api("/students");
-
-
-        console.log(
-            "[DISCIPLINE] Students response:",
-            response
-        );
-
-
-        students =
-            Array.isArray(response)
-                ? response
-                : response.students ||
-                  response.users ||
-                  response.data ||
-                  [];
-
-
-        console.log(
-            `[DISCIPLINE] Loaded ${students.length} students`
-        );
-
-
-        if (!students.length) {
-
-            classSelect.innerHTML = `
-                <option value="">
-                    No students found
-                </option>
-            `;
-
-            return;
-
-        }
-
-
-        // ---------------------------------------------
-        // BUILD UNIQUE CLASS LIST
-        // ---------------------------------------------
-
-        const classMap =
-            new Map();
-
-
-        students.forEach(student => {
-
-            const classValue =
-                getStudentClass(student);
-
-
-            if (!classValue) {
-                return;
-            }
-
-
-            const normalized =
-                String(classValue)
-                    .trim();
-
-
-            if (!normalized) {
-                return;
-            }
-
-
-            const key =
-                normalized.toLowerCase();
-
-
-            if (!classMap.has(key)) {
-
-                classMap.set(
-                    key,
-                    normalized
-                );
-
-            }
-
-        });
-
-
-        classes =
-            Array.from(
-                classMap.values()
-            )
-            .sort(
-                naturalClassSort
-            );
-
-
-        // ---------------------------------------------
-        // RENDER CLASSES
-        // ---------------------------------------------
-
-        classSelect.innerHTML = `
-            <option value="">
-                Select class
-            </option>
-        `;
-
-
-        classes.forEach(className => {
-
-            const option =
-                document.createElement("option");
-
-
-            option.value =
-                className;
-
-
-            option.textContent =
-                className;
-
-
-            classSelect.appendChild(
-                option
-            );
-
-        });
-
-
-        if (!classes.length) {
-
-            classSelect.innerHTML = `
-                <option value="">
-                    No classes found
-                </option>
-            `;
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "[DISCIPLINE STUDENTS LOAD]",
-            error
-        );
-
-
-        classSelect.innerHTML = `
-            <option value="">
-                Failed to load classes
-            </option>
-        `;
-
-
-        select.innerHTML = `
-            <option value="">
-                Failed to load students
-            </option>
-        `;
-
-    }
-
-}
-
-
-// =====================================================
-// GET STUDENT CLASS
-// =====================================================
-
-function getStudentClass(student) {
-
-    return (
-        student.className ||
-        student.class ||
-        student.class?.name ||
-        student.classId?.name ||
-        student.classId?.className ||
-        student.form ||
-        ""
-    );
-
-}
-
-
-// =====================================================
-// SORT CLASSES
-// =====================================================
-
-function naturalClassSort(a, b) {
-
-    return String(a).localeCompare(
-        String(b),
-        undefined,
-        {
-            numeric: true,
-            sensitivity: "base"
-        }
-    );
-
-}
-
-
-// =====================================================
-// CLASS CHANGED
-// =====================================================
-
-function handleClassChange(event) {
-
-    const selectedClass =
-        event.target.value;
-
-
-    const studentSelect =
-        document.getElementById("student");
-
-
-    if (!studentSelect) {
-        return;
-    }
-
-
-    studentSelect.innerHTML = `
-        <option value="">
-            Select student
-        </option>
-    `;
-
-
-    studentSelect.disabled =
-        true;
-
-
-    document.getElementById(
-        "admissionNumber"
-    ).value = "";
-
-
-    document.getElementById(
-        "className"
-    ).value =
-        selectedClass || "";
-
-
-    if (!selectedClass) {
-
-        studentSelect.innerHTML = `
-            <option value="">
-                Select class first
-            </option>
-        `;
-
-        return;
-
-    }
-
-
-    // ---------------------------------------------
-    // FILTER STUDENTS
-    // ---------------------------------------------
-
-    const filteredStudents =
-        students.filter(student => {
-
-            const studentClass =
-                getStudentClass(student);
-
-
-            return (
-                String(studentClass)
-                    .trim()
-                    .toLowerCase()
-                ===
-                String(selectedClass)
-                    .trim()
-                    .toLowerCase()
-            );
-
-        });
-
-
-    console.log(
-        `[DISCIPLINE] ${filteredStudents.length} students found in ${selectedClass}`
-    );
-
-
-    if (!filteredStudents.length) {
-
-        studentSelect.innerHTML = `
-            <option value="">
-                No students in this class
-            </option>
-        `;
-
-        return;
-
-    }
-
-
-    // ---------------------------------------------
-    // RENDER STUDENTS
-    // ---------------------------------------------
-
-    filteredStudents.forEach(student => {
-
-        const option =
-            document.createElement("option");
-
-
-        option.value =
-            student._id ||
-            student.id;
-
-
-        const name =
-            student.name ||
-            student.fullName ||
-            student.username ||
-            "Unnamed Student";
-
-
-        const admission =
-            student.admissionNumber ||
-            "";
-
-
-        option.textContent =
-            admission
-                ? `${name} — ${admission}`
-                : name;
-
-
-        studentSelect.appendChild(
-            option
-        );
-
-    });
-
-
-    studentSelect.disabled =
-        false;
-
-}
-
-
-// =====================================================
-// STUDENT SELECTED
-// =====================================================
-
-function handleStudentChange(event) {
-
-    const studentId =
-        event.target.value;
-
-
-    const student =
-        students.find(
-            item =>
-                String(
-                    item._id ||
-                    item.id
-                ) ===
-                String(studentId)
-        );
-
-
-    if (!student) {
-        return;
-    }
-
-
-    const studentClass =
-        getStudentClass(student);
-
-
-    document.getElementById(
-        "admissionNumber"
-    ).value =
-        student.admissionNumber || "";
-
-
-    document.getElementById(
-        "className"
-    ).value =
-        studentClass || "";
-
 
 }
 
@@ -718,6 +196,486 @@ async function api(
 
 }
 
+
+// =====================================================
+// LOAD STUDENTS
+// =====================================================
+
+async function loadStudents() {
+
+    const studentSelect =
+        document.getElementById(
+            "student"
+        );
+
+
+    const classSelect =
+        document.getElementById(
+            "classFilter"
+        );
+
+
+    if (!studentSelect) {
+
+        console.warn(
+            "[DISCIPLINE] Student select not found"
+        );
+
+        return;
+
+    }
+
+
+    studentSelect.innerHTML = `
+        <option value="">
+            Loading students...
+        </option>
+    `;
+
+
+    studentSelect.disabled = true;
+
+
+    if (classSelect) {
+
+        classSelect.innerHTML = `
+            <option value="">
+                Loading classes...
+            </option>
+        `;
+
+    }
+
+
+    try {
+
+        console.log(
+            "[DISCIPLINE] Loading students..."
+        );
+
+
+        const response =
+            await api(
+                "/students"
+            );
+
+
+        console.log(
+            "[DISCIPLINE] Students response:",
+            response
+        );
+
+
+        students =
+            Array.isArray(response)
+                ? response
+                : response.students ||
+                  response.users ||
+                  response.data ||
+                  [];
+
+
+        console.log(
+            `[DISCIPLINE] Loaded ${students.length} students`
+        );
+
+
+        if (!students.length) {
+
+            studentSelect.innerHTML = `
+                <option value="">
+                    No students found
+                </option>
+            `;
+
+            studentSelect.disabled = true;
+
+
+            if (classSelect) {
+
+                classSelect.innerHTML = `
+                    <option value="">
+                        No classes found
+                    </option>
+                `;
+
+            }
+
+
+            return;
+
+        }
+
+
+        // =================================================
+        // BUILD UNIQUE CLASSES
+        // =================================================
+
+        const classMap =
+            new Map();
+
+
+        students.forEach(
+            student => {
+
+                const className =
+                    getStudentClass(
+                        student
+                    );
+
+
+                if (!className) {
+                    return;
+                }
+
+
+                const normalized =
+                    String(className)
+                        .trim();
+
+
+                if (!normalized) {
+                    return;
+                }
+
+
+                const key =
+                    normalized.toLowerCase();
+
+
+                if (!classMap.has(key)) {
+
+                    classMap.set(
+                        key,
+                        normalized
+                    );
+
+                }
+
+            }
+        );
+
+
+        classes =
+            Array.from(
+                classMap.values()
+            )
+            .sort(
+                naturalClassSort
+            );
+
+
+        // =================================================
+        // RENDER CLASSES
+        // =================================================
+
+        if (classSelect) {
+
+            classSelect.innerHTML = `
+                <option value="">
+                    Select class
+                </option>
+            `;
+
+
+            classes.forEach(
+                className => {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+
+                    option.value =
+                        className;
+
+
+                    option.textContent =
+                        className;
+
+
+                    classSelect.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+
+            if (!classes.length) {
+
+                classSelect.innerHTML = `
+                    <option value="">
+                        No classes found
+                    </option>
+                `;
+
+            }
+
+        }
+
+
+        // =================================================
+        // STUDENT INITIAL STATE
+        // =================================================
+
+        studentSelect.innerHTML = `
+            <option value="">
+                Select class first
+            </option>
+        `;
+
+
+        studentSelect.disabled = true;
+
+
+    } catch (error) {
+
+        console.error(
+            "[DISCIPLINE STUDENTS LOAD]",
+            error
+        );
+
+
+        studentSelect.innerHTML = `
+            <option value="">
+                Failed to load students
+            </option>
+        `;
+
+
+        studentSelect.disabled = true;
+
+
+        if (classSelect) {
+
+            classSelect.innerHTML = `
+                <option value="">
+                    Failed to load classes
+                </option>
+            `;
+
+        }
+
+    }
+
+}
+
+
+// =====================================================
+// GET STUDENT CLASS
+// =====================================================
+
+function getStudentClass(student) {
+
+    return (
+        student.class ||
+        student.classAssigned ||
+        student.className ||
+        student.profile?.class ||
+        student.profile?.className ||
+        student.classId?.name ||
+        student.classId?.className ||
+        student.form ||
+        ""
+    );
+
+}
+
+
+// =====================================================
+// SORT CLASSES
+// =====================================================
+
+function naturalClassSort(
+    a,
+    b
+) {
+
+    return String(a).localeCompare(
+        String(b),
+        undefined,
+        {
+            numeric: true,
+            sensitivity: "base"
+        }
+    );
+
+}
+
+
+// =====================================================
+// CLASS CHANGED
+// =====================================================
+
+function handleClassChange(event) {
+
+    const selectedClass =
+        event.target.value;
+
+
+    const studentSelect =
+        document.getElementById(
+            "student"
+        );
+
+
+    if (!studentSelect) {
+        return;
+    }
+
+
+    // Reset student
+
+    studentSelect.innerHTML = `
+        <option value="">
+            Select student
+        </option>
+    `;
+
+
+    studentSelect.disabled = true;
+
+
+    // Clear automatic fields
+
+    const admissionInput =
+        document.getElementById(
+            "admissionNumber"
+        );
+
+
+    const classInput =
+        document.getElementById(
+            "className"
+        );
+
+
+    if (admissionInput) {
+
+        admissionInput.value = "";
+
+    }
+
+
+    if (classInput) {
+
+        classInput.value =
+            selectedClass || "";
+
+    }
+
+
+    if (!selectedClass) {
+
+        studentSelect.innerHTML = `
+            <option value="">
+                Select class first
+            </option>
+        `;
+
+        return;
+
+    }
+
+
+    // =================================================
+    // FILTER STUDENTS
+    // =================================================
+
+    const filteredStudents =
+        students.filter(
+            student => {
+
+                const studentClass =
+                    getStudentClass(
+                        student
+                    );
+
+
+                return (
+                    String(studentClass)
+                        .trim()
+                        .toLowerCase()
+                    ===
+                    String(selectedClass)
+                        .trim()
+                        .toLowerCase()
+                );
+
+            }
+        );
+
+
+    console.log(
+        `[DISCIPLINE] ${filteredStudents.length} students found in ${selectedClass}`
+    );
+
+
+    if (!filteredStudents.length) {
+
+        studentSelect.innerHTML = `
+            <option value="">
+                No students in this class
+            </option>
+        `;
+
+        return;
+
+    }
+
+
+    // =================================================
+    // RENDER STUDENTS
+    // =================================================
+
+    filteredStudents.forEach(
+        student => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                student._id ||
+                student.id;
+
+
+            const name =
+                student.name ||
+                student.fullName ||
+                student.username ||
+                "Unnamed Student";
+
+
+            const admission =
+                student.admissionNumber ||
+                "";
+
+
+            option.textContent =
+                admission
+                    ? `${name} — ${admission}`
+                    : name;
+
+
+            studentSelect.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    studentSelect.disabled =
+        false;
+
+}
+
+
 // =====================================================
 // STUDENT SELECTED
 // =====================================================
@@ -727,109 +685,63 @@ function handleStudentChange(event) {
     const studentId =
         event.target.value;
 
+
     const student =
         students.find(
             item =>
-                String(item._id || item.id) ===
+                String(
+                    item._id ||
+                    item.id
+                ) ===
                 String(studentId)
         );
+
 
     if (!student) {
         return;
     }
 
-    document.getElementById(
-        "admissionNumber"
-    ).value =
-        student.admissionNumber || "";
 
-    document.getElementById(
-        "className"
-    ).value =
-        student.className ||
-        student.class ||
-        student.className?.name ||
-        "";
-
-}
-
-
-// =====================================================
-// TOKEN
-// =====================================================
-
-function getToken() {
-
-    return localStorage.getItem("token");
-
-}
-
-
-// =====================================================
-// API
-// =====================================================
-
-async function api(
-    url,
-    options = {}
-) {
-
-    const token = getToken();
-
-    if (!token) {
-
-        throw new Error(
-            "Authentication required."
+    const studentClass =
+        getStudentClass(
+            student
         );
+
+
+    const admissionInput =
+        document.getElementById(
+            "admissionNumber"
+        );
+
+
+    const classInput =
+        document.getElementById(
+            "className"
+        );
+
+
+    if (admissionInput) {
+
+        admissionInput.value =
+            student.admissionNumber ||
+            "";
 
     }
 
 
-    const response =
-        await fetch(
-            `${API}${url}`,
-            {
-                ...options,
+    if (classInput) {
 
-                headers: {
-
-                    "Content-Type":
-                        "application/json",
-
-                    "Authorization":
-                        `Bearer ${token}`,
-
-                    ...(options.headers || {})
-
-                }
-
-            }
-        );
-
-
-    const data =
-        await response.json()
-            .catch(() => ({}));
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            data.message ||
-            data.error ||
-            `Request failed (${response.status})`
-        );
+        classInput.value =
+            studentClass ||
+            "";
 
     }
-
-
-    return data;
 
 }
 
 
 // =====================================================
-// LOAD
+// LOAD DISCIPLINE
 // =====================================================
 
 async function loadDiscipline() {
@@ -840,7 +752,9 @@ async function loadDiscipline() {
         );
 
 
-    if (!list) return;
+    if (!list) {
+        return;
+    }
 
 
     list.innerHTML = `
@@ -867,12 +781,14 @@ async function loadDiscipline() {
         disciplineCases =
             Array.isArray(response)
                 ? response
-                : response.discipline || [];
+                : response.discipline ||
+                  [];
 
 
         renderDiscipline();
 
         updateStatistics();
+
 
     } catch (error) {
 
@@ -893,7 +809,9 @@ async function loadDiscipline() {
                 </h3>
 
                 <p>
-                    ${escapeHtml(error.message)}
+                    ${escapeHtml(
+                        error.message
+                    )}
                 </p>
 
             </div>
@@ -917,7 +835,9 @@ function renderDiscipline() {
         );
 
 
-    if (!list) return;
+    if (!list) {
+        return;
+    }
 
 
     const search =
@@ -953,7 +873,8 @@ function renderDiscipline() {
 
                 const matchesSearch =
                     !search ||
-                    student.toLowerCase()
+                    student
+                        .toLowerCase()
                         .includes(search) ||
                     item.category
                         ?.toLowerCase()
@@ -965,12 +886,14 @@ function renderDiscipline() {
 
                 const matchesSeverity =
                     !severity ||
-                    item.severity === severity;
+                    item.severity ===
+                    severity;
 
 
                 const matchesStatus =
                     !status ||
-                    item.status === status;
+                    item.status ===
+                    status;
 
 
                 return (
@@ -1015,7 +938,9 @@ function renderDiscipline() {
         item => {
 
             list.appendChild(
-                createDisciplineCard(item)
+                createDisciplineCard(
+                    item
+                )
             );
 
         }
@@ -1025,13 +950,15 @@ function renderDiscipline() {
 
 
 // =====================================================
-// CARD
+// DISCIPLINE CARD
 // =====================================================
 
 function createDisciplineCard(item) {
 
     const card =
-        document.createElement("article");
+        document.createElement(
+            "article"
+        );
 
 
     card.className =
@@ -1057,10 +984,12 @@ function createDisciplineCard(item) {
 
     card.innerHTML = `
 
-        <div class="record-severity ${severity}">
+        <div class="record-severity ${escapeHtml(severity)}">
+
             ${escapeHtml(
                 severity.toUpperCase()
             )}
+
         </div>
 
 
@@ -1071,14 +1000,18 @@ function createDisciplineCard(item) {
                 <div>
 
                     <h3>
-                        ${escapeHtml(student)}
+                        ${escapeHtml(
+                            student
+                        )}
                     </h3>
 
                     <span>
+
                         ${escapeHtml(
                             item.admissionNumber ||
                             "No admission number"
                         )}
+
                     </span>
 
                 </div>
@@ -1086,7 +1019,9 @@ function createDisciplineCard(item) {
 
                 <span class="status-badge">
 
-                    ${escapeHtml(status)}
+                    ${escapeHtml(
+                        status
+                    )}
 
                 </span>
 
@@ -1100,9 +1035,12 @@ function createDisciplineCard(item) {
                     <i class="fas fa-gavel"></i>
 
                     <strong>
+
                         ${escapeHtml(
-                            item.category
+                            item.category ||
+                            ""
                         )}
+
                     </strong>
 
                 </div>
@@ -1132,26 +1070,27 @@ function createDisciplineCard(item) {
 
             ${
                 item.actionTaken
-                ? `
-                    <div class="action-taken">
+                    ? `
+                        <div class="action-taken">
 
-                        <strong>
-                            Action Taken:
-                        </strong>
+                            <strong>
+                                Action Taken:
+                            </strong>
 
-                        ${escapeHtml(
-                            item.actionTaken
-                        )}
+                            ${escapeHtml(
+                                item.actionTaken
+                            )}
 
-                    </div>
-                `
-                : ""
+                        </div>
+                    `
+                    : ""
             }
 
 
             <div class="record-footer">
 
                 Reported by
+
                 ${escapeHtml(
                     item.reportedBy ||
                     "Administrator"
@@ -1170,7 +1109,7 @@ function createDisciplineCard(item) {
 
 
 // =====================================================
-// CREATE
+// CREATE DISCIPLINE
 // =====================================================
 
 async function createDiscipline(event) {
@@ -1184,62 +1123,82 @@ async function createDiscipline(event) {
         );
 
 
+    const studentInput =
+        document.getElementById(
+            "student"
+        );
+
+
     const payload = {
 
         student:
-            document.getElementById(
-                "student"
-            ).value,
+            studentInput?.value || "",
 
         admissionNumber:
             document.getElementById(
                 "admissionNumber"
-            ).value.trim(),
+            )?.value.trim() || "",
 
         className:
             document.getElementById(
                 "className"
-            ).value.trim(),
+            )?.value.trim() || "",
 
         category:
             document.getElementById(
                 "category"
-            ).value,
+            )?.value || "",
 
         severity:
             document.getElementById(
                 "severity"
-            ).value,
+            )?.value || "low",
 
         incidentDate:
             document.getElementById(
                 "incidentDate"
-            ).value,
+            )?.value || "",
 
         description:
             document.getElementById(
                 "description"
-            ).value.trim(),
+            )?.value.trim() || "",
 
         actionTaken:
             document.getElementById(
                 "actionTaken"
-            ).value.trim()
+            )?.value.trim() || ""
 
     };
 
 
+    if (!payload.student) {
+
+        showToast(
+            "Please select a student.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
     try {
 
-        button.disabled = true;
+        if (button) {
 
-        button.innerHTML = `
+            button.disabled = true;
 
-            <i class="fas fa-spinner fa-spin"></i>
+            button.innerHTML = `
 
-            Saving...
+                <i class="fas fa-spinner fa-spin"></i>
 
-        `;
+                Saving...
+
+            `;
+
+        }
 
 
         const response =
@@ -1252,6 +1211,7 @@ async function createDiscipline(event) {
                         JSON.stringify(
                             payload
                         )
+
                 }
             );
 
@@ -1283,17 +1243,22 @@ async function createDiscipline(event) {
             "error"
         );
 
+
     } finally {
 
-        button.disabled = false;
+        if (button) {
 
-        button.innerHTML = `
+            button.disabled = false;
 
-            <i class="fas fa-save"></i>
+            button.innerHTML = `
 
-            Save Incident
+                <i class="fas fa-save"></i>
 
-        `;
+                Save Incident
+
+            `;
+
+        }
 
     }
 
@@ -1312,7 +1277,9 @@ function openDisciplineModal() {
         );
 
 
-    if (!modal) return;
+    if (!modal) {
+        return;
+    }
 
 
     modal.style.display =
@@ -1324,15 +1291,27 @@ function openDisciplineModal() {
     );
 
 
-    document.getElementById(
-        "incidentDate"
-    ).value =
-        new Date()
-            .toISOString()
-            .split("T")[0];
+    const incidentDate =
+        document.getElementById(
+            "incidentDate"
+        );
+
+
+    if (incidentDate) {
+
+        incidentDate.value =
+            new Date()
+                .toISOString()
+                .split("T")[0];
+
+    }
 
 }
 
+
+// =====================================================
+// CLOSE MODAL
+// =====================================================
 
 function closeDisciplineModal() {
 
@@ -1342,7 +1321,9 @@ function closeDisciplineModal() {
         );
 
 
-    if (!modal) return;
+    if (!modal) {
+        return;
+    }
 
 
     modal.style.display =
@@ -1358,6 +1339,41 @@ function closeDisciplineModal() {
         "disciplineForm"
     )?.reset();
 
+
+    // Reset student/class selectors
+
+    const classSelect =
+        document.getElementById(
+            "classFilter"
+        );
+
+
+    const studentSelect =
+        document.getElementById(
+            "student"
+        );
+
+
+    if (classSelect) {
+
+        classSelect.value = "";
+
+    }
+
+
+    if (studentSelect) {
+
+        studentSelect.innerHTML = `
+            <option value="">
+                Select class first
+            </option>
+        `;
+
+        studentSelect.disabled =
+            true;
+
+    }
+
 }
 
 
@@ -1367,39 +1383,72 @@ function closeDisciplineModal() {
 
 function updateStatistics() {
 
-    document.getElementById(
-        "totalCases"
-    ).textContent =
-        disciplineCases.length;
+    const total =
+        document.getElementById(
+            "totalCases"
+        );
 
 
-    document.getElementById(
-        "investigationCases"
-    ).textContent =
-        disciplineCases.filter(
-            item =>
-                item.status ===
-                "under_investigation"
-        ).length;
+    const investigation =
+        document.getElementById(
+            "investigationCases"
+        );
 
 
-    document.getElementById(
-        "seriousCases"
-    ).textContent =
-        disciplineCases.filter(
-            item =>
-                item.severity === "high" ||
-                item.severity === "critical"
-        ).length;
+    const serious =
+        document.getElementById(
+            "seriousCases"
+        );
 
 
-    document.getElementById(
-        "resolvedCases"
-    ).textContent =
-        disciplineCases.filter(
-            item =>
-                item.status === "resolved"
-        ).length;
+    const resolved =
+        document.getElementById(
+            "resolvedCases"
+        );
+
+
+    if (total) {
+
+        total.textContent =
+            disciplineCases.length;
+
+    }
+
+
+    if (investigation) {
+
+        investigation.textContent =
+            disciplineCases.filter(
+                item =>
+                    item.status ===
+                    "under_investigation"
+            ).length;
+
+    }
+
+
+    if (serious) {
+
+        serious.textContent =
+            disciplineCases.filter(
+                item =>
+                    item.severity === "high" ||
+                    item.severity === "critical"
+            ).length;
+
+    }
+
+
+    if (resolved) {
+
+        resolved.textContent =
+            disciplineCases.filter(
+                item =>
+                    item.status ===
+                    "resolved"
+            ).length;
+
+    }
 
 }
 
@@ -1413,7 +1462,10 @@ function formatStatus(status) {
     return String(
         status || ""
     )
-    .replaceAll("_", " ")
+    .replaceAll(
+        "_",
+        " "
+    )
     .replace(
         /\b\w/g,
         char =>
@@ -1425,14 +1477,22 @@ function formatStatus(status) {
 
 function formatDate(value) {
 
-    if (!value) return "Unknown date";
+    if (!value) {
+
+        return "Unknown date";
+
+    }
 
 
     const date =
         new Date(value);
 
 
-    if (isNaN(date.getTime())) {
+    if (
+        isNaN(
+            date.getTime()
+        )
+    ) {
 
         return "Unknown date";
 
@@ -1456,11 +1516,26 @@ function escapeHtml(value) {
     return String(
         value ?? ""
     )
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll(
+        "&",
+        "&amp;"
+    )
+    .replaceAll(
+        "<",
+        "&lt;"
+    )
+    .replaceAll(
+        ">",
+        "&gt;"
+    )
+    .replaceAll(
+        '"',
+        "&quot;"
+    )
+    .replaceAll(
+        "'",
+        "&#039;"
+    );
 
 }
 
@@ -1480,8 +1555,21 @@ function showToast(
         );
 
 
+    if (!container) {
+
+        console.log(
+            `[${type}] ${message}`
+        );
+
+        return;
+
+    }
+
+
     const toast =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
 
     toast.className =
@@ -1497,7 +1585,11 @@ function showToast(
         }"></i>
 
         <span>
-            ${escapeHtml(message)}
+
+            ${escapeHtml(
+                message
+            )}
+
         </span>
 
     `;
