@@ -25,18 +25,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initializeAnnouncementPage() {
 
-    /* ---------------------------------------------
-       NEW ANNOUNCEMENT BUTTON
-    --------------------------------------------- */
+    console.log("[ANNOUNCEMENTS] Initializing page...");
 
-    const createButton =
-        document.getElementById(
-            "createAnnouncementBtn"
-        );
 
-    if (createButton) {
+    /* =================================================
+       OPEN MODAL BUTTON
+    ================================================= */
 
-        createButton.addEventListener(
+    const openButton =
+        document.getElementById("openAnnouncementBtn");
+
+    if (openButton) {
+
+        openButton.addEventListener(
             "click",
             openAnnouncementForm
         );
@@ -44,9 +45,83 @@ function initializeAnnouncementPage() {
     }
 
 
-    /* ---------------------------------------------
-       ANNOUNCEMENT FORM
-    --------------------------------------------- */
+    /* =================================================
+       EMPTY STATE CREATE BUTTON
+    ================================================= */
+
+    const emptyCreateButton =
+        document.getElementById("emptyCreateBtn");
+
+    if (emptyCreateButton) {
+
+        emptyCreateButton.addEventListener(
+            "click",
+            openAnnouncementForm
+        );
+
+    }
+
+
+    /* =================================================
+       CLOSE BUTTON
+    ================================================= */
+
+    const closeButton =
+        document.getElementById(
+            "closeAnnouncementModal"
+        );
+
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            "click",
+            closeAnnouncementForm
+        );
+
+    }
+
+
+    /* =================================================
+       CANCEL BUTTON
+    ================================================= */
+
+    const cancelButton =
+        document.getElementById(
+            "cancelAnnouncementBtn"
+        );
+
+    if (cancelButton) {
+
+        cancelButton.addEventListener(
+            "click",
+            closeAnnouncementForm
+        );
+
+    }
+
+
+    /* =================================================
+       MODAL OVERLAY
+    ================================================= */
+
+    const overlay =
+        document.querySelector(
+            "#announcementModal .modal-overlay"
+        );
+
+    if (overlay) {
+
+        overlay.addEventListener(
+            "click",
+            closeAnnouncementForm
+        );
+
+    }
+
+
+    /* =================================================
+       FORM
+    ================================================= */
 
     const form =
         document.getElementById(
@@ -63,31 +138,150 @@ function initializeAnnouncementPage() {
     }
 
 
-    /* ---------------------------------------------
-       REFRESH BUTTON
-    --------------------------------------------- */
+    /* =================================================
+       CHARACTER COUNT
+    ================================================= */
+
+    const textarea =
+        document.getElementById(
+            "announcementText"
+        );
+
+    if (textarea) {
+
+        textarea.addEventListener(
+            "input",
+            updateCharacterCount
+        );
+
+    }
+
+
+    /* =================================================
+       LIVE PREVIEW
+    ================================================= */
+
+    const titleInput =
+        document.getElementById(
+            "announcementTitle"
+        );
+
+    const previewText =
+        document.getElementById(
+            "announcementPreview"
+        );
+
+    if (titleInput) {
+
+        titleInput.addEventListener(
+            "input",
+            updateAnnouncementPreview
+        );
+
+    }
+
+    if (textarea) {
+
+        textarea.addEventListener(
+            "input",
+            updateAnnouncementPreview
+        );
+
+    }
+
+
+    /* =================================================
+       REFRESH
+    ================================================= */
 
     const refreshButton =
         document.getElementById(
             "refreshAnnouncementsBtn"
         );
 
-    refreshButton?.addEventListener(
-        "click",
-        loadAnnouncements
+    if (refreshButton) {
+
+        refreshButton.addEventListener(
+            "click",
+            loadAnnouncements
+        );
+
+    }
+
+
+    /* =================================================
+       SEARCH
+    ================================================= */
+
+    const search =
+        document.getElementById(
+            "announcementSearch"
+        );
+
+    if (search) {
+
+        search.addEventListener(
+            "input",
+            applyAnnouncementFilters
+        );
+
+    }
+
+
+    /* =================================================
+       FILTERS
+    ================================================= */
+
+    [
+        "announcementPriorityFilter",
+        "announcementAudienceFilter",
+        "announcementStatusFilter"
+    ].forEach(id => {
+
+        const element =
+            document.getElementById(id);
+
+        if (element) {
+
+            element.addEventListener(
+                "change",
+                applyAnnouncementFilters
+            );
+
+        }
+
+    });
+
+
+    /* =================================================
+       ESC KEY
+    ================================================= */
+
+    document.addEventListener(
+        "keydown",
+        event => {
+
+            if (event.key === "Escape") {
+
+                closeAnnouncementForm();
+
+            }
+
+        }
     );
 
 
-    /* ---------------------------------------------
-       LOAD ANNOUNCEMENTS
-    --------------------------------------------- */
+    /* =================================================
+       LOAD DATA
+    ================================================= */
 
     loadAnnouncements();
 
 }
 
+
 /* =====================================================
-   OPEN ANNOUNCEMENT FORM
+   OPEN MODAL
 ===================================================== */
 
 function openAnnouncementForm() {
@@ -100,7 +294,7 @@ function openAnnouncementForm() {
     if (!modal) {
 
         console.error(
-            "[ANNOUNCEMENTS] announcementModal not found."
+            "[ANNOUNCEMENTS] Modal not found."
         );
 
         return;
@@ -109,9 +303,27 @@ function openAnnouncementForm() {
 
     modal.style.display = "flex";
 
+    modal.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+
     document.body.classList.add(
         "modal-open"
     );
+
+
+    const form =
+        document.getElementById(
+            "announcementForm"
+        );
+
+    form?.reset();
+
+
+    updateCharacterCount();
+
+    updateAnnouncementPreview();
 
 
     const textarea =
@@ -129,7 +341,7 @@ function openAnnouncementForm() {
 
 
 /* =====================================================
-   CLOSE ANNOUNCEMENT FORM
+   CLOSE MODAL
 ===================================================== */
 
 function closeAnnouncementForm() {
@@ -143,6 +355,11 @@ function closeAnnouncementForm() {
 
     modal.style.display = "none";
 
+    modal.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
     document.body.classList.remove(
         "modal-open"
     );
@@ -155,7 +372,13 @@ function closeAnnouncementForm() {
 
     form?.reset();
 
+
+    updateCharacterCount();
+
+    updateAnnouncementPreview();
+
 }
+
 
 /* =====================================================
    TOKEN
@@ -187,6 +410,7 @@ async function api(
 
     }
 
+
     const headers = {
 
         "Content-Type":
@@ -199,6 +423,7 @@ async function api(
 
     };
 
+
     const response =
         await fetch(
             `${API}${url}`,
@@ -207,6 +432,7 @@ async function api(
                 headers
             }
         );
+
 
     let data = null;
 
@@ -221,6 +447,7 @@ async function api(
 
     }
 
+
     if (!response.ok) {
 
         throw new Error(
@@ -230,6 +457,7 @@ async function api(
         );
 
     }
+
 
     return data;
 
@@ -249,7 +477,9 @@ async function loadAnnouncements() {
 
     if (!list) return;
 
+
     showLoading();
+
 
     try {
 
@@ -258,19 +488,6 @@ async function loadAnnouncements() {
                 "/announcements"
             );
 
-        /*
-         * Supports:
-         *
-         * [...]
-         *
-         * {
-         *   announcements: [...]
-         * }
-         *
-         * {
-         *   data: [...]
-         * }
-         */
 
         if (Array.isArray(response)) {
 
@@ -301,35 +518,29 @@ async function loadAnnouncements() {
 
         }
 
-        /*
-         * Newest first
-         */
 
         announcements.sort(
             (a, b) => {
 
-                const dateA =
-                    new Date(
-                        a.createdAt ||
-                        a.date ||
-                        0
-                    );
-
-                const dateB =
-                    new Date(
-                        b.createdAt ||
-                        b.date ||
-                        0
-                    );
-
-                return dateB - dateA;
+                return new Date(
+                    b.createdAt ||
+                    b.publishDate ||
+                    0
+                ) -
+                new Date(
+                    a.createdAt ||
+                    a.publishDate ||
+                    0
+                );
 
             }
         );
 
-        renderAnnouncements();
 
-        updateAnnouncementCount();
+        updateStatistics();
+
+        applyAnnouncementFilters();
+
 
     } catch (error) {
 
@@ -349,58 +560,59 @@ async function loadAnnouncements() {
 
 
 /* =====================================================
-   RENDER ANNOUNCEMENTS
+   RENDER
 ===================================================== */
 
-function renderAnnouncements() {
+function renderAnnouncements(
+    items = announcements
+) {
 
     const list =
         document.getElementById(
             "announcementsList"
         );
 
+    const empty =
+        document.getElementById(
+            "announcementEmpty"
+        );
+
     if (!list) return;
+
 
     list.innerHTML = "";
 
-    if (!announcements.length) {
 
-        list.innerHTML = `
+    if (!items.length) {
 
-            <div class="announcement-empty">
+        if (empty) {
 
-                <div class="empty-icon">
+            empty.style.display =
+                "block";
 
-                    <i class="fas fa-bullhorn"></i>
-
-                </div>
-
-                <h3>
-                    No announcements yet
-                </h3>
-
-                <p>
-                    Create your first school announcement
-                    using the form above.
-                </p>
-
-            </div>
-
-        `;
+        }
 
         return;
 
     }
 
-    announcements.forEach(
+
+    if (empty) {
+
+        empty.style.display =
+            "none";
+
+    }
+
+
+    items.forEach(
         announcement => {
 
-            const item =
+            list.appendChild(
                 createAnnouncementElement(
                     announcement
-                );
-
-            list.appendChild(item);
+                )
+            );
 
         }
     );
@@ -409,7 +621,7 @@ function renderAnnouncements() {
 
 
 /* =====================================================
-   CREATE ANNOUNCEMENT ELEMENT
+   CREATE CARD
 ===================================================== */
 
 function createAnnouncementElement(
@@ -417,15 +629,24 @@ function createAnnouncementElement(
 ) {
 
     const item =
-        document.createElement("article");
+        document.createElement(
+            "article"
+        );
 
     item.className =
-        "announcement-card";
+        "announcement-item";
+
 
     const id =
         announcement._id ||
         announcement.id ||
         "";
+
+
+    const title =
+        announcement.title ||
+        "School Announcement";
+
 
     const text =
         announcement.text ||
@@ -433,19 +654,32 @@ function createAnnouncementElement(
         announcement.content ||
         "No content";
 
+
+    const priority =
+        announcement.priority ||
+        "normal";
+
+
+    const audience =
+        announcement.audience ||
+        "all";
+
+
     const date =
         formatDate(
             announcement.createdAt ||
-            announcement.date
+            announcement.publishDate
         );
 
+
     const author =
-        announcement.author?.name ||
-        announcement.createdBy?.name ||
+        announcement.createdBy ||
         announcement.authorName ||
         "Administrator";
 
+
     item.dataset.id = id;
+
 
     item.innerHTML = `
 
@@ -460,11 +694,27 @@ function createAnnouncementElement(
 
             <div class="announcement-card-header">
 
-                <span class="announcement-label">
+                <div>
 
-                    School Announcement
+                    <span class="announcement-label">
 
-                </span>
+                        ${escapeHtml(title)}
+
+                    </span>
+
+                    <span class="
+                        priority-badge
+                        priority-${escapeAttribute(priority)}
+                    ">
+
+                        ${escapeHtml(
+                            formatPriority(priority)
+                        )}
+
+                    </span>
+
+                </div>
+
 
                 <span class="announcement-date">
 
@@ -488,6 +738,17 @@ function createAnnouncementElement(
 
                 <span>
 
+                    <i class="fas fa-users"></i>
+
+                    ${escapeHtml(
+                        formatAudience(audience)
+                    )}
+
+                </span>
+
+
+                <span>
+
                     <i class="fas fa-user-shield"></i>
 
                     Posted by
@@ -506,7 +767,6 @@ function createAnnouncementElement(
                 type="button"
                 class="delete-announcement-btn"
                 title="Delete announcement"
-                data-id="${escapeAttribute(id)}"
             >
 
                 <i class="fas fa-trash"></i>
@@ -517,10 +777,12 @@ function createAnnouncementElement(
 
     `;
 
+
     const deleteButton =
         item.querySelector(
             ".delete-announcement-btn"
         );
+
 
     deleteButton?.addEventListener(
         "click",
@@ -534,13 +796,14 @@ function createAnnouncementElement(
         }
     );
 
+
     return item;
 
 }
 
 
 /* =====================================================
-   SUBMIT ANNOUNCEMENT
+   SUBMIT
 ===================================================== */
 
 async function handleAnnouncementSubmit(
@@ -549,47 +812,107 @@ async function handleAnnouncementSubmit(
 
     event.preventDefault();
 
+
     const form =
         event.target;
 
-    const textarea =
+
+    const title =
+        document.getElementById(
+            "announcementTitle"
+        )?.value.trim();
+
+
+    const text =
         document.getElementById(
             "announcementText"
-        );
+        )?.value.trim();
+
+
+    const priority =
+        document.getElementById(
+            "announcementPriority"
+        )?.value ||
+        "normal";
+
+
+    const audience =
+        document.getElementById(
+            "announcementAudience"
+        )?.value ||
+        "all";
+
+
+    const publishDate =
+        document.getElementById(
+            "announcementPublishDate"
+        )?.value;
+
+
+    const expiryDate =
+        document.getElementById(
+            "announcementExpiryDate"
+        )?.value;
+
 
     const button =
         document.getElementById(
-            "publishAnnouncementBtn"
+            "saveAnnouncementBtn"
         );
 
-    if (!textarea) return;
 
-    const text =
-        textarea.value.trim();
+    if (!title) {
+
+        showMessage(
+            "Please enter an announcement title.",
+            "error"
+        );
+
+        return;
+
+    }
+
 
     if (!text) {
 
         showMessage(
-            "Please enter an announcement.",
+            "Please enter an announcement message.",
             "error"
         );
-
-        textarea.focus();
 
         return;
 
     }
 
-    if (text.length > 1000) {
+
+    if (text.length > 2000) {
 
         showMessage(
-            "Announcement cannot exceed 1000 characters.",
+            "Announcement message cannot exceed 2000 characters.",
             "error"
         );
 
         return;
 
     }
+
+
+    if (
+        publishDate &&
+        expiryDate &&
+        new Date(expiryDate) <=
+        new Date(publishDate)
+    ) {
+
+        showMessage(
+            "Expiry date must be after the publish date.",
+            "error"
+        );
+
+        return;
+
+    }
+
 
     try {
 
@@ -598,6 +921,34 @@ async function handleAnnouncementSubmit(
             true
         );
 
+
+        const payload = {
+
+            title,
+
+            text,
+
+            priority,
+
+            audience,
+
+            publishDate:
+                publishDate ||
+                new Date().toISOString(),
+
+            expiryDate:
+                expiryDate ||
+                null
+
+        };
+
+
+        console.log(
+            "[ANNOUNCEMENTS] Creating:",
+            payload
+        );
+
+
         const response =
             await api(
                 "/announcements",
@@ -605,44 +956,42 @@ async function handleAnnouncementSubmit(
                     method: "POST",
 
                     body:
-                        JSON.stringify({
-                            text
-                        })
+                        JSON.stringify(
+                            payload
+                        )
                 }
             );
+
 
         const announcement =
             response?.announcement ||
             response?.data ||
             response;
 
-        if (announcement) {
 
-            /*
-             * Add immediately to the top.
-             */
+        if (announcement) {
 
             announcements.unshift(
                 announcement
             );
 
-            renderAnnouncements();
-
-            updateAnnouncementCount();
-
-        } else {
-
-            await loadAnnouncements();
-
         }
 
-        form.reset();
+
+        updateStatistics();
+
+        applyAnnouncementFilters();
+
+
+        closeAnnouncementForm();
+
 
         showMessage(
             response?.message ||
             "Announcement published successfully.",
             "success"
         );
+
 
     } catch (error) {
 
@@ -651,11 +1000,13 @@ async function handleAnnouncementSubmit(
             error
         );
 
+
         showMessage(
             error.message ||
             "Failed to publish announcement.",
             "error"
         );
+
 
     } finally {
 
@@ -670,7 +1021,7 @@ async function handleAnnouncementSubmit(
 
 
 /* =====================================================
-   DELETE ANNOUNCEMENT
+   DELETE
 ===================================================== */
 
 async function deleteAnnouncement(
@@ -689,31 +1040,19 @@ async function deleteAnnouncement(
 
     }
 
-    const confirmed =
-        window.confirm(
-            "Are you sure you want to delete this announcement?\n\nThis action cannot be undone."
-        );
 
-    if (!confirmed) return;
+    if (
+        !window.confirm(
+            "Are you sure you want to delete this announcement?"
+        )
+    ) {
 
-    const button =
-        element.querySelector(
-            ".delete-announcement-btn"
-        );
+        return;
+
+    }
+
 
     try {
-
-        if (button) {
-
-            button.disabled = true;
-
-            button.innerHTML = `
-
-                <i class="fas fa-spinner fa-spin"></i>
-
-            `;
-
-        }
 
         await api(
             `/announcements/${encodeURIComponent(id)}`,
@@ -722,9 +1061,6 @@ async function deleteAnnouncement(
             }
         );
 
-        /*
-         * Remove from local array.
-         */
 
         announcements =
             announcements.filter(
@@ -735,29 +1071,29 @@ async function deleteAnnouncement(
                     ) !== String(id)
             );
 
-        /*
-         * Animate removal.
-         */
 
         element.classList.add(
             "removing"
         );
 
+
         setTimeout(
             () => {
 
-                renderAnnouncements();
+                updateStatistics();
 
-                updateAnnouncementCount();
+                applyAnnouncementFilters();
 
             },
             300
         );
 
+
         showMessage(
             "Announcement deleted successfully.",
             "success"
         );
+
 
     } catch (error) {
 
@@ -766,17 +1102,6 @@ async function deleteAnnouncement(
             error
         );
 
-        if (button) {
-
-            button.disabled = false;
-
-            button.innerHTML = `
-
-                <i class="fas fa-trash"></i>
-
-            `;
-
-        }
 
         showMessage(
             error.message ||
@@ -790,165 +1115,291 @@ async function deleteAnnouncement(
 
 
 /* =====================================================
-   LOADING
+   FILTERS
 ===================================================== */
 
-function showLoading() {
+function applyAnnouncementFilters() {
 
-    const list =
+    const search =
         document.getElementById(
-            "announcementsList"
+            "announcementSearch"
+        )?.value
+        .trim()
+        .toLowerCase() || "";
+
+
+    const priority =
+        document.getElementById(
+            "announcementPriorityFilter"
+        )?.value || "";
+
+
+    const audience =
+        document.getElementById(
+            "announcementAudienceFilter"
+        )?.value || "";
+
+
+    const status =
+        document.getElementById(
+            "announcementStatusFilter"
+        )?.value || "";
+
+
+    const filtered =
+        announcements.filter(
+            announcement => {
+
+                const title =
+                    (
+                        announcement.title ||
+                        ""
+                    ).toLowerCase();
+
+
+                const text =
+                    (
+                        announcement.text ||
+                        ""
+                    ).toLowerCase();
+
+
+                const matchesSearch =
+                    !search ||
+                    title.includes(search) ||
+                    text.includes(search);
+
+
+                const matchesPriority =
+                    !priority ||
+                    (
+                        announcement.priority ||
+                        "normal"
+                    ) === priority;
+
+
+                const matchesAudience =
+                    !audience ||
+                    (
+                        announcement.audience ||
+                        "all"
+                    ) === audience;
+
+
+                const matchesStatus =
+                    !status ||
+                    getAnnouncementStatus(
+                        announcement
+                    ) === status;
+
+
+                return (
+                    matchesSearch &&
+                    matchesPriority &&
+                    matchesAudience &&
+                    matchesStatus
+                );
+
+            }
         );
 
-    if (!list) return;
 
-    list.innerHTML = `
-
-        <div class="announcement-loading">
-
-            <i class="fas fa-spinner fa-spin"></i>
-
-            <p>
-                Loading announcements...
-            </p>
-
-        </div>
-
-    `;
+    renderAnnouncements(
+        filtered
+    );
 
 }
 
 
 /* =====================================================
-   ERROR
+   STATUS
 ===================================================== */
 
-function showError(
-    message
+function getAnnouncementStatus(
+    announcement
 ) {
 
-    const list =
-        document.getElementById(
-            "announcementsList"
-        );
-
-    if (!list) return;
-
-    list.innerHTML = `
-
-        <div class="announcement-error">
-
-            <i class="fas fa-exclamation-circle"></i>
-
-            <h3>
-                Unable to load announcements
-            </h3>
-
-            <p>
-                ${escapeHtml(message)}
-            </p>
-
-            <button
-                type="button"
-                onclick="loadAnnouncements()"
-                class="retry-btn"
-            >
-
-                <i class="fas fa-sync-alt"></i>
-
-                Try Again
-
-            </button>
-
-        </div>
-
-    `;
-
-}
+    const now =
+        new Date();
 
 
-/* =====================================================
-   MESSAGE / TOAST
-===================================================== */
-
-function showMessage(
-    message,
-    type = "success"
-) {
-
-    let container =
-        document.getElementById(
-            "announcementToastContainer"
-        );
-
-    if (!container) {
-
-        container =
-            document.createElement(
-                "div"
+    const publish =
+        announcement.publishDate
+            ? new Date(
+                announcement.publishDate
+            )
+            : new Date(
+                announcement.createdAt
             );
 
-        container.id =
-            "announcementToastContainer";
 
-        container.className =
-            "announcement-toast-container";
+    const expiry =
+        announcement.expiryDate
+            ? new Date(
+                announcement.expiryDate
+            )
+            : null;
 
-        document.body.appendChild(
-            container
-        );
+
+    if (
+        publish &&
+        publish > now
+    ) {
+
+        return "scheduled";
 
     }
 
-    const toast =
-        document.createElement("div");
 
-    toast.className =
-        `announcement-toast ${type}`;
+    if (
+        expiry &&
+        expiry < now
+    ) {
 
-    const icon =
-        type === "success"
-            ? "fas fa-check-circle"
-            : "fas fa-exclamation-circle";
+        return "expired";
 
-    toast.innerHTML = `
+    }
 
-        <i class="${icon}"></i>
 
-        <span>
-            ${escapeHtml(message)}
-        </span>
+    return "active";
 
-        <button
-            type="button"
-            aria-label="Close notification"
-        >
+}
 
-            <i class="fas fa-times"></i>
 
-        </button>
+/* =====================================================
+   STATISTICS
+===================================================== */
 
-    `;
+function updateStatistics() {
 
-    toast
-        .querySelector("button")
-        ?.addEventListener(
-            "click",
-            () => toast.remove()
+    const total =
+        announcements.length;
+
+
+    const active =
+        announcements.filter(
+            a =>
+                getAnnouncementStatus(a) ===
+                "active"
+        ).length;
+
+
+    const scheduled =
+        announcements.filter(
+            a =>
+                getAnnouncementStatus(a) ===
+                "scheduled"
+        ).length;
+
+
+    const high =
+        announcements.filter(
+            a =>
+                a.priority ===
+                "high"
+        ).length;
+
+
+    setText(
+        "totalAnnouncements",
+        total
+    );
+
+
+    setText(
+        "activeAnnouncements",
+        active
+    );
+
+
+    setText(
+        "scheduledAnnouncements",
+        scheduled
+    );
+
+
+    setText(
+        "priorityAnnouncements",
+        high
+    );
+
+}
+
+
+/* =====================================================
+   CHARACTER COUNT
+===================================================== */
+
+function updateCharacterCount() {
+
+    const textarea =
+        document.getElementById(
+            "announcementText"
         );
 
-    container.appendChild(
-        toast
-    );
+    const counter =
+        document.getElementById(
+            "announcementCharacterCount"
+        );
 
-    setTimeout(
-        () => {
 
-            toast.remove();
+    if (!textarea || !counter) return;
 
-        },
-        5000
-    );
+
+    counter.textContent =
+        textarea.value.length;
+
+}
+
+
+/* =====================================================
+   PREVIEW
+===================================================== */
+
+function updateAnnouncementPreview() {
+
+    const title =
+        document.getElementById(
+            "announcementTitle"
+        )?.value.trim();
+
+
+    const text =
+        document.getElementById(
+            "announcementText"
+        )?.value.trim();
+
+
+    const preview =
+        document.getElementById(
+            "announcementPreview"
+        );
+
+
+    if (!preview) return;
+
+
+    preview.innerHTML = `
+
+        <strong>
+
+            ${escapeHtml(
+                title ||
+                "Your announcement title"
+            )}
+
+        </strong>
+
+        <p>
+
+            ${escapeHtml(
+                text ||
+                "Your announcement message will appear here."
+            )}
+
+        </p>
+
+    `;
 
 }
 
@@ -964,12 +1415,15 @@ function setButtonLoading(
 
     if (!button) return;
 
+
     if (loading) {
 
         button.disabled = true;
 
+
         button.dataset.originalText =
             button.innerHTML;
+
 
         button.innerHTML = `
 
@@ -982,6 +1436,7 @@ function setButtonLoading(
     } else {
 
         button.disabled = false;
+
 
         button.innerHTML =
             button.dataset.originalText ||
@@ -999,27 +1454,258 @@ function setButtonLoading(
 
 
 /* =====================================================
-   UPDATE COUNT
+   LOADING
 ===================================================== */
 
-function updateAnnouncementCount() {
+function showLoading() {
 
-    const element =
+    const loading =
         document.getElementById(
-            "announcementCount"
+            "announcementLoading"
         );
 
-    if (!element) return;
 
-    element.textContent =
-        announcements.length;
+    const list =
+        document.getElementById(
+            "announcementsList"
+        );
+
+
+    if (loading) {
+
+        loading.style.display =
+            "flex";
+
+    }
+
+
+    if (list) {
+
+        list.innerHTML = "";
+
+    }
 
 }
 
 
 /* =====================================================
-   FORMAT DATE
+   ERROR
 ===================================================== */
+
+function showError(
+    message
+) {
+
+    const loading =
+        document.getElementById(
+            "announcementLoading"
+        );
+
+
+    if (loading) {
+
+        loading.style.display =
+            "none";
+
+    }
+
+
+    const list =
+        document.getElementById(
+            "announcementsList"
+        );
+
+
+    if (!list) return;
+
+
+    list.innerHTML = `
+
+        <div class="announcement-error">
+
+            <i class="fas fa-exclamation-circle"></i>
+
+            <h3>
+                Unable to load announcements
+            </h3>
+
+            <p>
+                ${escapeHtml(message)}
+            </p>
+
+            <button
+                type="button"
+                class="retry-btn"
+                onclick="loadAnnouncements()"
+            >
+
+                <i class="fas fa-sync-alt"></i>
+
+                Try Again
+
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =====================================================
+   TOAST
+===================================================== */
+
+function showMessage(
+    message,
+    type = "success"
+) {
+
+    const container =
+        document.getElementById(
+            "announcementToastContainer"
+        );
+
+
+    if (!container) {
+
+        console.warn(
+            "[ANNOUNCEMENTS]",
+            message
+        );
+
+        return;
+
+    }
+
+
+    const toast =
+        document.createElement(
+            "div"
+        );
+
+
+    toast.className =
+        `announcement-toast ${type}`;
+
+
+    toast.innerHTML = `
+
+        <i class="${
+            type === "success"
+                ? "fas fa-check-circle"
+                : "fas fa-exclamation-circle"
+        }"></i>
+
+        <span>
+            ${escapeHtml(message)}
+        </span>
+
+        <button
+            type="button"
+            aria-label="Close"
+        >
+
+            <i class="fas fa-times"></i>
+
+        </button>
+
+    `;
+
+
+    toast
+        .querySelector("button")
+        ?.addEventListener(
+            "click",
+            () => toast.remove()
+        );
+
+
+    container.appendChild(
+        toast
+    );
+
+
+    setTimeout(
+        () => toast.remove(),
+        5000
+    );
+
+}
+
+
+/* =====================================================
+   HELPERS
+===================================================== */
+
+function setText(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(id);
+
+
+    if (element) {
+
+        element.textContent =
+            value;
+
+    }
+
+}
+
+
+function formatPriority(
+    priority
+) {
+
+    const values = {
+
+        normal: "Normal",
+
+        important: "Important",
+
+        high: "High Priority"
+
+    };
+
+
+    return (
+        values[priority] ||
+        "Normal"
+    );
+
+}
+
+
+function formatAudience(
+    audience
+) {
+
+    const values = {
+
+        all: "Everyone",
+
+        students: "Students",
+
+        teachers: "Teachers",
+
+        parents: "Parents",
+
+        staff: "Staff"
+
+    };
+
+
+    return (
+        values[audience] ||
+        "Everyone"
+    );
+
+}
+
 
 function formatDate(
     value
@@ -1031,14 +1717,21 @@ function formatDate(
 
     }
 
+
     const date =
         new Date(value);
 
-    if (isNaN(date.getTime())) {
+
+    if (
+        isNaN(
+            date.getTime()
+        )
+    ) {
 
         return "Date unavailable";
 
     }
+
 
     return date.toLocaleDateString(
         "en-US",
@@ -1054,10 +1747,6 @@ function formatDate(
 
 }
 
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
 
 function escapeHtml(
     value
@@ -1090,43 +1779,17 @@ function escapeHtml(
 }
 
 
-/* =====================================================
-   ESCAPE ATTRIBUTE
-===================================================== */
-
 function escapeAttribute(
     value
 ) {
 
-    return String(
-        value ?? ""
-    )
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        );
+    return escapeHtml(value);
 
 }
 
 
 /* =====================================================
-   GLOBAL FUNCTIONS
+   GLOBAL
 ===================================================== */
 
 window.loadAnnouncements =
@@ -1134,3 +1797,9 @@ window.loadAnnouncements =
 
 window.deleteAnnouncement =
     deleteAnnouncement;
+
+window.openAnnouncementForm =
+    openAnnouncementForm;
+
+window.closeAnnouncementForm =
+    closeAnnouncementForm;
