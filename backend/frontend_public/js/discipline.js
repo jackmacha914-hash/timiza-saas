@@ -2,6 +2,7 @@ const API =
     "https://timiza-saas.onrender.com/api";
 
 let disciplineCases = [];
+let students = [];
 
 
 // =====================================================
@@ -84,8 +85,158 @@ function initializeDiscipline() {
             renderDiscipline
         );
 
+    document
+    .getElementById("student")
+    ?.addEventListener(
+        "change",
+        handleStudentChange
+    );
+
 
     loadDiscipline();
+    loadStudents();
+
+}
+
+// =====================================================
+// LOAD STUDENTS
+// =====================================================
+
+async function loadStudents() {
+
+    const select =
+        document.getElementById("student");
+
+    if (!select) return;
+
+    select.innerHTML = `
+        <option value="">
+            Loading students...
+        </option>
+    `;
+
+    try {
+
+        console.log("[DISCIPLINE] Loading students...");
+
+        const response =
+            await api("/students");
+
+        console.log(
+            "[DISCIPLINE] Students response:",
+            response
+        );
+
+        students =
+            Array.isArray(response)
+                ? response
+                : response.students ||
+                  response.users ||
+                  response.data ||
+                  [];
+
+        if (!students.length) {
+
+            select.innerHTML = `
+                <option value="">
+                    No students found
+                </option>
+            `;
+
+            console.warn(
+                "[DISCIPLINE] No students returned"
+            );
+
+            return;
+        }
+
+        select.innerHTML = `
+            <option value="">
+                Select student
+            </option>
+        `;
+
+        students.forEach(student => {
+
+            const option =
+                document.createElement("option");
+
+            option.value =
+                student._id ||
+                student.id;
+
+            const name =
+                student.name ||
+                student.fullName ||
+                student.username ||
+                "Unnamed Student";
+
+            const admission =
+                student.admissionNumber ||
+                "";
+
+            option.textContent =
+                admission
+                    ? `${name} — ${admission}`
+                    : name;
+
+            select.appendChild(option);
+
+        });
+
+        console.log(
+            `[DISCIPLINE] Loaded ${students.length} students`
+        );
+
+    } catch (error) {
+
+        console.error(
+            "[DISCIPLINE STUDENTS LOAD]",
+            error
+        );
+
+        select.innerHTML = `
+            <option value="">
+                Failed to load students
+            </option>
+        `;
+
+    }
+
+}
+
+// =====================================================
+// STUDENT SELECTED
+// =====================================================
+
+function handleStudentChange(event) {
+
+    const studentId =
+        event.target.value;
+
+    const student =
+        students.find(
+            item =>
+                String(item._id || item.id) ===
+                String(studentId)
+        );
+
+    if (!student) {
+        return;
+    }
+
+    document.getElementById(
+        "admissionNumber"
+    ).value =
+        student.admissionNumber || "";
+
+    document.getElementById(
+        "className"
+    ).value =
+        student.className ||
+        student.class ||
+        student.className?.name ||
+        "";
 
 }
 
@@ -525,7 +676,7 @@ async function createDiscipline(event) {
         student:
             document.getElementById(
                 "student"
-            ).value.trim(),
+            ).value,
 
         admissionNumber:
             document.getElementById(
