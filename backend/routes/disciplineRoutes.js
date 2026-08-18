@@ -1,8 +1,6 @@
 const express = require('express');
 
-const router =
-    express.Router();
-
+const router = express.Router();
 
 const {
     createDisciplineCase,
@@ -10,46 +8,41 @@ const {
     getDisciplineCase,
     updateDisciplineCase,
     deleteDisciplineCase
-} =
-    require('../controllers/disciplineController');
-
+} = require('../controllers/disciplineController');
 
 const {
-    protect,
     authorize
-} =
-    require('../middleware/auth');
+} = require('../middleware/auth');
 
 
 // =====================================================
-// GET ALL
+// GET ALL DISCIPLINE CASES
+// Authenticated users in the school
 // =====================================================
 
 router.get(
     '/',
-    protect,
     getDisciplineCases
 );
 
 
 // =====================================================
-// GET ONE
+// GET ONE DISCIPLINE CASE
 // =====================================================
 
 router.get(
     '/:id',
-    protect,
     getDisciplineCase
 );
 
 
 // =====================================================
 // CREATE
+// Admin + Teacher
 // =====================================================
 
 router.post(
     '/',
-    protect,
     authorize('admin', 'teacher'),
     createDisciplineCase
 );
@@ -57,11 +50,11 @@ router.post(
 
 // =====================================================
 // UPDATE
+// Admin + Teacher
 // =====================================================
 
 router.put(
     '/:id',
-    protect,
     authorize('admin', 'teacher'),
     updateDisciplineCase
 );
@@ -69,11 +62,11 @@ router.put(
 
 // =====================================================
 // DELETE
+// Admin + Teacher
 // =====================================================
 
 router.delete(
     '/:id',
-    protect,
     authorize('admin', 'teacher'),
     deleteDisciplineCase
 );
