@@ -4,7 +4,7 @@ const router = express.Router();
 const {
     authenticateUser,
     authorizeRoles
-} = require("../middleware/authmiddleware");
+} = require("../middleware/authMiddleware");
 
 const {
     getDashboard
