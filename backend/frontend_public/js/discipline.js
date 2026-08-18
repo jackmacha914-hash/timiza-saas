@@ -1210,127 +1210,179 @@ async function openStudentHistory(
     studentId,
     studentName = "Student"
 ) {
+    console.log(
+        "[DISCIPLINE HISTORY] Opening...",
+        studentId,
+        studentName
+    );
 
     const modal =
-        document.getElementById(
-            "studentHistoryModal"
+        document.getElementById("studentHistoryModal");
+
+    const timeline =
+        document.getElementById("studentHistoryTimeline");
+
+    if (!modal) {
+        console.error(
+            "[DISCIPLINE HISTORY] Modal not found"
         );
-
-
-    const content =
-        document.getElementById(
-            "studentHistoryContent"
-        );
-
-
-    if (!modal || !content) {
         return;
     }
 
-
-    modal.style.display = "flex";
-
-    document.body.classList.add(
-        "modal-open"
-    );
-
-
-    content.innerHTML = `
-
-        <div class="history-loading">
-
-            <i class="fas fa-spinner fa-spin"></i>
-
-            <p>
-                Loading ${escapeHtml(studentName)}'s history...
-            </p>
-
-        </div>
-
-    `;
-
-
-    try {
-
-        /*
-         * We already have disciplineCases loaded.
-         * Therefore we can build the history immediately
-         * without requiring another API endpoint.
-         */
-
-        const history =
-            disciplineCases.filter(
-                item => {
-
-                    const id =
-                        item.student?._id ||
-                        item.student?.id ||
-                        item.studentId;
-
-
-                    return String(id) ===
-                        String(studentId);
-
-                }
-            );
-
-
-        /*
-         * If the API returns the student as an
-         * object/string in different formats,
-         * also try admission/name matching.
-         */
-
-        if (!history.length) {
-
-            content.innerHTML =
-                buildStudentHistory(
-                    history,
-                    studentName
-                );
-
-            return;
-
-        }
-
-
-        content.innerHTML =
-            buildStudentHistory(
-                history,
-                studentName
-            );
-
-
-    } catch (error) {
-
+    if (!timeline) {
         console.error(
-            "[STUDENT HISTORY]",
-            error
+            "[DISCIPLINE HISTORY] Timeline not found"
         );
-
-
-        content.innerHTML = `
-
-            <div class="history-empty">
-
-                <i class="fas fa-exclamation-circle"></i>
-
-                <h3>
-                    Unable to load history
-                </h3>
-
-                <p>
-                    ${escapeHtml(
-                        error.message
-                    )}
-                </p>
-
-            </div>
-
-        `;
-
+        return;
     }
 
+    /*
+     * OPEN MODAL
+     */
+    modal.classList.add("is-open");
+
+    modal.style.display = "flex";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
+
+    document.body.classList.add("modal-open");
+
+    /*
+     * UPDATE STUDENT NAME
+     */
+    const info =
+        document.getElementById(
+            "historyStudentInfo"
+        );
+
+    if (info) {
+        info.textContent = studentName;
+    }
+
+    /*
+     * LOADING STATE
+     */
+    timeline.innerHTML = `
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            Loading discipline history...
+        </div>
+    `;
+
+    /*
+     * FIND HISTORY
+     */
+    const history =
+        disciplineCases.filter(item => {
+
+            const id =
+                item.student?._id ||
+                item.student?.id ||
+                item.studentId;
+
+            return String(id) ===
+                String(studentId);
+        });
+
+    console.log(
+        "[DISCIPLINE HISTORY] Records:",
+        history
+    );
+
+    /*
+     * BUILD HISTORY
+     */
+    timeline.innerHTML =
+        history.length
+            ? history
+                .slice()
+                .sort(
+                    (a, b) =>
+                        new Date(b.incidentDate) -
+                        new Date(a.incidentDate)
+                )
+                .map(
+                    item =>
+                        buildHistoryItem(item)
+                )
+                .join("")
+            : `
+                <div class="history-empty">
+                    <i class="fas fa-circle-check"></i>
+
+                    <h3>
+                        No discipline incidents
+                    </h3>
+
+                    <p>
+                        This student has no recorded
+                        discipline cases.
+                    </p>
+                </div>
+            `;
+
+    /*
+     * UPDATE SUMMARY
+     */
+    const total =
+        history.length;
+
+    const minor =
+        history.filter(
+            item =>
+                item.severity === "low" ||
+                item.severity === "medium"
+        ).length;
+
+    const serious =
+        history.filter(
+            item =>
+                item.severity === "high" ||
+                item.severity === "critical"
+        ).length;
+
+    const resolved =
+        history.filter(
+            item =>
+                item.status === "resolved"
+        ).length;
+
+    const open =
+        history.filter(
+            item =>
+                item.status !== "resolved" &&
+                item.status !== "dismissed"
+        ).length;
+
+    document.getElementById(
+        "historyTotalCases"
+    )?.replaceChildren(
+        document.createTextNode(total)
+    );
+
+    document.getElementById(
+        "historyMinorCases"
+    )?.replaceChildren(
+        document.createTextNode(minor)
+    );
+
+    document.getElementById(
+        "historySeriousCases"
+    )?.replaceChildren(
+        document.createTextNode(serious)
+    );
+
+    document.getElementById(
+        "historyResolvedCases"
+    )?.replaceChildren(
+        document.createTextNode(resolved)
+    );
+
+    document.getElementById(
+        "historyOpenCases"
+    )?.replaceChildren(
+        document.createTextNode(open)
+    );
 }
 
 // =====================================================
@@ -1792,30 +1844,31 @@ function buildHistoryItem(item) {
 // =====================================================
 // CLOSE STUDENT HISTORY
 // =====================================================
-
 function closeStudentHistory() {
+
+    console.log(
+        "[DISCIPLINE HISTORY] Closing..."
+    );
 
     const modal =
         document.getElementById(
             "studentHistoryModal"
         );
 
-
     if (!modal) {
         return;
     }
 
+    modal.classList.remove("is-open");
 
-    modal.style.display =
-        "none";
-
+    modal.style.display = "none";
+    modal.style.visibility = "hidden";
+    modal.style.opacity = "0";
 
     document.body.classList.remove(
         "modal-open"
     );
-
 }
-
 
 // =====================================================
 // CREATE DISCIPLINE
