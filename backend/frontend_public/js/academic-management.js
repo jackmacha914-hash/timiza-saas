@@ -5,6 +5,13 @@ let classChart;
 let gradeChart;
 let trendChart;
 
+let subjectsCache = [];
+
+
+/* =====================================================
+   INITIALIZE
+===================================================== */
+
 document.addEventListener("DOMContentLoaded", () => {
 
     initializeTabs();
@@ -19,232 +26,1196 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .getElementById("refreshAcademicBtn")
-        ?.addEventListener("click", refreshAcademic);
+        ?.addEventListener(
+            "click",
+            refreshAcademic
+        );
 
 });
 
-/* =====================================
+
+/* =====================================================
    TOKEN
-===================================== */
+===================================================== */
 
 function getToken() {
+
     return localStorage.getItem("token");
+
 }
 
-async function api(url) {
 
-    const response = await fetch(`${API}${url}`, {
-        headers: {
-            Authorization: `Bearer ${getToken()}`,
-            "Content-Type": "application/json"
+/* =====================================================
+   API HELPER
+===================================================== */
+
+async function api(url, options = {}) {
+
+    const token = getToken();
+
+    if (!token) {
+
+        throw new Error(
+            "Your session has expired. Please log in again."
+        );
+
+    }
+
+    const response = await fetch(
+        `${API}${url}`,
+        {
+            ...options,
+
+            headers: {
+
+                "Content-Type":
+                    "application/json",
+
+                Authorization:
+                    `Bearer ${token}`,
+
+                ...(options.headers || {})
+            }
         }
-    });
+    );
 
-    if (!response.ok)
-        throw new Error("API Error");
 
-    return response.json();
+    let data;
+
+    try {
+
+        data = await response.json();
+
+    } catch {
+
+        data = {};
+
+    }
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            data.message ||
+            "Something went wrong."
+        );
+
+    }
+
+
+    return data;
+
 }
 
-/* =====================================
+
+/* =====================================================
+   HTML SECURITY
+===================================================== */
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+/* =====================================================
    TABS
-===================================== */
+===================================================== */
 
 function initializeTabs() {
 
-    const tabs = document.querySelectorAll(".academic-tab");
+    const tabs =
+        document.querySelectorAll(
+            ".academic-tab"
+        );
 
-    const sections = document.querySelectorAll(".academic-section");
+    const sections =
+        document.querySelectorAll(
+            ".academic-section"
+        );
+
 
     tabs.forEach(tab => {
 
-        tab.addEventListener("click", () => {
+        tab.addEventListener(
+            "click",
+            () => {
 
-            tabs.forEach(t => t.classList.remove("active"));
+                tabs.forEach(t =>
+                    t.classList.remove("active")
+                );
 
-            sections.forEach(s => s.classList.remove("active"));
 
-            tab.classList.add("active");
+                sections.forEach(section =>
+                    section.classList.remove("active")
+                );
 
-            document
-                .getElementById(tab.dataset.tab)
-                .classList.add("active");
 
-        });
+                tab.classList.add("active");
+
+
+                const section =
+                    document.getElementById(
+                        tab.dataset.tab
+                    );
+
+
+                if (section) {
+
+                    section.classList.add(
+                        "active"
+                    );
+
+                }
+
+            }
+        );
 
     });
 
 }
 
-/* =====================================
+
+/* =====================================================
    DASHBOARD
-===================================== */
+===================================================== */
 
 async function loadDashboard() {
 
     try {
 
-        const dashboard = await api("/academic/dashboard");
+        const response =
+            await api(
+                "/academic/dashboard"
+            );
 
-        document.getElementById("totalSubjects").textContent =
-            dashboard.totalSubjects || 0;
 
-        document.getElementById("subjectAllocations").textContent =
-            dashboard.allocations || 0;
+        const dashboard =
+            response.data ||
+            response;
 
-        document.getElementById("activeExams").textContent =
-            dashboard.exams || 0;
 
-        document.getElementById("schoolAverage").textContent =
-            (dashboard.average || 0) + "%";
+        setText(
+            "totalSubjects",
+            dashboard.totalSubjects || 0
+        );
 
-        document.getElementById("reportCardsCount").textContent =
-            dashboard.reportCards || 0;
 
-        document.getElementById("studentsAssessed").textContent =
-            dashboard.students || 0;
+        setText(
+            "subjectAllocations",
+            dashboard.allocations || 0
+        );
+
+
+        setText(
+            "activeExams",
+            dashboard.exams || 0
+        );
+
+
+        setText(
+            "schoolAverage",
+            `${dashboard.average || 0}%`
+        );
+
+
+        setText(
+            "reportCardsCount",
+            dashboard.reportCards || 0
+        );
+
+
+        setText(
+            "studentsAssessed",
+            dashboard.students || 0
+        );
+
 
     } catch (err) {
 
-        console.error(err);
+        console.error(
+            "[ACADEMIC DASHBOARD]",
+            err
+        );
 
     }
 
 }
 
-/* =====================================
+
+/* =====================================================
+   SET TEXT
+===================================================== */
+
+function setText(id, value) {
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+
+        element.textContent = value;
+
+    }
+
+}
+
+
+/* =====================================================
    SUBJECTS
-===================================== */
+===================================================== */
 
 async function loadSubjects() {
 
+    const body =
+        document.getElementById(
+            "subjectsBody"
+        );
+
+
+    if (!body) return;
+
+
+    body.innerHTML = `
+
+        <tr>
+
+            <td colspan="5"
+                style="text-align:center;">
+
+                <i class="fas fa-spinner fa-spin"></i>
+                Loading subjects...
+
+            </td>
+
+        </tr>
+
+    `;
+
+
     try {
 
-        const subjects = await api("/subjects");
+        const response =
+            await api("/subjects");
 
-        const body =
-            document.getElementById("subjectsBody");
+
+        /*
+         * New backend response:
+         *
+         * {
+         *   success: true,
+         *   count: 5,
+         *   data: [...]
+         * }
+         */
+
+        const subjects =
+            response.data || [];
+
+
+        subjectsCache =
+            subjects;
+
 
         body.innerHTML = "";
+
+
+        if (!subjects.length) {
+
+            body.innerHTML = `
+
+                <tr>
+
+                    <td colspan="5"
+                        style="text-align:center;">
+
+                        <div class="empty-state">
+
+                            <i class="fas fa-book"
+                               style="font-size:32px;">
+                            </i>
+
+                            <p>
+                                No subjects have been added yet.
+                            </p>
+
+                            <button
+                                class="primary-btn"
+                                onclick="openAddSubjectModal()">
+
+                                <i class="fas fa-plus"></i>
+
+                                Add First Subject
+
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
 
         subjects.forEach(subject => {
 
             body.innerHTML += `
 
-            <tr>
+                <tr>
 
-                <td>${subject.name}</td>
+                    <td>
 
-                <td>${subject.code}</td>
+                        <strong>
+                            ${escapeHtml(
+                                subject.name
+                            )}
+                        </strong>
 
-                <td>${subject.category}</td>
+                    </td>
 
-                <td>
 
-                    <span class="badge badge-success">
+                    <td>
 
-                        Active
+                        <span class="subject-code">
 
-                    </span>
+                            ${escapeHtml(
+                                subject.code
+                            )}
 
-                </td>
+                        </span>
 
-                <td>
+                    </td>
 
-                    <button class="action-btn edit-btn">
 
-                        Edit
+                    <td>
 
-                    </button>
+                        ${escapeHtml(
+                            subject.category ||
+                            "Core"
+                        )}
 
-                    <button class="action-btn delete-btn">
+                    </td>
 
-                        Delete
 
-                    </button>
+                    <td>
 
-                </td>
+                        <span class="badge ${
+                            subject.active
+                                ? "badge-success"
+                                : "badge-danger"
+                        }">
 
-            </tr>
+                            ${
+                                subject.active
+                                    ? "Active"
+                                    : "Inactive"
+                            }
+
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        <button
+                            class="action-btn edit-btn"
+                            onclick="editSubject(
+                                '${subject._id}'
+                            )">
+
+                            <i class="fas fa-edit"></i>
+
+                            Edit
+
+                        </button>
+
+
+                        ${
+                            subject.active
+
+                            ?
+
+                            `
+
+                            <button
+                                class="action-btn delete-btn"
+                                onclick="deactivateSubject(
+                                    '${subject._id}'
+                                )">
+
+                                <i class="fas fa-ban"></i>
+
+                                Deactivate
+
+                            </button>
+
+                            `
+
+                            :
+
+                            `
+
+                            <button
+                                class="action-btn edit-btn"
+                                onclick="activateSubject(
+                                    '${subject._id}'
+                                )">
+
+                                <i class="fas fa-check"></i>
+
+                                Activate
+
+                            </button>
+
+                            `
+                        }
+
+                    </td>
+
+                </tr>
 
             `;
 
         });
 
+
     } catch (err) {
 
-        console.error(err);
+        console.error(
+            "[SUBJECTS]",
+            err
+        );
+
+
+        body.innerHTML = `
+
+            <tr>
+
+                <td colspan="5"
+                    style="text-align:center;">
+
+                    <div class="error-state">
+
+                        <i class="fas fa-exclamation-triangle"></i>
+
+                        <p>
+                            ${escapeHtml(
+                                err.message
+                            )}
+                        </p>
+
+                        <button
+                            class="primary-btn"
+                            onclick="loadSubjects()">
+
+                            <i class="fas fa-sync"></i>
+
+                            Try Again
+
+                        </button>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
+        `;
 
     }
 
 }
 
-/* =====================================
+
+/* =====================================================
+   ADD SUBJECT
+===================================================== */
+
+async function addSubject() {
+
+    const name =
+        document
+            .getElementById("subjectName")
+            ?.value
+            .trim();
+
+
+    const code =
+        document
+            .getElementById("subjectCode")
+            ?.value
+            .trim();
+
+
+    const category =
+        document
+            .getElementById("subjectCategory")
+            ?.value;
+
+
+    if (!name) {
+
+        alert(
+            "Please enter the subject name."
+        );
+
+        return;
+
+    }
+
+
+    if (!code) {
+
+        alert(
+            "Please enter the subject code."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        await api(
+            "/subjects",
+            {
+
+                method: "POST",
+
+                body: JSON.stringify({
+
+                    name,
+                    code,
+                    category
+
+                })
+
+            }
+        );
+
+
+        closeSubjectModal();
+
+        await loadSubjects();
+
+        await loadDashboard();
+
+
+        alert(
+            "Subject created successfully."
+        );
+
+
+    } catch (err) {
+
+        console.error(
+            "[ADD SUBJECT]",
+            err
+        );
+
+
+        alert(
+            err.message
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   EDIT SUBJECT
+===================================================== */
+
+function editSubject(id) {
+
+    const subject =
+        subjectsCache.find(
+            item => item._id === id
+        );
+
+
+    if (!subject) {
+
+        alert(
+            "Subject could not be found."
+        );
+
+        return;
+
+    }
+
+
+    document.getElementById(
+        "subjectModalTitle"
+    ).textContent =
+        "Edit Subject";
+
+
+    document.getElementById(
+        "subjectId"
+    ).value =
+        subject._id;
+
+
+    document.getElementById(
+        "subjectName"
+    ).value =
+        subject.name || "";
+
+
+    document.getElementById(
+        "subjectCode"
+    ).value =
+        subject.code || "";
+
+
+    document.getElementById(
+        "subjectCategory"
+    ).value =
+        subject.category || "Core";
+
+
+    const form =
+        document.getElementById(
+            "subjectForm"
+        );
+
+
+    if (form) {
+
+        form.onsubmit =
+            async function(event) {
+
+                event.preventDefault();
+
+                await updateSubject();
+
+            };
+
+    }
+
+
+    openSubjectModal();
+
+}
+
+
+/* =====================================================
+   UPDATE SUBJECT
+===================================================== */
+
+async function updateSubject() {
+
+    const id =
+        document.getElementById(
+            "subjectId"
+        ).value;
+
+
+    const name =
+        document.getElementById(
+            "subjectName"
+        ).value.trim();
+
+
+    const code =
+        document.getElementById(
+            "subjectCode"
+        ).value.trim();
+
+
+    const category =
+        document.getElementById(
+            "subjectCategory"
+        ).value;
+
+
+    if (!id) {
+
+        alert(
+            "Invalid subject."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        await api(
+            `/subjects/${id}`,
+            {
+
+                method: "PUT",
+
+                body: JSON.stringify({
+
+                    name,
+                    code,
+                    category
+
+                })
+
+            }
+        );
+
+
+        closeSubjectModal();
+
+        await loadSubjects();
+
+        await loadDashboard();
+
+
+        alert(
+            "Subject updated successfully."
+        );
+
+
+    } catch (err) {
+
+        console.error(
+            "[UPDATE SUBJECT]",
+            err
+        );
+
+
+        alert(
+            err.message
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   DEACTIVATE SUBJECT
+===================================================== */
+
+async function deactivateSubject(id) {
+
+    const subject =
+        subjectsCache.find(
+            item => item._id === id
+        );
+
+
+    if (!subject) return;
+
+
+    const confirmed =
+        confirm(
+            `Deactivate "${subject.name}"?\n\n` +
+            `The subject will remain in historical ` +
+            `academic records but will no longer be active.`
+        );
+
+
+    if (!confirmed) return;
+
+
+    try {
+
+        await api(
+            `/subjects/${id}`,
+            {
+                method: "DELETE"
+            }
+        );
+
+
+        await loadSubjects();
+
+        await loadDashboard();
+
+
+        alert(
+            "Subject deactivated successfully."
+        );
+
+
+    } catch (err) {
+
+        console.error(
+            "[DEACTIVATE SUBJECT]",
+            err
+        );
+
+
+        alert(
+            err.message
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   ACTIVATE SUBJECT
+===================================================== */
+
+async function activateSubject(id) {
+
+    try {
+
+        await api(
+            `/subjects/${id}`,
+            {
+
+                method: "PUT",
+
+                body: JSON.stringify({
+                    active: true
+                })
+
+            }
+        );
+
+
+        await loadSubjects();
+
+        await loadDashboard();
+
+
+    } catch (err) {
+
+        console.error(
+            "[ACTIVATE SUBJECT]",
+            err
+        );
+
+
+        alert(
+            err.message
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   SUBJECT MODAL
+===================================================== */
+
+function openAddSubjectModal() {
+
+    const form =
+        document.getElementById(
+            "subjectForm"
+        );
+
+
+    if (form) {
+
+        form.reset();
+
+    }
+
+
+    const id =
+        document.getElementById(
+            "subjectId"
+        );
+
+
+    if (id) {
+
+        id.value = "";
+
+    }
+
+
+    const title =
+        document.getElementById(
+            "subjectModalTitle"
+        );
+
+
+    if (title) {
+
+        title.textContent =
+            "Add Subject";
+
+    }
+
+
+    if (form) {
+
+        form.onsubmit =
+            async function(event) {
+
+                event.preventDefault();
+
+                await addSubject();
+
+            };
+
+    }
+
+
+    openSubjectModal();
+
+}
+
+
+function openSubjectModal() {
+
+    const modal =
+        document.getElementById(
+            "subjectModal"
+        );
+
+
+    if (modal) {
+
+        modal.classList.add(
+            "active"
+        );
+
+    }
+
+}
+
+
+function closeSubjectModal() {
+
+    const modal =
+        document.getElementById(
+            "subjectModal"
+        );
+
+
+    if (modal) {
+
+        modal.classList.remove(
+            "active"
+        );
+
+    }
+
+}
+
+
+/* =====================================================
    REPORT CARDS
-===================================== */
+===================================================== */
 
 async function loadReportCards() {
 
     try {
 
-        const response = await api("/reportcards");
+        const response =
+            await api(
+                "/reportcards"
+            );
 
-console.log("REPORTS:", response);
 
-const reports = response.data || [];
+        console.log(
+            "REPORTS:",
+            response
+        );
 
-const body = document.getElementById("reportCardsBody");
 
-body.innerHTML = "";
+        const reports =
+            response.data || [];
 
-if (!reports.length) {
-    body.innerHTML = `
-        <tr>
-            <td colspan="7" style="text-align:center;">
-                No report cards found
-            </td>
-        </tr>
-    `;
-    return;
-}
 
-reports.forEach(report => {
+        const body =
+            document.getElementById(
+                "reportCardsBody"
+            );
+
+
+        if (!body) return;
+
+
+        body.innerHTML = "";
+
+
+        if (!reports.length) {
+
+            body.innerHTML = `
+
+                <tr>
+
+                    <td colspan="7"
+                        style="text-align:center;">
+
+                        No report cards found
+
+                    </td>
+
+                </tr>
+
+            `;
+
+            return;
+
+        }
+
+
+        reports.forEach(report => {
 
             body.innerHTML += `
-<tr>
-    <td>${report.studentName || "-"}</td>
-    <td>${report.className || "-"}</td>
-    <td>${report.term || "-"}</td>
-    <td>${report.average || 0}%</td>
-    <td>${report.grade || "-"}</td>
-    <td>${report.position || "-"}</td>
-    <td>
-        <button class="action-btn view-btn"
-            onclick="viewReportCard('${report._id}')">
-            View
-        </button>
-    </td>
-</tr>
-`;
+
+                <tr>
+
+                    <td>
+                        ${escapeHtml(
+                            report.studentName ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            report.className ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            report.term ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${report.average || 0}%
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            report.grade ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            report.position ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+
+                        <button
+                            class="action-btn view-btn"
+                            onclick="viewReportCard(
+                                '${report._id}'
+                            )">
+
+                            <i class="fas fa-eye"></i>
+
+                            View
+
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            `;
 
         });
 
+
     } catch (err) {
 
-        console.error(err);
+        console.error(
+            "[REPORT CARDS]",
+            err
+        );
 
     }
 
 }
 
-/* =====================================
+
+/* =====================================================
+   VIEW REPORT CARD
+===================================================== */
+
+function viewReportCard(id) {
+
+    if (!id) return;
+
+
+    /*
+     * We will connect this to a dedicated
+     * report-card page/modal next.
+     */
+
+    console.log(
+        "View report card:",
+        id
+    );
+
+}
+
+
+/* =====================================================
    CHARTS
-===================================== */
+===================================================== */
 
 function loadCharts() {
 
+    const subjectCanvas =
+        document.getElementById(
+            "subjectPerformanceChart"
+        );
+
+
+    const classCanvas =
+        document.getElementById(
+            "classPerformanceChart"
+        );
+
+
+    const gradeCanvas =
+        document.getElementById(
+            "gradeDistributionChart"
+        );
+
+
+    const trendCanvas =
+        document.getElementById(
+            "examTrendChart"
+        );
+
+
+    if (!subjectCanvas ||
+        !classCanvas ||
+        !gradeCanvas ||
+        !trendCanvas) {
+
+        return;
+
+    }
+
+
     subjectChart = new Chart(
-        document.getElementById("subjectPerformanceChart"),
+        subjectCanvas,
         {
 
             type: "bar",
@@ -255,18 +1226,41 @@ function loadCharts() {
 
                 datasets: [{
 
-                    label: "Average",
+                    label:
+                        "Average Score",
 
                     data: []
 
                 }]
 
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        max: 100
+
+                    }
+
+                }
+
             }
 
-        });
+        }
+    );
+
 
     classChart = new Chart(
-        document.getElementById("classPerformanceChart"),
+        classCanvas,
         {
 
             type: "bar",
@@ -277,18 +1271,41 @@ function loadCharts() {
 
                 datasets: [{
 
-                    label: "Classes",
+                    label:
+                        "Average Score",
 
                     data: []
 
                 }]
 
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        max: 100
+
+                    }
+
+                }
+
             }
 
-        });
+        }
+    );
+
 
     gradeChart = new Chart(
-        document.getElementById("gradeDistributionChart"),
+        gradeCanvas,
         {
 
             type: "pie",
@@ -303,12 +1320,22 @@ function loadCharts() {
 
                 }]
 
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false
+
             }
 
-        });
+        }
+    );
+
 
     trendChart = new Chart(
-        document.getElementById("examTrendChart"),
+        trendCanvas,
         {
 
             type: "line",
@@ -319,28 +1346,125 @@ function loadCharts() {
 
                 datasets: [{
 
-                    label: "School Average",
+                    label:
+                        "School Average",
 
-                    data: []
+                    data: [],
+
+                    tension: 0.3
 
                 }]
 
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        max: 100
+
+                    }
+
+                }
+
             }
 
-        });
+        }
+    );
 
 }
 
-/* =====================================
+
+/* =====================================================
    REFRESH
-===================================== */
+===================================================== */
 
-function refreshAcademic() {
+async function refreshAcademic() {
 
-    loadDashboard();
+    const button =
+        document.getElementById(
+            "refreshAcademicBtn"
+        );
 
-    loadSubjects();
 
-    loadReportCards();
+    if (button) {
+
+        button.disabled = true;
+
+        button.innerHTML = `
+
+            <i class="fas fa-spinner fa-spin"></i>
+
+            Refreshing...
+
+        `;
+
+    }
+
+
+    try {
+
+        await Promise.all([
+
+            loadDashboard(),
+
+            loadSubjects(),
+
+            loadReportCards()
+
+        ]);
+
+    } finally {
+
+        if (button) {
+
+            button.disabled = false;
+
+            button.innerHTML = `
+
+                <i class="fas fa-sync-alt"></i>
+
+                Refresh
+
+            `;
+
+        }
+
+    }
 
 }
+
+
+/* =====================================================
+   CLOSE MODAL WHEN CLICKING OUTSIDE
+===================================================== */
+
+document.addEventListener(
+    "click",
+    event => {
+
+        const modal =
+            document.getElementById(
+                "subjectModal"
+            );
+
+
+        if (
+            modal &&
+            event.target === modal
+        ) {
+
+            closeSubjectModal();
+
+        }
+
+    }
+);
