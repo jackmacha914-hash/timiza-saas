@@ -999,6 +999,25 @@ function renderDiscipline() {
 
 }
 
+
+const detailsButton =
+    card.querySelector(".view-details-btn");
+
+if (detailsButton) {
+
+    detailsButton.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            openDisciplineDetails(item);
+
+        }
+    );
+
+}
 // =====================================================
 // DISCIPLINE CARD
 // =====================================================
@@ -1201,6 +1220,377 @@ function createDisciplineCard(item) {
     return card;
 
 }
+//details function
+
+function openDisciplineDetails(item) {
+
+    const modal =
+        document.getElementById(
+            "disciplineDetailsModal"
+        );
+
+    const content =
+        document.getElementById(
+            "disciplineDetailsContent"
+        );
+
+    if (!modal || !content) {
+
+        console.error(
+            "[DISCIPLINE DETAILS] Modal not found"
+        );
+
+        return;
+    }
+
+    const student =
+        item.student?.name ||
+        item.student?.fullName ||
+        item.studentName ||
+        "Unknown Student";
+
+    const admissionNumber =
+        item.admissionNumber ||
+        item.student?.admissionNumber ||
+        "Not available";
+
+    const className =
+        item.className ||
+        item.student?.className ||
+        item.student?.class ||
+        "Not available";
+
+    const severity =
+        item.severity ||
+        "low";
+
+    const status =
+        item.status ||
+        "reported";
+
+    content.innerHTML = `
+
+        <div class="case-details-header">
+
+            <div class="case-student">
+
+                <div class="case-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+
+                <div>
+
+                    <h3>
+                        ${escapeHtml(student)}
+                    </h3>
+
+                    <p>
+                        Admission:
+                        ${escapeHtml(admissionNumber)}
+                    </p>
+
+                    <p>
+                        Class:
+                        ${escapeHtml(className)}
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div class="case-badges">
+
+                <span
+                    class="history-severity ${escapeHtml(severity)}"
+                >
+                    ${escapeHtml(
+                        severity.toUpperCase()
+                    )}
+                </span>
+
+                <span
+                    class="history-status ${escapeHtml(
+                        status.replaceAll("_", "-")
+                    )}"
+                >
+                    ${escapeHtml(
+                        formatStatus(status)
+                    )}
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="case-details-grid">
+
+            <div class="case-detail-card">
+
+                <span>
+                    Incident Category
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        item.category ||
+                        "Not specified"
+                    )}
+                </strong>
+
+            </div>
+
+
+            <div class="case-detail-card">
+
+                <span>
+                    Incident Date
+                </span>
+
+                <strong>
+                    ${formatDate(
+                        item.incidentDate
+                    )}
+                </strong>
+
+            </div>
+
+
+            <div class="case-detail-card">
+
+                <span>
+                    Reported By
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        item.reportedBy ||
+                        "Administrator"
+                    )}
+                </strong>
+
+            </div>
+
+
+            <div class="case-detail-card">
+
+                <span>
+                    Case Status
+                </span>
+
+                <strong>
+                    ${escapeHtml(
+                        formatStatus(status)
+                    )}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="case-detail-section">
+
+            <h4>
+                <i class="fas fa-file-lines"></i>
+                Incident Description
+            </h4>
+
+            <p>
+                ${escapeHtml(
+                    item.description ||
+                    "No description provided."
+                )}
+            </p>
+
+        </div>
+
+
+        <div class="case-detail-section">
+
+            <h4>
+                <i class="fas fa-gavel"></i>
+                Action Taken
+            </h4>
+
+            <p>
+                ${escapeHtml(
+                    item.actionTaken ||
+                    "No action recorded."
+                )}
+            </p>
+
+        </div>
+
+
+        ${
+            item.investigationNotes
+                ? `
+                    <div class="case-detail-section">
+
+                        <h4>
+                            <i class="fas fa-magnifying-glass"></i>
+                            Investigation Notes
+                        </h4>
+
+                        <p>
+                            ${escapeHtml(
+                                item.investigationNotes
+                            )}
+                        </p>
+
+                    </div>
+                `
+                : ""
+        }
+
+
+        ${
+            item.resolution
+                ? `
+                    <div class="case-detail-section">
+
+                        <h4>
+                            <i class="fas fa-circle-check"></i>
+                            Resolution
+                        </h4>
+
+                        <p>
+                            ${escapeHtml(
+                                item.resolution
+                            )}
+                        </p>
+
+                    </div>
+                `
+                : ""
+        }
+
+
+        ${
+            item.followUpDate
+                ? `
+                    <div class="case-detail-section">
+
+                        <h4>
+                            <i class="fas fa-calendar-check"></i>
+                            Follow-up Date
+                        </h4>
+
+                        <p>
+                            ${formatDate(
+                                item.followUpDate
+                            )}
+                        </p>
+
+                    </div>
+                `
+                : ""
+        }
+
+
+        <div class="case-detail-section">
+
+            <h4>
+                <i class="fas fa-user-shield"></i>
+                Parent Notification
+            </h4>
+
+            <p>
+
+                ${
+                    item.parentNotified
+                        ? "Parent/Guardian has been notified."
+                        : "Parent/Guardian has not been notified."
+                }
+
+            </p>
+
+        </div>
+
+
+        <div class="case-details-actions">
+
+            <button
+                type="button"
+                class="secondary-btn"
+                id="closeDisciplineDetailsBtn"
+            >
+                Close
+            </button>
+
+            <button
+                type="button"
+                class="primary-btn"
+                id="editDisciplineCaseBtn"
+            >
+                <i class="fas fa-pen"></i>
+                Edit Case
+            </button>
+
+        </div>
+
+    `;
+
+
+    modal.classList.add("is-open");
+
+    modal.style.display = "flex";
+
+    document.body.classList.add(
+        "modal-open"
+    );
+
+
+    document
+        .getElementById(
+            "closeDisciplineDetailsBtn"
+        )
+        ?.addEventListener(
+            "click",
+            closeDisciplineDetails
+        );
+
+
+    document
+        .getElementById(
+            "editDisciplineCaseBtn"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                editDisciplineCase(item);
+
+            }
+        );
+
+}
+
+//close details modal
+function closeDisciplineDetails() {
+
+    const modal =
+        document.getElementById(
+            "disciplineDetailsModal"
+        );
+
+    if (!modal) {
+        return;
+    }
+
+    modal.classList.remove(
+        "is-open"
+    );
+
+    modal.style.display = "none";
+
+    document.body.classList.remove(
+        "modal-open"
+    );
+
+}
+
 
 // =====================================================
 // OPEN STUDENT HISTORY
