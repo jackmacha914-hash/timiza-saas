@@ -1,0 +1,416 @@
+const Discipline = require('../models/Discipline');
+
+
+// =====================================================
+// CREATE DISCIPLINE CASE
+// =====================================================
+
+const createDisciplineCase = async (req, res) => {
+
+    try {
+
+        const {
+            student,
+            admissionNumber,
+            className,
+            category,
+            severity,
+            description,
+            incidentDate,
+            actionTaken,
+            status,
+            resolutionNotes
+        } = req.body;
+
+
+        if (!student) {
+            return res.status(400).json({
+                message: 'Student is required'
+            });
+        }
+
+        if (!category) {
+            return res.status(400).json({
+                message: 'Discipline category is required'
+            });
+        }
+
+        if (!description) {
+            return res.status(400).json({
+                message: 'Incident description is required'
+            });
+        }
+
+        if (!incidentDate) {
+            return res.status(400).json({
+                message: 'Incident date is required'
+            });
+        }
+
+
+        const discipline =
+            await Discipline.create({
+
+                school: req.user.school,
+
+                student,
+
+                admissionNumber,
+
+                className,
+
+                category,
+
+                severity: severity || 'low',
+
+                description,
+
+                incidentDate,
+
+                reportedBy:
+                    req.user.name ||
+                    req.user.fullName ||
+                    req.user.email ||
+                    'Administrator',
+
+                actionTaken,
+
+                status:
+                    status || 'reported',
+
+                resolutionNotes
+
+            });
+
+
+        const populated =
+            await Discipline.findById(
+                discipline._id
+            ).populate(
+                'student',
+                'name fullName email admissionNumber'
+            );
+
+
+        res.status(201).json({
+
+            message:
+                'Discipline case recorded successfully',
+
+            discipline:
+                populated
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            '[DISCIPLINE CREATE]',
+            error
+        );
+
+        res.status(500).json({
+
+            message:
+                'Failed to create discipline case',
+
+            error:
+                error.message
+
+        });
+
+    }
+
+};
+
+
+// =====================================================
+// GET DISCIPLINE CASES
+// =====================================================
+
+const getDisciplineCases = async (req, res) => {
+
+    try {
+
+        const cases =
+            await Discipline.find({
+                school: req.user.school
+            })
+            .populate(
+                'student',
+                'name fullName email admissionNumber'
+            )
+            .sort({
+                createdAt: -1
+            });
+
+
+        res.json({
+            discipline: cases
+        });
+
+    } catch (error) {
+
+        console.error(
+            '[DISCIPLINE GET]',
+            error
+        );
+
+        res.status(500).json({
+
+            message:
+                'Failed to load discipline records',
+
+            error:
+                error.message
+
+        });
+
+    }
+
+};
+
+
+// =====================================================
+// GET SINGLE CASE
+// =====================================================
+
+const getDisciplineCase = async (req, res) => {
+
+    try {
+
+        const discipline =
+            await Discipline.findOne({
+
+                _id: req.params.id,
+
+                school: req.user.school
+
+            }).populate(
+                'student',
+                'name fullName email admissionNumber'
+            );
+
+
+        if (!discipline) {
+
+            return res.status(404).json({
+
+                message:
+                    'Discipline case not found'
+
+            });
+
+        }
+
+
+        res.json({
+            discipline
+        });
+
+    } catch (error) {
+
+        console.error(
+            '[DISCIPLINE GET ONE]',
+            error
+        );
+
+        res.status(500).json({
+
+            message:
+                'Failed to load discipline case',
+
+            error:
+                error.message
+
+        });
+
+    }
+
+};
+
+
+// =====================================================
+// UPDATE CASE
+// =====================================================
+
+const updateDisciplineCase = async (req, res) => {
+
+    try {
+
+        const allowedFields = [
+
+            'category',
+            'severity',
+            'description',
+            'incidentDate',
+            'actionTaken',
+            'status',
+            'resolutionNotes'
+
+        ];
+
+
+        const updates = {};
+
+
+        allowedFields.forEach(field => {
+
+            if (
+                req.body[field] !== undefined
+            ) {
+
+                updates[field] =
+                    req.body[field];
+
+            }
+
+        });
+
+
+        if (
+            updates.status === 'resolved'
+        ) {
+
+            updates.resolvedAt =
+                new Date();
+
+        }
+
+
+        const discipline =
+            await Discipline.findOneAndUpdate(
+
+                {
+                    _id: req.params.id,
+                    school: req.user.school
+                },
+
+                updates,
+
+                {
+                    new: true,
+                    runValidators: true
+                }
+
+            ).populate(
+                'student',
+                'name fullName email admissionNumber'
+            );
+
+
+        if (!discipline) {
+
+            return res.status(404).json({
+
+                message:
+                    'Discipline case not found'
+
+            });
+
+        }
+
+
+        res.json({
+
+            message:
+                'Discipline case updated successfully',
+
+            discipline
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            '[DISCIPLINE UPDATE]',
+            error
+        );
+
+        res.status(500).json({
+
+            message:
+                'Failed to update discipline case',
+
+            error:
+                error.message
+
+        });
+
+    }
+
+};
+
+
+// =====================================================
+// DELETE CASE
+// =====================================================
+
+const deleteDisciplineCase = async (req, res) => {
+
+    try {
+
+        const discipline =
+            await Discipline.findOneAndDelete({
+
+                _id: req.params.id,
+
+                school: req.user.school
+
+            });
+
+
+        if (!discipline) {
+
+            return res.status(404).json({
+
+                message:
+                    'Discipline case not found'
+
+            });
+
+        }
+
+
+        res.json({
+
+            message:
+                'Discipline case deleted successfully'
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            '[DISCIPLINE DELETE]',
+            error
+        );
+
+        res.status(500).json({
+
+            message:
+                'Failed to delete discipline case',
+
+            error:
+                error.message
+
+        });
+
+    }
+
+};
+
+
+module.exports = {
+
+    createDisciplineCase,
+
+    getDisciplineCases,
+
+    getDisciplineCase,
+
+    updateDisciplineCase,
+
+    deleteDisciplineCase
+
+};
