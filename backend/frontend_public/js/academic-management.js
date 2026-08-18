@@ -1,11 +1,17 @@
+/* =====================================================
+   TIMIZA EDUANALYTICS
+   ACADEMIC MANAGEMENT
+===================================================== */
+
 const API = "https://timiza-saas.onrender.com/api";
 
-let subjectChart;
-let classChart;
-let gradeChart;
-let trendChart;
+let subjectChart = null;
+let classChart = null;
+let gradeChart = null;
+let trendChart = null;
 
 let currentEditingSubjectId = null;
+let allSubjects = [];
 
 
 /* =====================================================
@@ -30,7 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document
         .getElementById("refreshAcademicBtn")
-        ?.addEventListener("click", refreshAcademic);
+        ?.addEventListener(
+            "click",
+            refreshAcademic
+        );
 
 });
 
@@ -47,32 +56,34 @@ function getToken() {
 
 
 /* =====================================================
-   API
+   API HELPER
 ===================================================== */
 
 async function api(url, options = {}) {
 
     const token = getToken();
 
-    const response = await fetch(`${API}${url}`, {
+    const headers = {
 
-        ...options,
+        "Content-Type": "application/json",
 
-        headers: {
+        ...(token
+            ? {
+                Authorization: `Bearer ${token}`
+            }
+            : {}),
 
-            "Content-Type": "application/json",
+        ...(options.headers || {})
 
-            ...(token
-                ? {
-                    Authorization: `Bearer ${token}`
-                }
-                : {}),
+    };
 
-            ...(options.headers || {})
-
+    const response = await fetch(
+        `${API}${url}`,
+        {
+            ...options,
+            headers
         }
-
-    });
+    );
 
     let data = null;
 
@@ -80,7 +91,7 @@ async function api(url, options = {}) {
 
         data = await response.json();
 
-    } catch (err) {
+    } catch (error) {
 
         data = null;
 
@@ -90,6 +101,7 @@ async function api(url, options = {}) {
 
         throw new Error(
             data?.message ||
+            data?.error ||
             `Request failed with status ${response.status}`
         );
 
@@ -107,35 +119,54 @@ async function api(url, options = {}) {
 function initializeTabs() {
 
     const tabs =
-        document.querySelectorAll(".academic-tab");
+        document.querySelectorAll(
+            ".academic-tab"
+        );
 
     const sections =
-        document.querySelectorAll(".academic-section");
+        document.querySelectorAll(
+            ".academic-section"
+        );
 
     tabs.forEach(tab => {
 
-        tab.addEventListener("click", () => {
+        tab.addEventListener(
+            "click",
+            () => {
 
-            tabs.forEach(t =>
-                t.classList.remove("active")
-            );
+                tabs.forEach(item => {
 
-            sections.forEach(section =>
-                section.classList.remove("active")
-            );
+                    item.classList.remove(
+                        "active"
+                    );
 
-            tab.classList.add("active");
+                });
 
-            const target =
-                document.getElementById(tab.dataset.tab);
+                sections.forEach(section => {
 
-            if (target) {
+                    section.classList.remove(
+                        "active"
+                    );
 
-                target.classList.add("active");
+                });
+
+                tab.classList.add("active");
+
+                const target =
+                    document.getElementById(
+                        tab.dataset.tab
+                    );
+
+                if (target) {
+
+                    target.classList.add(
+                        "active"
+                    );
+
+                }
 
             }
-
-        });
+        );
 
     });
 
@@ -150,35 +181,66 @@ async function loadDashboard() {
 
     try {
 
+        const response =
+            await api(
+                "/academic/dashboard"
+            );
+
         const dashboard =
-            await api("/academic/dashboard");
+            response?.data ||
+            response ||
+            {};
 
-        document.getElementById("totalSubjects").textContent =
-            dashboard.totalSubjects || 0;
+        setText(
+            "totalSubjects",
+            dashboard.totalSubjects || 0
+        );
 
-        document.getElementById("totalClasses").textContent =
-            dashboard.totalClasses || 0;
+        setText(
+            "totalClasses",
+            dashboard.totalClasses || 0
+        );
 
-        document.getElementById("subjectAllocations").textContent =
-            dashboard.allocations || 0;
+        setText(
+            "subjectAllocations",
+            dashboard.allocations ||
+            dashboard.subjectAllocations ||
+            0
+        );
 
-        document.getElementById("activeExams").textContent =
-            dashboard.exams || 0;
+        setText(
+            "activeExams",
+            dashboard.exams ||
+            dashboard.activeExams ||
+            0
+        );
 
-        document.getElementById("schoolAverage").textContent =
-            (dashboard.average || 0) + "%";
+        setText(
+            "schoolAverage",
+            `${dashboard.average || 0}%`
+        );
 
-        document.getElementById("reportCardsCount")?.textContent =
-            dashboard.reportCards || 0;
+        setText(
+            "studentsAssessed",
+            dashboard.students ||
+            dashboard.studentsAssessed ||
+            0
+        );
 
-        document.getElementById("studentsAssessed").textContent =
-            dashboard.students || 0;
+        /*
+         * This element is optional because it is not
+         * present in the supplied HTML.
+         */
+        setText(
+            "reportCardsCount",
+            dashboard.reportCards || 0
+        );
 
-    } catch (err) {
+    } catch (error) {
 
         console.error(
             "[DASHBOARD]",
-            err
+            error
         );
 
     }
@@ -224,51 +286,66 @@ function initializeSubjectControls() {
 
 
 /* =====================================================
-   SUBJECTS
+   LOAD SUBJECTS
 ===================================================== */
-
-let allSubjects = [];
-
 
 async function loadSubjects() {
 
     try {
 
+        showAcademicLoading(true);
+
         const response =
             await api("/subjects");
 
         /*
-         * Supports both:
+         * Supports:
          *
          * [...]
          *
-         * and:
-         *
-         * { success: true, data: [...] }
+         * {
+         *   success: true,
+         *   data: [...]
+         * }
          */
 
         if (Array.isArray(response)) {
 
             allSubjects = response;
 
-        } else {
+        } else if (
+            Array.isArray(response?.data)
+        ) {
 
             allSubjects =
-                response.data || [];
+                response.data;
+
+        } else if (
+            Array.isArray(response?.subjects)
+        ) {
+
+            allSubjects =
+                response.subjects;
+
+        } else {
+
+            allSubjects = [];
 
         }
 
         renderSubjects(allSubjects);
 
-    } catch (err) {
+    } catch (error) {
 
         console.error(
             "[SUBJECTS]",
-            err
+            error
         );
 
         const body =
-            document.getElementById("subjectsBody");
+            document.getElementById(
+                "subjectsBody"
+            );
 
         if (body) {
 
@@ -278,8 +355,14 @@ async function loadSubjects() {
 
                     <td
                         colspan="7"
-                        style="text-align:center;color:#dc2626;"
+                        style="
+                            text-align:center;
+                            color:#dc2626;
+                            padding:30px;
+                        "
                     >
+
+                        <i class="fas fa-exclamation-circle"></i>
 
                         Failed to load subjects.
 
@@ -290,6 +373,10 @@ async function loadSubjects() {
             `;
 
         }
+
+    } finally {
+
+        showAcademicLoading(false);
 
     }
 
@@ -303,13 +390,18 @@ async function loadSubjects() {
 function renderSubjects(subjects) {
 
     const body =
-        document.getElementById("subjectsBody");
+        document.getElementById(
+            "subjectsBody"
+        );
 
     if (!body) return;
 
     body.innerHTML = "";
 
-    if (!subjects.length) {
+    if (
+        !Array.isArray(subjects) ||
+        !subjects.length
+    ) {
 
         body.innerHTML = `
 
@@ -317,8 +409,15 @@ function renderSubjects(subjects) {
 
                 <td
                     colspan="7"
-                    style="text-align:center;"
+                    style="
+                        text-align:center;
+                        padding:30px;
+                    "
                 >
+
+                    <i class="fas fa-book-open"></i>
+
+                    <br>
 
                     No subjects found.
 
@@ -340,29 +439,64 @@ function renderSubjects(subjects) {
         const status =
             subject.status || "active";
 
+        const subjectId =
+            subject._id ||
+            subject.id;
+
+        const classesCount =
+            Array.isArray(subject.classes)
+                ? subject.classes.length
+                : Number(subject.classesCount || 0);
+
+        const teachersCount =
+            Array.isArray(subject.teachers)
+                ? subject.teachers.length
+                : Number(subject.teachersCount || 0);
+
         row.innerHTML = `
 
             <td>
+
                 <strong>
-                    ${escapeHtml(subject.name)}
+                    ${escapeHtml(
+                        subject.name || "-"
+                    )}
                 </strong>
+
             </td>
 
-            <td>
-                ${escapeHtml(subject.code)}
-            </td>
 
             <td>
-                ${escapeHtml(subject.category)}
+
+                ${escapeHtml(
+                    subject.code || "-"
+                )}
+
             </td>
 
-            <td>
-                ${subject.classes?.length || 0}
-            </td>
 
             <td>
-                ${subject.teachers?.length || 0}
+
+                ${escapeHtml(
+                    subject.category || "-"
+                )}
+
             </td>
+
+
+            <td>
+
+                ${classesCount}
+
+            </td>
+
+
+            <td>
+
+                ${teachersCount}
+
+            </td>
+
 
             <td>
 
@@ -382,24 +516,32 @@ function renderSubjects(subjects) {
 
             </td>
 
+
             <td>
 
                 <button
                     type="button"
                     class="action-btn edit-btn"
-                    onclick="openEditSubjectModal('${subject._id}')"
+                    onclick="openEditSubjectModal('${escapeAttribute(subjectId)}')"
                 >
+
                     <i class="fas fa-edit"></i>
+
                     Edit
+
                 </button>
+
 
                 <button
                     type="button"
                     class="action-btn delete-btn"
-                    onclick="deleteSubject('${subject._id}')"
+                    onclick="deleteSubject('${escapeAttribute(subjectId)}')"
                 >
+
                     <i class="fas fa-trash"></i>
+
                     Delete
+
                 </button>
 
             </td>
@@ -414,7 +556,7 @@ function renderSubjects(subjects) {
 
 
 /* =====================================================
-   SUBJECT FILTER
+   FILTER SUBJECTS
 ===================================================== */
 
 function filterSubjects() {
@@ -441,31 +583,33 @@ function filterSubjects() {
     const filtered =
         allSubjects.filter(subject => {
 
-            const matchesSearch =
+            const subjectName =
+                String(
+                    subject.name || ""
+                ).toLowerCase();
 
-                !search ||
+            const subjectCode =
+                String(
+                    subject.code || ""
+                ).toLowerCase();
 
-                String(subject.name || "")
-                    .toLowerCase()
-                    .includes(search) ||
-
-                String(subject.code || "")
-                    .toLowerCase()
-                    .includes(search);
-
-            const matchesCategory =
-
-                !category ||
-
-                subject.category === category;
+            const subjectCategory =
+                subject.category || "";
 
             const subjectStatus =
                 subject.status || "active";
 
+            const matchesSearch =
+                !search ||
+                subjectName.includes(search) ||
+                subjectCode.includes(search);
+
+            const matchesCategory =
+                !category ||
+                subjectCategory === category;
+
             const matchesStatus =
-
                 !status ||
-
                 subjectStatus === status;
 
             return (
@@ -482,7 +626,7 @@ function filterSubjects() {
 
 
 /* =====================================================
-   MODAL INITIALIZATION
+   ACADEMIC MODAL
 ===================================================== */
 
 function initializeAcademicModal() {
@@ -585,7 +729,9 @@ function openAddSubjectModal() {
     setTimeout(() => {
 
         document
-            .getElementById("subjectName")
+            .getElementById(
+                "subjectName"
+            )
             ?.focus();
 
     }, 100);
@@ -601,7 +747,11 @@ function openEditSubjectModal(id) {
 
     const subject =
         allSubjects.find(
-            item => item._id === id
+            item =>
+                String(
+                    item._id ||
+                    item.id
+                ) === String(id)
         );
 
     if (!subject) {
@@ -615,7 +765,9 @@ function openEditSubjectModal(id) {
 
     }
 
-    currentEditingSubjectId = id;
+    currentEditingSubjectId =
+        subject._id ||
+        subject.id;
 
     const modal =
         document.getElementById(
@@ -631,6 +783,12 @@ function openEditSubjectModal(id) {
         document.getElementById(
             "academicModalBody"
         );
+
+    if (!modal || !title || !body) {
+
+        return;
+
+    }
 
     title.innerHTML = `
 
@@ -649,14 +807,26 @@ function openEditSubjectModal(id) {
         "modal-open"
     );
 
+    setTimeout(() => {
+
+        document
+            .getElementById(
+                "subjectName"
+            )
+            ?.focus();
+
+    }, 100);
+
 }
 
 
 /* =====================================================
-   SUBJECT FORM HTML
+   SUBJECT FORM
 ===================================================== */
 
-function getSubjectFormHtml(subject = null) {
+function getSubjectFormHtml(
+    subject = null
+) {
 
     const isEditing =
         Boolean(subject);
@@ -676,22 +846,28 @@ function getSubjectFormHtml(subject = null) {
 
                 </div>
 
+
                 <div>
 
                     <h3>
+
                         ${
                             isEditing
                                 ? "Update Subject"
                                 : "Create New Subject"
                         }
+
                     </h3>
 
+
                     <p>
+
                         ${
                             isEditing
                                 ? "Update the subject information below."
                                 : "Add a subject to your school's academic curriculum."
                         }
+
                     </p>
 
                 </div>
@@ -711,9 +887,13 @@ function getSubjectFormHtml(subject = null) {
 
                 <!-- SUBJECT NAME -->
 
-                <div class="form-group form-full">
+                <div
+                    class="form-group form-full"
+                >
 
-                    <label for="subjectName">
+                    <label
+                        for="subjectName"
+                    >
 
                         Subject Name
 
@@ -722,6 +902,7 @@ function getSubjectFormHtml(subject = null) {
                         </span>
 
                     </label>
+
 
                     <div class="input-icon">
 
@@ -732,7 +913,9 @@ function getSubjectFormHtml(subject = null) {
                             id="subjectName"
                             name="name"
                             placeholder="e.g. Mathematics"
-                            value="${escapeHtml(subject?.name || "")}"
+                            value="${escapeHtml(
+                                subject?.name || ""
+                            )}"
                             maxlength="100"
                             required
                         >
@@ -746,7 +929,9 @@ function getSubjectFormHtml(subject = null) {
 
                 <div class="form-group">
 
-                    <label for="subjectCode">
+                    <label
+                        for="subjectCode"
+                    >
 
                         Subject Code
 
@@ -755,6 +940,7 @@ function getSubjectFormHtml(subject = null) {
                         </span>
 
                     </label>
+
 
                     <div class="input-icon">
 
@@ -765,15 +951,21 @@ function getSubjectFormHtml(subject = null) {
                             id="subjectCode"
                             name="code"
                             placeholder="e.g. MAT"
-                            value="${escapeHtml(subject?.code || "")}"
+                            value="${escapeHtml(
+                                subject?.code || ""
+                            )}"
                             maxlength="20"
                             required
                         >
 
                     </div>
 
+
                     <small>
-                        The code must be unique within your school.
+
+                        The code must be unique
+                        within your school.
+
                     </small>
 
                 </div>
@@ -783,7 +975,9 @@ function getSubjectFormHtml(subject = null) {
 
                 <div class="form-group">
 
-                    <label for="subjectCategory">
+                    <label
+                        for="subjectCategory"
+                    >
 
                         Category
 
@@ -793,9 +987,11 @@ function getSubjectFormHtml(subject = null) {
 
                     </label>
 
+
                     <div class="input-icon">
 
                         <i class="fas fa-layer-group"></i>
+
 
                         <select
                             id="subjectCategory"
@@ -804,8 +1000,11 @@ function getSubjectFormHtml(subject = null) {
                         >
 
                             <option value="">
+
                                 Select category
+
                             </option>
+
 
                             <option
                                 value="Core"
@@ -815,8 +1014,11 @@ function getSubjectFormHtml(subject = null) {
                                         : ""
                                 }
                             >
+
                                 Core
+
                             </option>
+
 
                             <option
                                 value="Science"
@@ -826,8 +1028,11 @@ function getSubjectFormHtml(subject = null) {
                                         : ""
                                 }
                             >
+
                                 Science
+
                             </option>
+
 
                             <option
                                 value="Humanities"
@@ -837,8 +1042,11 @@ function getSubjectFormHtml(subject = null) {
                                         : ""
                                 }
                             >
+
                                 Humanities
+
                             </option>
+
 
                             <option
                                 value="Technical"
@@ -848,8 +1056,11 @@ function getSubjectFormHtml(subject = null) {
                                         : ""
                                 }
                             >
+
                                 Technical
+
                             </option>
+
 
                             <option
                                 value="Languages"
@@ -859,8 +1070,11 @@ function getSubjectFormHtml(subject = null) {
                                         : ""
                                 }
                             >
+
                                 Languages
+
                             </option>
+
 
                             <option
                                 value="Optional"
@@ -870,7 +1084,9 @@ function getSubjectFormHtml(subject = null) {
                                         : ""
                                 }
                             >
+
                                 Optional
+
                             </option>
 
                         </select>
@@ -879,11 +1095,10 @@ function getSubjectFormHtml(subject = null) {
 
                 </div>
 
-
             </div>
 
 
-            <!-- ACTIONS -->
+            <!-- FORM ACTIONS -->
 
             <div class="subject-form-actions">
 
@@ -926,7 +1141,7 @@ function getSubjectFormHtml(subject = null) {
 
 
 /* =====================================================
-   SUBMIT SUBJECT FORM
+   SUBJECT FORM SUBMIT
 ===================================================== */
 
 document.addEventListener(
@@ -934,7 +1149,7 @@ document.addEventListener(
     async event => {
 
         if (
-            event.target.id !==
+            event.target?.id !==
             "subjectForm"
         ) {
 
@@ -958,26 +1173,27 @@ async function saveSubject() {
 
     const name =
         document
-            .getElementById("subjectName")
+            .getElementById(
+                "subjectName"
+            )
             ?.value
             .trim();
 
     const code =
         document
-            .getElementById("subjectCode")
+            .getElementById(
+                "subjectCode"
+            )
             ?.value
             .trim()
             .toUpperCase();
 
     const category =
         document
-            .getElementById("subjectCategory")
+            .getElementById(
+                "subjectCategory"
+            )
             ?.value;
-
-    const message =
-        document.getElementById(
-            "subjectFormMessage"
-        );
 
     const button =
         document.getElementById(
@@ -1000,6 +1216,7 @@ async function saveSubject() {
 
     }
 
+
     if (!code) {
 
         showFormMessage(
@@ -1010,6 +1227,7 @@ async function saveSubject() {
         return;
 
     }
+
 
     if (!category) {
 
@@ -1050,25 +1268,44 @@ async function saveSubject() {
 
         let response;
 
+        const payload = {
+
+            name,
+            code,
+            category
+
+        };
+
+
+        /* -----------------------------------------
+           UPDATE
+        ----------------------------------------- */
+
         if (currentEditingSubjectId) {
 
             response =
                 await api(
-                    `/subjects/${currentEditingSubjectId}`,
+                    `/subjects/${encodeURIComponent(
+                        currentEditingSubjectId
+                    )}`,
                     {
                         method: "PUT",
 
-                        body: JSON.stringify({
-
-                            name,
-                            code,
-                            category
-
-                        })
+                        body:
+                            JSON.stringify(
+                                payload
+                            )
                     }
                 );
 
-        } else {
+        }
+
+
+        /* -----------------------------------------
+           CREATE
+        ----------------------------------------- */
+
+        else {
 
             response =
                 await api(
@@ -1076,13 +1313,10 @@ async function saveSubject() {
                     {
                         method: "POST",
 
-                        body: JSON.stringify({
-
-                            name,
-                            code,
-                            category
-
-                        })
+                        body:
+                            JSON.stringify(
+                                payload
+                            )
                     }
                 );
 
@@ -1093,33 +1327,37 @@ async function saveSubject() {
            SUCCESS
         ----------------------------------------- */
 
+        const wasEditing =
+            Boolean(
+                currentEditingSubjectId
+            );
+
         closeAcademicModal();
 
         showAcademicMessage(
-            response.message ||
+            response?.message ||
             (
-                currentEditingSubjectId
+                wasEditing
                     ? "Subject updated successfully."
                     : "Subject created successfully."
             ),
             "success"
         );
 
-
         await loadSubjects();
 
         await loadDashboard();
 
 
-    } catch (err) {
+    } catch (error) {
 
         console.error(
             "[SUBJECT SAVE]",
-            err
+            error
         );
 
         showFormMessage(
-            err.message ||
+            error.message ||
             "Unable to save subject.",
             "error"
         );
@@ -1156,7 +1394,11 @@ async function deleteSubject(id) {
 
     const subject =
         allSubjects.find(
-            item => item._id === id
+            item =>
+                String(
+                    item._id ||
+                    item.id
+                ) === String(id)
         );
 
     const subjectName =
@@ -1168,6 +1410,7 @@ async function deleteSubject(id) {
         window.confirm(
             `Are you sure you want to delete "${subjectName}"?\n\nThis action cannot be undone.`
         );
+
 
     if (!confirmed) {
 
@@ -1182,31 +1425,34 @@ async function deleteSubject(id) {
 
         const response =
             await api(
-                `/subjects/${id}`,
+                `/subjects/${encodeURIComponent(id)}`,
                 {
                     method: "DELETE"
                 }
             );
 
+
         showAcademicMessage(
-            response.message ||
+            response?.message ||
             "Subject deleted successfully.",
             "success"
         );
+
 
         await loadSubjects();
 
         await loadDashboard();
 
-    } catch (err) {
+
+    } catch (error) {
 
         console.error(
             "[SUBJECT DELETE]",
-            err
+            error
         );
 
         showAcademicMessage(
-            err.message ||
+            error.message ||
             "Unable to delete subject.",
             "error"
         );
@@ -1260,18 +1506,20 @@ function showFormMessage(
 
     if (!element) return;
 
-    element.textContent = text;
+    element.textContent =
+        text || "An error occurred.";
 
     element.className =
         `form-message ${type}`;
 
-    element.style.display = "block";
+    element.style.display =
+        "block";
 
 }
 
 
 /* =====================================================
-   GLOBAL MESSAGE
+   GLOBAL ACADEMIC MESSAGE
 ===================================================== */
 
 function showAcademicMessage(
@@ -1284,10 +1532,13 @@ function showAcademicMessage(
             "academicToastContainer"
         );
 
+
     if (!container) {
 
         container =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
         container.id =
             "academicToastContainer";
@@ -1303,18 +1554,23 @@ function showAcademicMessage(
 
 
     const toast =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     toast.className =
         `academic-toast ${type}`;
 
+
+    const icon =
+        type === "success"
+            ? "fas fa-check-circle"
+            : "fas fa-exclamation-circle";
+
+
     toast.innerHTML = `
 
-        <i class="${
-            type === "success"
-                ? "fas fa-check-circle"
-                : "fas fa-exclamation-circle"
-        }"></i>
+        <i class="${icon}"></i>
 
         <span>
             ${escapeHtml(text)}
@@ -1322,14 +1578,27 @@ function showAcademicMessage(
 
         <button
             type="button"
-            onclick="this.parentElement.remove()"
+            aria-label="Close notification"
         >
+
             <i class="fas fa-times"></i>
+
         </button>
 
     `;
 
-    container.appendChild(toast);
+
+    toast
+        .querySelector("button")
+        ?.addEventListener(
+            "click",
+            () => toast.remove()
+        );
+
+
+    container.appendChild(
+        toast
+    );
 
 
     setTimeout(() => {
@@ -1345,7 +1614,9 @@ function showAcademicMessage(
    LOADING
 ===================================================== */
 
-function showAcademicLoading(show) {
+function showAcademicLoading(
+    show
+) {
 
     const loading =
         document.getElementById(
@@ -1355,7 +1626,9 @@ function showAcademicLoading(show) {
     if (!loading) return;
 
     loading.style.display =
-        show ? "flex" : "none";
+        show
+            ? "flex"
+            : "none";
 
 }
 
@@ -1366,12 +1639,76 @@ function showAcademicLoading(show) {
 
 function escapeHtml(value) {
 
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+/* =====================================================
+   ESCAPE ATTRIBUTE
+===================================================== */
+
+function escapeAttribute(value) {
+
+    return String(
+        value ?? ""
+    )
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+        .replace(
+            /'/g,
+            "\\'"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        );
+
+}
+
+
+/* =====================================================
+   SET TEXT HELPER
+===================================================== */
+
+function setText(
+    elementId,
+    value
+) {
+
+    const element =
+        document.getElementById(
+            elementId
+        );
+
+    if (!element) return;
+
+    element.textContent =
+        value;
 
 }
 
@@ -1385,15 +1722,40 @@ async function loadReportCards() {
     try {
 
         const response =
-            await api("/reportcards");
+            await api(
+                "/reportcards"
+            );
 
         console.log(
-            "REPORTS:",
+            "[REPORT CARDS]",
             response
         );
 
-        const reports =
-            response.data || [];
+
+        let reports = [];
+
+
+        if (Array.isArray(response)) {
+
+            reports =
+                response;
+
+        } else if (
+            Array.isArray(response?.data)
+        ) {
+
+            reports =
+                response.data;
+
+        } else if (
+            Array.isArray(response?.reportCards)
+        ) {
+
+            reports =
+                response.reportCards;
+
+        }
+
 
         const body =
             document.getElementById(
@@ -1404,6 +1766,7 @@ async function loadReportCards() {
 
         body.innerHTML = "";
 
+
         if (!reports.length) {
 
             body.innerHTML = `
@@ -1412,9 +1775,18 @@ async function loadReportCards() {
 
                     <td
                         colspan="7"
-                        style="text-align:center;"
+                        style="
+                            text-align:center;
+                            padding:30px;
+                        "
                     >
-                        No report cards found
+
+                        <i class="fas fa-file-alt"></i>
+
+                        <br>
+
+                        No report cards found.
+
                     </td>
 
                 </tr>
@@ -1425,66 +1797,111 @@ async function loadReportCards() {
 
         }
 
-        reports.forEach(report => {
 
-            body.innerHTML += `
+        reports.forEach(
+            report => {
 
-                <tr>
+                const reportId =
+                    report._id ||
+                    report.id ||
+                    "";
 
-                    <td>
-                        ${escapeHtml(
-                            report.studentName || "-"
-                        )}
-                    </td>
 
-                    <td>
-                        ${escapeHtml(
-                            report.admissionNo || "-"
-                        )}
-                    </td>
+                body.innerHTML += `
 
-                    <td>
-                        ${escapeHtml(
-                            report.className || "-"
-                        )}
-                    </td>
+                    <tr>
 
-                    <td>
-                        ${report.average || 0}%
-                    </td>
+                        <td>
 
-                    <td>
-                        ${escapeHtml(
-                            report.grade || "-"
-                        )}
-                    </td>
+                            ${escapeHtml(
+                                report.studentName ||
+                                report.student?.name ||
+                                "-"
+                            )}
 
-                    <td>
-                        ${report.position || "-"}
-                    </td>
+                        </td>
 
-                    <td>
 
-                        <button
-                            class="action-btn view-btn"
-                            onclick="viewReportCard('${report._id}')"
-                        >
-                            View
-                        </button>
+                        <td>
 
-                    </td>
+                            ${escapeHtml(
+                                report.admissionNo ||
+                                report.student?.admissionNo ||
+                                "-"
+                            )}
 
-                </tr>
+                        </td>
 
-            `;
 
-        });
+                        <td>
 
-    } catch (err) {
+                            ${escapeHtml(
+                                report.className ||
+                                report.class?.name ||
+                                "-"
+                            )}
+
+                        </td>
+
+
+                        <td>
+
+                            ${Number(
+                                report.average || 0
+                            )}%
+
+                        </td>
+
+
+                        <td>
+
+                            ${escapeHtml(
+                                report.grade ||
+                                "-"
+                            )}
+
+                        </td>
+
+
+                        <td>
+
+                            ${escapeHtml(
+                                report.position ||
+                                "-"
+                            )}
+
+                        </td>
+
+
+                        <td>
+
+                            <button
+                                type="button"
+                                class="action-btn view-btn"
+                                onclick="viewReportCard('${escapeAttribute(reportId)}')"
+                            >
+
+                                <i class="fas fa-eye"></i>
+
+                                View
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+    } catch (error) {
 
         console.error(
             "[REPORT CARDS]",
-            err
+            error
         );
 
     }
@@ -1497,6 +1914,21 @@ async function loadReportCards() {
 ===================================================== */
 
 function loadCharts() {
+
+    /*
+     * Destroy existing charts first.
+     * Prevents Chart.js canvas reuse errors.
+     */
+
+    destroyChart(subjectChart);
+    destroyChart(classChart);
+    destroyChart(gradeChart);
+    destroyChart(trendChart);
+
+
+    /* ---------------------------------------------
+       SUBJECT PERFORMANCE
+    --------------------------------------------- */
 
     const subjectCanvas =
         document.getElementById(
@@ -1516,13 +1948,38 @@ function loadCharts() {
 
                         labels: [],
 
-                        datasets: [{
+                        datasets: [
 
-                            label: "Average",
+                            {
 
-                            data: []
+                                label:
+                                    "Average",
 
-                        }]
+                                data: []
+
+                            }
+
+                        ]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        scales: {
+
+                            y: {
+
+                                beginAtZero: true,
+
+                                max: 100
+
+                            }
+
+                        }
 
                     }
 
@@ -1531,6 +1988,10 @@ function loadCharts() {
 
     }
 
+
+    /* ---------------------------------------------
+       CLASS PERFORMANCE
+    --------------------------------------------- */
 
     const classCanvas =
         document.getElementById(
@@ -1550,13 +2011,38 @@ function loadCharts() {
 
                         labels: [],
 
-                        datasets: [{
+                        datasets: [
 
-                            label: "Classes",
+                            {
 
-                            data: []
+                                label:
+                                    "Class Average",
 
-                        }]
+                                data: []
+
+                            }
+
+                        ]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        scales: {
+
+                            y: {
+
+                                beginAtZero: true,
+
+                                max: 100
+
+                            }
+
+                        }
 
                     }
 
@@ -1565,6 +2051,10 @@ function loadCharts() {
 
     }
 
+
+    /* ---------------------------------------------
+       GRADE DISTRIBUTION
+    --------------------------------------------- */
 
     const gradeCanvas =
         document.getElementById(
@@ -1584,11 +2074,23 @@ function loadCharts() {
 
                         labels: [],
 
-                        datasets: [{
+                        datasets: [
 
-                            data: []
+                            {
 
-                        }]
+                                data: []
+
+                            }
+
+                        ]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false
 
                     }
 
@@ -1597,6 +2099,10 @@ function loadCharts() {
 
     }
 
+
+    /* ---------------------------------------------
+       EXAM TREND
+    --------------------------------------------- */
 
     const trendCanvas =
         document.getElementById(
@@ -1616,13 +2122,40 @@ function loadCharts() {
 
                         labels: [],
 
-                        datasets: [{
+                        datasets: [
 
-                            label: "School Average",
+                            {
 
-                            data: []
+                                label:
+                                    "School Average",
 
-                        }]
+                                data: [],
+
+                                tension: 0.3
+
+                            }
+
+                        ]
+
+                    },
+
+                    options: {
+
+                        responsive: true,
+
+                        maintainAspectRatio: false,
+
+                        scales: {
+
+                            y: {
+
+                                beginAtZero: true,
+
+                                max: 100
+
+                            }
+
+                        }
 
                     }
 
@@ -1635,29 +2168,326 @@ function loadCharts() {
 
 
 /* =====================================================
-   REFRESH
+   DESTROY CHART
 ===================================================== */
 
-function refreshAcademic() {
+function destroyChart(chart) {
 
-    loadDashboard();
+    if (
+        chart &&
+        typeof chart.destroy === "function"
+    ) {
 
-    loadSubjects();
+        chart.destroy();
 
-    loadReportCards();
+    }
 
 }
 
 
 /* =====================================================
-   OPTIONAL REPORT FUNCTION
+   REFRESH ACADEMIC DATA
+===================================================== */
+
+async function refreshAcademic() {
+
+    try {
+
+        showAcademicLoading(true);
+
+        await Promise.all([
+            loadDashboard(),
+            loadSubjects(),
+            loadReportCards()
+        ]);
+
+        showAcademicMessage(
+            "Academic data refreshed successfully.",
+            "success"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "[REFRESH]",
+            error
+        );
+
+        showAcademicMessage(
+            "Some academic data could not be refreshed.",
+            "error"
+        );
+
+    } finally {
+
+        showAcademicLoading(false);
+
+    }
+
+}
+
+
+/* =====================================================
+   VIEW REPORT CARD
 ===================================================== */
 
 function viewReportCard(id) {
+
+    if (!id) {
+
+        showAcademicMessage(
+            "Report card ID is missing.",
+            "error"
+        );
+
+        return;
+
+    }
 
     console.log(
         "View report card:",
         id
     );
 
+    /*
+     * Add your report-card route here when available.
+     *
+     * Example:
+     *
+     * window.location.href =
+     *     `report-card.html?id=${encodeURIComponent(id)}`;
+     */
+
 }
+
+
+/* =====================================================
+   OPTIONAL: LOAD ACADEMIC ANALYTICS
+===================================================== */
+
+async function loadAcademicAnalytics() {
+
+    try {
+
+        const response =
+            await api(
+                "/academic/analytics"
+            );
+
+        console.log(
+            "[ACADEMIC ANALYTICS]",
+            response
+        );
+
+        /*
+         * Expected example:
+         *
+         * {
+         *   subjectPerformance: {
+         *      labels: [],
+         *      data: []
+         *   },
+         *
+         *   classPerformance: {
+         *      labels: [],
+         *      data: []
+         *   },
+         *
+         *   gradeDistribution: {
+         *      labels: [],
+         *      data: []
+         *   },
+         *
+         *   examinationTrend: {
+         *      labels: [],
+         *      data: []
+         *   }
+         * }
+         */
+
+        const analytics =
+            response?.data ||
+            response ||
+            {};
+
+
+        /* SUBJECT CHART */
+
+        if (
+            subjectChart &&
+            analytics.subjectPerformance
+        ) {
+
+            subjectChart.data.labels =
+                analytics
+                    .subjectPerformance
+                    .labels || [];
+
+            subjectChart.data.datasets[0].data =
+                analytics
+                    .subjectPerformance
+                    .data || [];
+
+            subjectChart.update();
+
+        }
+
+
+        /* CLASS CHART */
+
+        if (
+            classChart &&
+            analytics.classPerformance
+        ) {
+
+            classChart.data.labels =
+                analytics
+                    .classPerformance
+                    .labels || [];
+
+            classChart.data.datasets[0].data =
+                analytics
+                    .classPerformance
+                    .data || [];
+
+            classChart.update();
+
+        }
+
+
+        /* GRADE CHART */
+
+        if (
+            gradeChart &&
+            analytics.gradeDistribution
+        ) {
+
+            gradeChart.data.labels =
+                analytics
+                    .gradeDistribution
+                    .labels || [];
+
+            gradeChart.data.datasets[0].data =
+                analytics
+                    .gradeDistribution
+                    .data || [];
+
+            gradeChart.update();
+
+        }
+
+
+        /* TREND CHART */
+
+        if (
+            trendChart &&
+            analytics.examinationTrend
+        ) {
+
+            trendChart.data.labels =
+                analytics
+                    .examinationTrend
+                    .labels || [];
+
+            trendChart.data.datasets[0].data =
+                analytics
+                    .examinationTrend
+                    .data || [];
+
+            trendChart.update();
+
+        }
+
+
+        /* SUMMARY */
+
+        setText(
+            "topClass",
+            analytics.topClass || "—"
+        );
+
+        setText(
+            "topSubject",
+            analytics.topSubject || "—"
+        );
+
+        setText(
+            "topStudent",
+            analytics.topStudent || "—"
+        );
+
+        setText(
+            "analyticsAverage",
+            `${analytics.average || 0}%`
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "[ACADEMIC ANALYTICS]",
+            error
+        );
+
+    }
+
+}
+
+
+/* =====================================================
+   OPTIONAL: INITIALIZE ANALYTICS
+===================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        setTimeout(() => {
+
+            loadAcademicAnalytics();
+
+        }, 300);
+
+    }
+);
+
+
+/* =====================================================
+   GLOBAL ERROR HANDLER
+===================================================== */
+
+window.addEventListener(
+    "unhandledrejection",
+    event => {
+
+        console.error(
+            "[UNHANDLED PROMISE]",
+            event.reason
+        );
+
+    }
+);
+
+
+/* =====================================================
+   EXPORT GLOBAL FUNCTIONS
+   Required by inline onclick attributes in HTML.
+===================================================== */
+
+window.openAddSubjectModal =
+    openAddSubjectModal;
+
+window.openEditSubjectModal =
+    openEditSubjectModal;
+
+window.deleteSubject =
+    deleteSubject;
+
+window.closeAcademicModal =
+    closeAcademicModal;
+
+window.viewReportCard =
+    viewReportCard;
+
+window.refreshAcademic =
+    refreshAcademic;
