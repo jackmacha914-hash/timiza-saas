@@ -99,6 +99,121 @@ function initializeDiscipline() {
 }
 
 // =====================================================
+// STUDENT / CLASS DATA
+// =====================================================
+
+let disciplineCases = [];
+let students = [];
+let classes = [];
+
+
+// =====================================================
+// INITIALIZE
+// =====================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initializeDiscipline
+);
+
+
+function initializeDiscipline() {
+
+    console.log(
+        "[DISCIPLINE] Initializing page..."
+    );
+
+
+    document
+        .getElementById("openDisciplineBtn")
+        ?.addEventListener(
+            "click",
+            openDisciplineModal
+        );
+
+
+    document
+        .getElementById("closeDisciplineModal")
+        ?.addEventListener(
+            "click",
+            closeDisciplineModal
+        );
+
+
+    document
+        .getElementById("cancelDisciplineBtn")
+        ?.addEventListener(
+            "click",
+            closeDisciplineModal
+        );
+
+
+    document
+        .getElementById("disciplineForm")
+        ?.addEventListener(
+            "submit",
+            createDiscipline
+        );
+
+
+    document
+        .getElementById("refreshDisciplineBtn")
+        ?.addEventListener(
+            "click",
+            loadDiscipline
+        );
+
+
+    document
+        .getElementById("disciplineSearch")
+        ?.addEventListener(
+            "input",
+            renderDiscipline
+        );
+
+
+    document
+        .getElementById("severityFilter")
+        ?.addEventListener(
+            "change",
+            renderDiscipline
+        );
+
+
+    document
+        .getElementById("statusFilter")
+        ?.addEventListener(
+            "change",
+            renderDiscipline
+        );
+
+
+    // CLASS CHANGE
+    document
+        .getElementById("classFilter")
+        ?.addEventListener(
+            "change",
+            handleClassChange
+        );
+
+
+    // STUDENT CHANGE
+    document
+        .getElementById("student")
+        ?.addEventListener(
+            "change",
+            handleStudentChange
+        );
+
+
+    loadDiscipline();
+
+    loadStudents();
+
+}
+
+
+// =====================================================
 // LOAD STUDENTS
 // =====================================================
 
@@ -107,25 +222,47 @@ async function loadStudents() {
     const select =
         document.getElementById("student");
 
-    if (!select) return;
+    const classSelect =
+        document.getElementById("classFilter");
 
-    select.innerHTML = `
+
+    if (!select || !classSelect) {
+        return;
+    }
+
+
+    classSelect.innerHTML = `
         <option value="">
-            Loading students...
+            Loading classes...
         </option>
     `;
 
+
+    select.innerHTML = `
+        <option value="">
+            Select class first
+        </option>
+    `;
+
+    select.disabled = true;
+
+
     try {
 
-        console.log("[DISCIPLINE] Loading students...");
+        console.log(
+            "[DISCIPLINE] Loading students..."
+        );
+
 
         const response =
             await api("/students");
+
 
         console.log(
             "[DISCIPLINE] Students response:",
             response
         );
+
 
         students =
             Array.isArray(response)
@@ -135,58 +272,121 @@ async function loadStudents() {
                   response.data ||
                   [];
 
+
+        console.log(
+            `[DISCIPLINE] Loaded ${students.length} students`
+        );
+
+
         if (!students.length) {
 
-            select.innerHTML = `
+            classSelect.innerHTML = `
                 <option value="">
                     No students found
                 </option>
             `;
 
-            console.warn(
-                "[DISCIPLINE] No students returned"
-            );
-
             return;
+
         }
 
-        select.innerHTML = `
+
+        // ---------------------------------------------
+        // BUILD UNIQUE CLASS LIST
+        // ---------------------------------------------
+
+        const classMap =
+            new Map();
+
+
+        students.forEach(student => {
+
+            const classValue =
+                getStudentClass(student);
+
+
+            if (!classValue) {
+                return;
+            }
+
+
+            const normalized =
+                String(classValue)
+                    .trim();
+
+
+            if (!normalized) {
+                return;
+            }
+
+
+            const key =
+                normalized.toLowerCase();
+
+
+            if (!classMap.has(key)) {
+
+                classMap.set(
+                    key,
+                    normalized
+                );
+
+            }
+
+        });
+
+
+        classes =
+            Array.from(
+                classMap.values()
+            )
+            .sort(
+                naturalClassSort
+            );
+
+
+        // ---------------------------------------------
+        // RENDER CLASSES
+        // ---------------------------------------------
+
+        classSelect.innerHTML = `
             <option value="">
-                Select student
+                Select class
             </option>
         `;
 
-        students.forEach(student => {
+
+        classes.forEach(className => {
 
             const option =
                 document.createElement("option");
 
+
             option.value =
-                student._id ||
-                student.id;
+                className;
 
-            const name =
-                student.name ||
-                student.fullName ||
-                student.username ||
-                "Unnamed Student";
-
-            const admission =
-                student.admissionNumber ||
-                "";
 
             option.textContent =
-                admission
-                    ? `${name} — ${admission}`
-                    : name;
+                className;
 
-            select.appendChild(option);
+
+            classSelect.appendChild(
+                option
+            );
 
         });
 
-        console.log(
-            `[DISCIPLINE] Loaded ${students.length} students`
-        );
+
+        if (!classes.length) {
+
+            classSelect.innerHTML = `
+                <option value="">
+                    No classes found
+                </option>
+            `;
+
+        }
+
 
     } catch (error) {
 
@@ -195,6 +395,14 @@ async function loadStudents() {
             error
         );
 
+
+        classSelect.innerHTML = `
+            <option value="">
+                Failed to load classes
+            </option>
+        `;
+
+
         select.innerHTML = `
             <option value="">
                 Failed to load students
@@ -202,6 +410,311 @@ async function loadStudents() {
         `;
 
     }
+
+}
+
+
+// =====================================================
+// GET STUDENT CLASS
+// =====================================================
+
+function getStudentClass(student) {
+
+    return (
+        student.className ||
+        student.class ||
+        student.class?.name ||
+        student.classId?.name ||
+        student.classId?.className ||
+        student.form ||
+        ""
+    );
+
+}
+
+
+// =====================================================
+// SORT CLASSES
+// =====================================================
+
+function naturalClassSort(a, b) {
+
+    return String(a).localeCompare(
+        String(b),
+        undefined,
+        {
+            numeric: true,
+            sensitivity: "base"
+        }
+    );
+
+}
+
+
+// =====================================================
+// CLASS CHANGED
+// =====================================================
+
+function handleClassChange(event) {
+
+    const selectedClass =
+        event.target.value;
+
+
+    const studentSelect =
+        document.getElementById("student");
+
+
+    if (!studentSelect) {
+        return;
+    }
+
+
+    studentSelect.innerHTML = `
+        <option value="">
+            Select student
+        </option>
+    `;
+
+
+    studentSelect.disabled =
+        true;
+
+
+    document.getElementById(
+        "admissionNumber"
+    ).value = "";
+
+
+    document.getElementById(
+        "className"
+    ).value =
+        selectedClass || "";
+
+
+    if (!selectedClass) {
+
+        studentSelect.innerHTML = `
+            <option value="">
+                Select class first
+            </option>
+        `;
+
+        return;
+
+    }
+
+
+    // ---------------------------------------------
+    // FILTER STUDENTS
+    // ---------------------------------------------
+
+    const filteredStudents =
+        students.filter(student => {
+
+            const studentClass =
+                getStudentClass(student);
+
+
+            return (
+                String(studentClass)
+                    .trim()
+                    .toLowerCase()
+                ===
+                String(selectedClass)
+                    .trim()
+                    .toLowerCase()
+            );
+
+        });
+
+
+    console.log(
+        `[DISCIPLINE] ${filteredStudents.length} students found in ${selectedClass}`
+    );
+
+
+    if (!filteredStudents.length) {
+
+        studentSelect.innerHTML = `
+            <option value="">
+                No students in this class
+            </option>
+        `;
+
+        return;
+
+    }
+
+
+    // ---------------------------------------------
+    // RENDER STUDENTS
+    // ---------------------------------------------
+
+    filteredStudents.forEach(student => {
+
+        const option =
+            document.createElement("option");
+
+
+        option.value =
+            student._id ||
+            student.id;
+
+
+        const name =
+            student.name ||
+            student.fullName ||
+            student.username ||
+            "Unnamed Student";
+
+
+        const admission =
+            student.admissionNumber ||
+            "";
+
+
+        option.textContent =
+            admission
+                ? `${name} — ${admission}`
+                : name;
+
+
+        studentSelect.appendChild(
+            option
+        );
+
+    });
+
+
+    studentSelect.disabled =
+        false;
+
+}
+
+
+// =====================================================
+// STUDENT SELECTED
+// =====================================================
+
+function handleStudentChange(event) {
+
+    const studentId =
+        event.target.value;
+
+
+    const student =
+        students.find(
+            item =>
+                String(
+                    item._id ||
+                    item.id
+                ) ===
+                String(studentId)
+        );
+
+
+    if (!student) {
+        return;
+    }
+
+
+    const studentClass =
+        getStudentClass(student);
+
+
+    document.getElementById(
+        "admissionNumber"
+    ).value =
+        student.admissionNumber || "";
+
+
+    document.getElementById(
+        "className"
+    ).value =
+        studentClass || "";
+
+
+}
+
+
+// =====================================================
+// TOKEN
+// =====================================================
+
+function getToken() {
+
+    return localStorage.getItem(
+        "token"
+    );
+
+}
+
+
+// =====================================================
+// API
+// =====================================================
+
+async function api(
+    url,
+    options = {}
+) {
+
+    const token =
+        getToken();
+
+
+    if (!token) {
+
+        throw new Error(
+            "Authentication required."
+        );
+
+    }
+
+
+    const response =
+        await fetch(
+            `${API}${url}`,
+            {
+                ...options,
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json",
+
+                    "Authorization":
+                        `Bearer ${token}`,
+
+                    ...(options.headers || {})
+
+                }
+
+            }
+        );
+
+
+    const data =
+        await response
+            .json()
+            .catch(
+                () => ({})
+            );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            data.message ||
+            data.error ||
+            `Request failed (${response.status})`
+        );
+
+    }
+
+
+    return data;
 
 }
 
