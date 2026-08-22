@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 
 const disciplineSchema = new mongoose.Schema({
@@ -65,9 +64,20 @@ const disciplineSchema = new mongoose.Schema({
         required: true
     },
 
+    // User who reported the discipline case
     reportedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+
+    // Role of the person who reported the case
+    reportedByRole: {
         type: String,
-        default: 'Administrator'
+        enum: [
+            'admin',
+            'teacher'
+        ]
     },
 
     actionTaken: {
