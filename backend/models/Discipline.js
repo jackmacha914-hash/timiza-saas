@@ -64,9 +64,26 @@ const disciplineSchema = new mongoose.Schema({
         required: true
     },
 
+    // =====================================================
+    // USER WHO REPORTED THE CASE
+    // Must be a User ObjectId because the controller
+    // stores reportingUser._id and populates reportedBy.
+    // =====================================================
     reportedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+
+    // =====================================================
+    // ROLE OF THE USER WHO REPORTED THE CASE
+    // =====================================================
+    reportedByRole: {
         type: String,
-        default: 'Administrator'
+        enum: [
+            'admin',
+            'teacher'
+        ]
     },
 
     actionTaken: {
