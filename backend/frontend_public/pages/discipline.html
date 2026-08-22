@@ -49,6 +49,7 @@
                 <i class="fas fa-arrow-left"></i>
             </button>
 
+
             <div>
 
                 <span class="page-label">
@@ -95,14 +96,14 @@
         <div class="summary-card">
 
             <div class="summary-icon blue">
-
                 <i class="fas fa-folder-open"></i>
-
             </div>
 
             <div>
 
-                <span>Total Cases</span>
+                <span>
+                    Total Cases
+                </span>
 
                 <strong id="totalCases">
                     0
@@ -117,14 +118,14 @@
         <div class="summary-card">
 
             <div class="summary-icon orange">
-
                 <i class="fas fa-search"></i>
-
             </div>
 
             <div>
 
-                <span>Under Investigation</span>
+                <span>
+                    Under Investigation
+                </span>
 
                 <strong id="investigationCases">
                     0
@@ -139,14 +140,14 @@
         <div class="summary-card">
 
             <div class="summary-icon red">
-
                 <i class="fas fa-triangle-exclamation"></i>
-
             </div>
 
             <div>
 
-                <span>High / Critical</span>
+                <span>
+                    High / Critical
+                </span>
 
                 <strong id="seriousCases">
                     0
@@ -161,14 +162,14 @@
         <div class="summary-card">
 
             <div class="summary-icon green">
-
                 <i class="fas fa-circle-check"></i>
-
             </div>
 
             <div>
 
-                <span>Resolved</span>
+                <span>
+                    Resolved
+                </span>
 
                 <strong id="resolvedCases">
                     0
@@ -337,7 +338,9 @@
 
     <div class="modal-overlay"></div>
 
+
     <div class="modal-content student-history-modal">
+
 
         <div class="modal-header">
 
@@ -449,7 +452,7 @@
 
 
 
-        <!-- HISTORY TIMELINE -->
+        <!-- HISTORY -->
 
         <div class="student-history-section">
 
@@ -505,7 +508,9 @@
 
     <div class="modal-overlay"></div>
 
+
     <div class="modal-content">
+
 
         <div class="modal-header">
 
@@ -548,9 +553,13 @@
             <div class="form-group">
 
                 <label for="classFilter">
+
                     Class
+
                     <span>*</span>
+
                 </label>
+
 
                 <select
                     id="classFilter"
@@ -558,7 +567,7 @@
                 >
 
                     <option value="">
-                        Loading classes...
+                        Select class
                     </option>
 
                 </select>
@@ -605,9 +614,7 @@
                 <div class="form-group">
 
                     <label for="admissionNumber">
-
                         Admission Number
-
                     </label>
 
                     <input
@@ -622,9 +629,7 @@
                 <div class="form-group">
 
                     <label for="className">
-
                         Class
-
                     </label>
 
                     <input
@@ -717,9 +722,7 @@
                 <div class="form-group">
 
                     <label for="severity">
-
                         Severity
-
                     </label>
 
 
@@ -797,7 +800,7 @@
 
 
 
-            <!-- ACTION TAKEN -->
+            <!-- ACTION -->
 
             <div class="form-group">
 
@@ -819,8 +822,6 @@
 
 
 
-            <!-- CREATE ACTIONS -->
-
             <div class="modal-actions">
 
 
@@ -829,9 +830,7 @@
                     class="secondary-btn"
                     id="cancelDisciplineBtn"
                 >
-
                     Cancel
-
                 </button>
 
 
@@ -868,6 +867,7 @@
     style="display:none;"
 >
 
+
     <div
         class="modal-overlay"
         id="disciplineDetailsOverlay"
@@ -878,7 +878,6 @@
 
 
         <div class="modal-header">
-
 
             <div>
 
@@ -956,7 +955,6 @@
 
         <div class="modal-header">
 
-
             <div>
 
                 <span class="modal-label">
@@ -974,7 +972,7 @@
 
 
                 <p>
-                    Update the investigation, action and resolution.
+                    Update the discipline case and its current status.
                 </p>
 
             </div>
@@ -999,9 +997,7 @@
         <form id="editDisciplineForm">
 
 
-            <!-- IMPORTANT:
-                 Hidden ID tells JavaScript which case to update.
-            -->
+            <!-- CASE ID -->
 
             <input
                 type="hidden"
@@ -1010,14 +1006,14 @@
 
 
 
-            <!-- STUDENT INFORMATION -->
+            <!-- STUDENT -->
 
             <div class="form-grid">
 
 
                 <div class="form-group">
 
-                    <label>
+                    <label for="editStudentName">
                         Student
                     </label>
 
@@ -1032,7 +1028,7 @@
 
                 <div class="form-group">
 
-                    <label>
+                    <label for="editAdmissionNumber">
                         Admission Number
                     </label>
 
@@ -1048,6 +1044,24 @@
 
 
 
+            <!-- CLASS -->
+
+            <div class="form-group">
+
+                <label for="editClassName">
+                    Class
+                </label>
+
+                <input
+                    type="text"
+                    id="editClassName"
+                    readonly
+                >
+
+            </div>
+
+
+
             <!-- CATEGORY / SEVERITY -->
 
             <div class="form-grid">
@@ -1056,11 +1070,22 @@
                 <div class="form-group">
 
                     <label for="editCategory">
+
                         Incident Category
+
+                        <span>*</span>
+
                     </label>
 
 
-                    <select id="editCategory">
+                    <select
+                        id="editCategory"
+                        required
+                    >
+
+                        <option value="">
+                            Select category
+                        </option>
 
                         <option value="Late Coming">
                             Late Coming
@@ -1111,15 +1136,21 @@
                 </div>
 
 
-
                 <div class="form-group">
 
                     <label for="editSeverity">
+
                         Severity
+
+                        <span>*</span>
+
                     </label>
 
 
-                    <select id="editSeverity">
+                    <select
+                        id="editSeverity"
+                        required
+                    >
 
                         <option value="low">
                             Low
@@ -1201,12 +1232,15 @@
 
                     Incident Date
 
+                    <span>*</span>
+
                 </label>
 
 
                 <input
                     type="date"
                     id="editIncidentDate"
+                    required
                 >
 
             </div>
@@ -1219,15 +1253,18 @@
 
                 <label for="editDescription">
 
-                    Incident Description
+                    Description
+
+                    <span>*</span>
 
                 </label>
 
 
                 <textarea
                     id="editDescription"
-                    rows="4"
+                    rows="5"
                     maxlength="3000"
+                    required
                     placeholder="Describe what happened..."
                 ></textarea>
 
@@ -1235,13 +1272,13 @@
 
 
 
-            <!-- INVESTIGATION NOTES -->
+            <!-- INVESTIGATION -->
 
             <div class="form-group">
 
                 <label for="editInvestigationNotes">
 
-                    <i class="fas fa-magnifying-glass"></i>
+                    <i class="fas fa-search"></i>
 
                     Investigation Notes
 
@@ -1331,7 +1368,6 @@
                 </div>
 
 
-
                 <div class="form-group">
 
                     <label for="editParentNotified">
@@ -1383,7 +1419,7 @@
 
                     <i class="fas fa-save"></i>
 
-                    Save Changes
+                    Update Incident
 
                 </button>
 
