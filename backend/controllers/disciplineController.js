@@ -1112,6 +1112,106 @@ const deleteDisciplineCase = async (req, res) => {
 
 };
 
+// =====================================================
+// GET MY DISCIPLINE CASES
+// Student can only see their own discipline records
+// =====================================================
+
+const getMyDisciplineCases = async (req, res) => {
+
+    try {
+
+        const studentId = getUserId(req);
+        const schoolId = getSchoolId(req);
+        const role = getUserRole(req);
+
+        // -----------------------------------------------
+        // AUTH CHECK
+        // -----------------------------------------------
+
+        if (!studentId) {
+
+            return res.status(401).json({
+                success: false,
+                message: 'Authenticated student could not be determined.'
+            });
+
+        }
+
+        if (!schoolId) {
+
+            return res.status(400).json({
+                success: false,
+                message: 'School could not be determined.'
+            });
+
+        }
+
+        // -----------------------------------------------
+        // STUDENT ONLY
+        // -----------------------------------------------
+
+        if (role !== 'student') {
+
+            return res.status(403).json({
+                success: false,
+                message: 'Only students can access their discipline records.'
+            });
+
+        }
+
+        // -----------------------------------------------
+        // FIND ONLY THIS STUDENT'S CASES
+        // -----------------------------------------------
+
+        const cases = await Discipline.find({
+            school: schoolId,
+            student: studentId
+        })
+        .populate(
+            'reportedBy',
+            'name fullName username email role'
+        )
+        .sort({
+            incidentDate: -1,
+            createdAt: -1
+        });
+
+        // -----------------------------------------------
+        // RESPONSE
+        // -----------------------------------------------
+
+        return res.json({
+
+            success: true,
+
+            discipline: cases,
+
+            count: cases.length
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            '[STUDENT DISCIPLINE GET]',
+            error
+        );
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: 'Failed to load your discipline records',
+
+            error: error.message
+
+        });
+
+    }
+
+};
+
 
 // =====================================================
 // EXPORT
@@ -1127,6 +1227,8 @@ module.exports = {
 
     updateDisciplineCase,
 
-    deleteDisciplineCase
+    deleteDisciplineCase,
+
+     getMyDisciplineCases
 
 };
