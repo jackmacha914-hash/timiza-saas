@@ -1973,3 +1973,323 @@ function showToast(
         5000
     );
 }
+
+// =====================================================
+// EDIT DISCIPLINE CASE
+// =====================================================
+
+async function editDisciplineCase(item) {
+
+    if (!item) {
+        showToast(
+            "Discipline case could not be found.",
+            "error"
+        );
+        return;
+    }
+
+    const caseId =
+        item._id ||
+        item.id;
+
+    if (!caseId) {
+        showToast(
+            "This discipline case has no ID.",
+            "error"
+        );
+        return;
+    }
+
+    // Close details modal first
+    closeDisciplineDetails();
+
+    // Open the existing discipline modal
+    const modal =
+        document.getElementById(
+            "disciplineModal"
+        );
+
+    const form =
+        document.getElementById(
+            "disciplineForm"
+        );
+
+    if (!modal || !form) {
+        showToast(
+            "Discipline form could not be found.",
+            "error"
+        );
+        return;
+    }
+
+    // -------------------------------------------------
+    // MARK FORM AS EDIT MODE
+    // -------------------------------------------------
+
+    form.dataset.editingId =
+        caseId;
+
+    // -------------------------------------------------
+    // STUDENT
+    // -------------------------------------------------
+
+    const studentSelect =
+        document.getElementById(
+            "student"
+        );
+
+    const classSelect =
+        document.getElementById(
+            "classFilter"
+        );
+
+    const studentId =
+        item.student?._id ||
+        item.student?.id ||
+        item.studentId ||
+        "";
+
+    const className =
+        item.className ||
+        item.student?.className ||
+        item.student?.class ||
+        getStudentClass(
+            item.student || {}
+        ) ||
+        "";
+
+    // -------------------------------------------------
+    // SELECT CLASS
+    // -------------------------------------------------
+
+    if (classSelect && className) {
+
+        classSelect.value =
+            className;
+
+        // Populate students for this class
+        handleClassChange({
+            target: classSelect
+        });
+
+    }
+
+    // -------------------------------------------------
+    // SELECT STUDENT
+    // -------------------------------------------------
+
+    if (
+        studentSelect &&
+        studentId
+    ) {
+
+        const studentExists =
+            Array.from(
+                studentSelect.options
+            ).some(
+                option =>
+                    String(
+                        option.value
+                    ) ===
+                    String(studentId)
+            );
+
+        if (!studentExists) {
+
+            const student =
+                students.find(
+                    s =>
+                        String(
+                            s._id ||
+                            s.id
+                        ) ===
+                        String(studentId)
+                );
+
+            if (student) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    student._id ||
+                    student.id;
+
+                option.textContent =
+                    student.name ||
+                    student.fullName ||
+                    student.username ||
+                    "Unnamed Student";
+
+                studentSelect.appendChild(
+                    option
+                );
+
+            }
+
+        }
+
+        studentSelect.value =
+            studentId;
+
+        studentSelect.disabled =
+            false;
+
+    }
+
+    // -------------------------------------------------
+    // BASIC FIELDS
+    // -------------------------------------------------
+
+    setInputValue(
+        "admissionNumber",
+        item.admissionNumber ||
+        item.student?.admissionNumber ||
+        ""
+    );
+
+    setInputValue(
+        "className",
+        className
+    );
+
+    setInputValue(
+        "category",
+        item.category || ""
+    );
+
+    setInputValue(
+        "severity",
+        item.severity || "low"
+    );
+
+    setInputValue(
+        "incidentDate",
+        formatDateForInput(
+            item.incidentDate
+        )
+    );
+
+    setInputValue(
+        "description",
+        item.description || ""
+    );
+
+    setInputValue(
+        "actionTaken",
+        item.actionTaken || ""
+    );
+
+    // -------------------------------------------------
+    // STATUS
+    //
+    // If your HTML has a status select, populate it.
+    // -------------------------------------------------
+
+    const statusInput =
+        document.getElementById(
+            "status"
+        );
+
+    if (statusInput) {
+
+        statusInput.value =
+            item.status ||
+            "reported";
+
+    }
+
+    // -------------------------------------------------
+    // OPEN MODAL
+    // -------------------------------------------------
+
+    modal.classList.add(
+        "is-open"
+    );
+
+    modal.style.display =
+        "flex";
+
+    modal.style.visibility =
+        "visible";
+
+    modal.style.opacity =
+        "1";
+
+    document.body.classList.add(
+        "modal-open"
+    );
+
+    // -------------------------------------------------
+    // CHANGE SAVE BUTTON
+    // -------------------------------------------------
+
+    const button =
+        document.getElementById(
+            "saveDisciplineBtn"
+        );
+
+    if (button) {
+
+        button.innerHTML = `
+            <i class="fas fa-save"></i>
+            Update Incident
+        `;
+
+    }
+
+}
+
+
+// =====================================================
+// SET INPUT VALUE
+// =====================================================
+
+function setInputValue(
+    id,
+    value
+) {
+
+    const element =
+        document.getElementById(id);
+
+    if (!element) {
+        return;
+    }
+
+    element.value =
+        value ?? "";
+
+}
+
+
+// =====================================================
+// DATE FOR HTML DATE INPUT
+// =====================================================
+
+function formatDateForInput(
+    value
+) {
+
+    if (!value) {
+        return "";
+    }
+
+    const date =
+        new Date(value);
+
+    if (
+        isNaN(
+            date.getTime()
+        )
+    ) {
+        return "";
+    }
+
+    return date
+        .toISOString()
+        .split("T")[0];
+
+}
