@@ -1000,22 +1000,7 @@ function renderDiscipline() {
 }
 
 
-const detailsButton =
-    card.querySelector(".view-details-btn");
 
-if (detailsButton) {
-
-    detailsButton.addEventListener(
-        "click",
-        event => {
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            openDisciplineDetails(item);
-
-        }
-    );
 
 }
 // =====================================================
@@ -1155,40 +1140,47 @@ function createDisciplineCard(item) {
             }
 
 
-            <div class="record-footer">
+          <div class="record-footer">
 
-                <span>
+    <span>
 
-                    Reported by
+        Reported by
 
-                    ${escapeHtml(
-                        item.reportedBy ||
-                        "Administrator"
-                    )}
+        ${escapeHtml(
+            item.reportedBy ||
+            "Administrator"
+        )}
 
-                </span>
+    </span>
 
+    <div class="record-actions">
 
-                ${
-                    studentId
-                        ? `
-                            <button
-                                type="button"
-                                class="view-history-btn"
-                                data-student-id="${escapeHtml(studentId)}"
-                            >
+        <button
+            type="button"
+            class="view-details-btn"
+        >
+            <i class="fas fa-eye"></i>
+            View Details
+        </button>
 
-                                <i class="fas fa-clock-rotate-left"></i>
+        ${
+            studentId
+                ? `
+                    <button
+                        type="button"
+                        class="view-history-btn"
+                        data-student-id="${escapeHtml(studentId)}"
+                    >
+                        <i class="fas fa-clock-rotate-left"></i>
+                        View History
+                    </button>
+                `
+                : ""
+        }
 
-                                View History
+    </div>
 
-                            </button>
-                        `
-                        : ""
-                }
-
-            </div>
-
+</div>
         </div>
 
     `;
@@ -1216,10 +1208,33 @@ function createDisciplineCard(item) {
 
     }
 
+    const detailsButton =
+    card.querySelector(
+        ".view-details-btn"
+    );
+
+if (detailsButton) {
+
+    detailsButton.addEventListener(
+        "click",
+        event => {
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            openDisciplineDetails(item);
+
+        }
+    );
+
+}
+
 
     return card;
 
 }
+
+
 //details function
 
 function openDisciplineDetails(item) {
