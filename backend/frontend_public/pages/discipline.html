@@ -33,7 +33,9 @@
 <div class="discipline-page">
 
 
-    <!-- HEADER -->
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
 
     <header class="discipline-header">
 
@@ -44,11 +46,8 @@
                 type="button"
                 onclick="history.back()"
             >
-
                 <i class="fas fa-arrow-left"></i>
-
             </button>
-
 
             <div>
 
@@ -57,11 +56,8 @@
                 </span>
 
                 <h1>
-
                     <i class="fas fa-gavel"></i>
-
                     Discipline
-
                 </h1>
 
                 <p>
@@ -89,7 +85,9 @@
 
 
 
-    <!-- SUMMARY -->
+    <!-- =====================================================
+         SUMMARY
+    ====================================================== -->
 
     <section class="summary-grid">
 
@@ -184,7 +182,9 @@
 
 
 
-    <!-- PANEL -->
+    <!-- =====================================================
+         DISCIPLINE PANEL
+    ====================================================== -->
 
     <section class="discipline-panel">
 
@@ -208,6 +208,7 @@
                 id="refreshDisciplineBtn"
                 class="refresh-btn"
                 type="button"
+                title="Refresh"
             >
 
                 <i class="fas fa-sync-alt"></i>
@@ -218,7 +219,9 @@
 
 
 
-        <!-- FILTERS -->
+        <!-- =================================================
+             FILTERS
+        ================================================== -->
 
         <div class="filters">
 
@@ -297,7 +300,9 @@
 
 
 
-        <!-- LIST -->
+        <!-- =================================================
+             LIST
+        ================================================== -->
 
         <div
             id="disciplineList"
@@ -318,9 +323,11 @@
 
 </div>
 
-    <!-- =====================================================
+
+
+<!-- =========================================================
      STUDENT DISCIPLINE HISTORY MODAL
-===================================================== -->
+========================================================= -->
 
 <div
     id="studentHistoryModal"
@@ -341,8 +348,11 @@
                 </span>
 
                 <h2>
+
                     <i class="fas fa-user-clock"></i>
+
                     Discipline History
+
                 </h2>
 
                 <p id="historyStudentInfo">
@@ -351,24 +361,31 @@
 
             </div>
 
+
             <button
                 id="closeStudentHistoryModal"
                 class="modal-close"
                 type="button"
             >
+
                 <i class="fas fa-times"></i>
+
             </button>
 
         </div>
+
 
 
         <!-- HISTORY SUMMARY -->
 
         <div class="history-summary-grid">
 
+
             <div class="history-summary-card">
 
-                <span>Total Cases</span>
+                <span>
+                    Total Cases
+                </span>
 
                 <strong id="historyTotalCases">
                     0
@@ -379,7 +396,9 @@
 
             <div class="history-summary-card">
 
-                <span>Minor</span>
+                <span>
+                    Minor
+                </span>
 
                 <strong id="historyMinorCases">
                     0
@@ -390,7 +409,9 @@
 
             <div class="history-summary-card">
 
-                <span>Serious</span>
+                <span>
+                    Serious
+                </span>
 
                 <strong id="historySeriousCases">
                     0
@@ -401,7 +422,9 @@
 
             <div class="history-summary-card">
 
-                <span>Resolved</span>
+                <span>
+                    Resolved
+                </span>
 
                 <strong id="historyResolvedCases">
                     0
@@ -412,7 +435,9 @@
 
             <div class="history-summary-card">
 
-                <span>Open</span>
+                <span>
+                    Open
+                </span>
 
                 <strong id="historyOpenCases">
                     0
@@ -421,6 +446,7 @@
             </div>
 
         </div>
+
 
 
         <!-- HISTORY TIMELINE -->
@@ -467,9 +493,9 @@
 
 
 
-<!-- =====================================================
+<!-- =========================================================
      CREATE CASE MODAL
-===================================================== -->
+========================================================= -->
 
 <div
     id="disciplineModal"
@@ -477,12 +503,9 @@
     style="display:none;"
 >
 
-
     <div class="modal-overlay"></div>
 
-
     <div class="modal-content">
-
 
         <div class="modal-header">
 
@@ -520,44 +543,77 @@
         <form id="disciplineForm">
 
 
+            <!-- CLASS -->
+
             <div class="form-group">
-                <select id="classFilter">
-    <option value="">Select class</option>
-</select>
 
-    <label for="student">
-        Student
-        <span>*</span>
-    </label>
+                <label for="classFilter">
+                    Class
+                    <span>*</span>
+                </label>
 
-    <select
-        id="student"
-        name="student"
-        required
-    >
+                <select
+                    id="classFilter"
+                    required
+                >
 
-        <option value="">
-            Loading students...
-        </option>
+                    <option value="">
+                        Loading classes...
+                    </option>
 
-    </select>
+                </select>
 
-</div>
+            </div>
 
 
+
+            <!-- STUDENT -->
+
+            <div class="form-group">
+
+                <label for="student">
+
+                    Student
+
+                    <span>*</span>
+
+                </label>
+
+
+                <select
+                    id="student"
+                    name="student"
+                    required
+                    disabled
+                >
+
+                    <option value="">
+                        Select class first
+                    </option>
+
+                </select>
+
+            </div>
+
+
+
+            <!-- ADMISSION / CLASS -->
 
             <div class="form-grid">
 
 
                 <div class="form-group">
 
-                    <label>
+                    <label for="admissionNumber">
+
                         Admission Number
+
                     </label>
 
                     <input
                         type="text"
                         id="admissionNumber"
+                        readonly
                     >
 
                 </div>
@@ -565,13 +621,16 @@
 
                 <div class="form-group">
 
-                    <label>
+                    <label for="className">
+
                         Class
+
                     </label>
 
                     <input
                         type="text"
                         id="className"
+                        readonly
                     >
 
                 </div>
@@ -580,15 +639,21 @@
 
 
 
+            <!-- CATEGORY / SEVERITY -->
+
             <div class="form-grid">
 
 
                 <div class="form-group">
 
-                    <label>
+                    <label for="category">
+
                         Incident Category
+
                         <span>*</span>
+
                     </label>
+
 
                     <select
                         id="category"
@@ -599,47 +664,47 @@
                             Select category
                         </option>
 
-                        <option>
+                        <option value="Late Coming">
                             Late Coming
                         </option>
 
-                        <option>
+                        <option value="Absenteeism">
                             Absenteeism
                         </option>
 
-                        <option>
+                        <option value="Bullying">
                             Bullying
                         </option>
 
-                        <option>
+                        <option value="Fighting">
                             Fighting
                         </option>
 
-                        <option>
+                        <option value="Disrespect">
                             Disrespect
                         </option>
 
-                        <option>
+                        <option value="Theft">
                             Theft
                         </option>
 
-                        <option>
+                        <option value="Property Damage">
                             Property Damage
                         </option>
 
-                        <option>
+                        <option value="Academic Misconduct">
                             Academic Misconduct
                         </option>
 
-                        <option>
+                        <option value="Uniform Violation">
                             Uniform Violation
                         </option>
 
-                        <option>
+                        <option value="Substance Violation">
                             Substance Violation
                         </option>
 
-                        <option>
+                        <option value="Other">
                             Other
                         </option>
 
@@ -651,9 +716,12 @@
 
                 <div class="form-group">
 
-                    <label>
+                    <label for="severity">
+
                         Severity
+
                     </label>
+
 
                     <select id="severity">
 
@@ -681,12 +749,18 @@
 
 
 
+            <!-- INCIDENT DATE -->
+
             <div class="form-group">
 
-                <label>
+                <label for="incidentDate">
+
                     Incident Date
+
                     <span>*</span>
+
                 </label>
+
 
                 <input
                     type="date"
@@ -698,12 +772,18 @@
 
 
 
+            <!-- DESCRIPTION -->
+
             <div class="form-group">
 
-                <label>
+                <label for="description">
+
                     Description
+
                     <span>*</span>
+
                 </label>
+
 
                 <textarea
                     id="description"
@@ -717,24 +797,32 @@
 
 
 
+            <!-- ACTION TAKEN -->
+
             <div class="form-group">
 
-                <label>
+                <label for="actionTaken">
+
                     Action Taken
+
                 </label>
+
 
                 <textarea
                     id="actionTaken"
                     rows="3"
                     maxlength="2000"
-                    placeholder="Describe any action taken..."
+                    placeholder="Describe any immediate action taken..."
                 ></textarea>
 
             </div>
 
 
 
+            <!-- CREATE ACTIONS -->
+
             <div class="modal-actions">
+
 
                 <button
                     type="button"
@@ -768,13 +856,16 @@
 
 </div>
 
-  <!-- =====================================================
-   discpline details MODAL
-===================================================== -->  
+
+
+<!-- =========================================================
+     DISCIPLINE DETAILS MODAL
+========================================================= -->
+
 <div
     id="disciplineDetailsModal"
     class="modal"
-    style="display: none;"
+    style="display:none;"
 >
 
     <div
@@ -782,15 +873,19 @@
         id="disciplineDetailsOverlay"
     ></div>
 
+
     <div class="modal-content discipline-details-modal">
 
+
         <div class="modal-header">
+
 
             <div>
 
                 <span class="modal-label">
                     DISCIPLINE MANAGEMENT
                 </span>
+
 
                 <h2>
 
@@ -801,6 +896,7 @@
                 </h2>
 
             </div>
+
 
             <button
                 type="button"
@@ -813,6 +909,7 @@
             </button>
 
         </div>
+
 
 
         <div
@@ -828,10 +925,482 @@
 
         </div>
 
+
     </div>
 
 </div>
 
+
+
+<!-- =========================================================
+     EDIT DISCIPLINE CASE MODAL
+========================================================= -->
+
+<div
+    id="editDisciplineModal"
+    class="modal"
+    style="display:none;"
+>
+
+
+    <div
+        class="modal-overlay"
+        id="editDisciplineOverlay"
+    ></div>
+
+
+    <div class="modal-content discipline-edit-modal">
+
+
+        <!-- HEADER -->
+
+        <div class="modal-header">
+
+
+            <div>
+
+                <span class="modal-label">
+                    DISCIPLINE MANAGEMENT
+                </span>
+
+
+                <h2>
+
+                    <i class="fas fa-pen-to-square"></i>
+
+                    Edit Discipline Case
+
+                </h2>
+
+
+                <p>
+                    Update the investigation, action and resolution.
+                </p>
+
+            </div>
+
+
+            <button
+                id="closeEditDisciplineModal"
+                class="modal-close"
+                type="button"
+            >
+
+                <i class="fas fa-times"></i>
+
+            </button>
+
+        </div>
+
+
+
+        <!-- EDIT FORM -->
+
+        <form id="editDisciplineForm">
+
+
+            <!-- IMPORTANT:
+                 Hidden ID tells JavaScript which case to update.
+            -->
+
+            <input
+                type="hidden"
+                id="editDisciplineId"
+            >
+
+
+
+            <!-- STUDENT INFORMATION -->
+
+            <div class="form-grid">
+
+
+                <div class="form-group">
+
+                    <label>
+                        Student
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editStudentName"
+                        readonly
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>
+                        Admission Number
+                    </label>
+
+                    <input
+                        type="text"
+                        id="editAdmissionNumber"
+                        readonly
+                    >
+
+                </div>
+
+            </div>
+
+
+
+            <!-- CATEGORY / SEVERITY -->
+
+            <div class="form-grid">
+
+
+                <div class="form-group">
+
+                    <label for="editCategory">
+                        Incident Category
+                    </label>
+
+
+                    <select id="editCategory">
+
+                        <option value="Late Coming">
+                            Late Coming
+                        </option>
+
+                        <option value="Absenteeism">
+                            Absenteeism
+                        </option>
+
+                        <option value="Bullying">
+                            Bullying
+                        </option>
+
+                        <option value="Fighting">
+                            Fighting
+                        </option>
+
+                        <option value="Disrespect">
+                            Disrespect
+                        </option>
+
+                        <option value="Theft">
+                            Theft
+                        </option>
+
+                        <option value="Property Damage">
+                            Property Damage
+                        </option>
+
+                        <option value="Academic Misconduct">
+                            Academic Misconduct
+                        </option>
+
+                        <option value="Uniform Violation">
+                            Uniform Violation
+                        </option>
+
+                        <option value="Substance Violation">
+                            Substance Violation
+                        </option>
+
+                        <option value="Other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+
+                <div class="form-group">
+
+                    <label for="editSeverity">
+                        Severity
+                    </label>
+
+
+                    <select id="editSeverity">
+
+                        <option value="low">
+                            Low
+                        </option>
+
+                        <option value="medium">
+                            Medium
+                        </option>
+
+                        <option value="high">
+                            High
+                        </option>
+
+                        <option value="critical">
+                            Critical
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- STATUS -->
+
+            <div class="form-group">
+
+                <label for="editStatus">
+
+                    Case Status
+
+                    <span>*</span>
+
+                </label>
+
+
+                <select
+                    id="editStatus"
+                    required
+                >
+
+                    <option value="reported">
+                        Reported
+                    </option>
+
+                    <option value="under_investigation">
+                        Under Investigation
+                    </option>
+
+                    <option value="hearing_scheduled">
+                        Hearing Scheduled
+                    </option>
+
+                    <option value="action_taken">
+                        Action Taken
+                    </option>
+
+                    <option value="resolved">
+                        Resolved
+                    </option>
+
+                    <option value="dismissed">
+                        Dismissed
+                    </option>
+
+                </select>
+
+            </div>
+
+
+
+            <!-- INCIDENT DATE -->
+
+            <div class="form-group">
+
+                <label for="editIncidentDate">
+
+                    Incident Date
+
+                </label>
+
+
+                <input
+                    type="date"
+                    id="editIncidentDate"
+                >
+
+            </div>
+
+
+
+            <!-- DESCRIPTION -->
+
+            <div class="form-group">
+
+                <label for="editDescription">
+
+                    Incident Description
+
+                </label>
+
+
+                <textarea
+                    id="editDescription"
+                    rows="4"
+                    maxlength="3000"
+                    placeholder="Describe what happened..."
+                ></textarea>
+
+            </div>
+
+
+
+            <!-- INVESTIGATION NOTES -->
+
+            <div class="form-group">
+
+                <label for="editInvestigationNotes">
+
+                    <i class="fas fa-magnifying-glass"></i>
+
+                    Investigation Notes
+
+                </label>
+
+
+                <textarea
+                    id="editInvestigationNotes"
+                    rows="4"
+                    maxlength="3000"
+                    placeholder="Record investigation findings, witnesses, evidence or notes..."
+                ></textarea>
+
+            </div>
+
+
+
+            <!-- ACTION TAKEN -->
+
+            <div class="form-group">
+
+                <label for="editActionTaken">
+
+                    <i class="fas fa-gavel"></i>
+
+                    Action Taken
+
+                </label>
+
+
+                <textarea
+                    id="editActionTaken"
+                    rows="3"
+                    maxlength="2000"
+                    placeholder="Describe disciplinary action taken..."
+                ></textarea>
+
+            </div>
+
+
+
+            <!-- RESOLUTION -->
+
+            <div class="form-group">
+
+                <label for="editResolution">
+
+                    <i class="fas fa-circle-check"></i>
+
+                    Resolution
+
+                </label>
+
+
+                <textarea
+                    id="editResolution"
+                    rows="4"
+                    maxlength="3000"
+                    placeholder="Explain how the case was resolved..."
+                ></textarea>
+
+            </div>
+
+
+
+            <!-- FOLLOW UP -->
+
+            <div class="form-grid">
+
+
+                <div class="form-group">
+
+                    <label for="editFollowUpDate">
+
+                        <i class="fas fa-calendar-check"></i>
+
+                        Follow-up Date
+
+                    </label>
+
+
+                    <input
+                        type="date"
+                        id="editFollowUpDate"
+                    >
+
+                </div>
+
+
+
+                <div class="form-group">
+
+                    <label for="editParentNotified">
+
+                        Parent / Guardian Notification
+
+                    </label>
+
+
+                    <select id="editParentNotified">
+
+                        <option value="false">
+                            Not Notified
+                        </option>
+
+                        <option value="true">
+                            Parent Notified
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- EDIT ACTIONS -->
+
+            <div class="modal-actions">
+
+
+                <button
+                    type="button"
+                    class="secondary-btn"
+                    id="cancelEditDisciplineBtn"
+                >
+
+                    Cancel
+
+                </button>
+
+
+                <button
+                    type="submit"
+                    class="primary-btn"
+                    id="saveEditDisciplineBtn"
+                >
+
+                    <i class="fas fa-save"></i>
+
+                    Save Changes
+
+                </button>
+
+            </div>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     TOAST
+========================================================= -->
 
 <div
     id="disciplineToastContainer"
@@ -840,7 +1409,12 @@
 
 
 
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
 <script src="../js/discipline.js"></script>
+
 
 </body>
 
