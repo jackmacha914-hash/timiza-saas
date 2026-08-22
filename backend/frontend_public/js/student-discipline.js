@@ -1,105 +1,203 @@
-// =====================================================
-// STUDENT DISCIPLINE
-// =====================================================
+/* =====================================================
+   STUDENT DISCIPLINE
+===================================================== */
 
-let studentDisciplineCases = [];
+(function () {
+
+    'use strict';
 
 
-// =====================================================
-// LOAD DISCIPLINE
-// =====================================================
+    // =====================================================
+    // CONFIG
+    // =====================================================
 
-async function loadStudentDiscipline() {
+    const API_URL = '/api/discipline/student/my-cases';
 
-    const loading =
-        document.getElementById(
-            'studentDisciplineLoading'
-        );
 
-    const error =
-        document.getElementById(
-            'studentDisciplineError'
-        );
+    let disciplineCases = [];
 
-    const empty =
-        document.getElementById(
-            'studentDisciplineEmpty'
-        );
 
-    const records =
-        document.getElementById(
-            'studentDisciplineRecords'
-        );
+    // =====================================================
+    // DOM HELPERS
+    // =====================================================
 
-    if (loading) {
-        loading.style.display = 'block';
+    function getElement(id) {
+        return document.getElementById(id);
     }
 
-    if (error) {
-        error.style.display = 'none';
-        error.textContent = '';
+
+    // =====================================================
+    // ESCAPE HTML
+    // Prevent unsafe HTML from database values
+    // =====================================================
+
+    function escapeHtml(value) {
+
+        if (
+            value === null ||
+            value === undefined
+        ) {
+            return '';
+        }
+
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
     }
 
-    if (empty) {
-        empty.style.display = 'none';
-    }
 
-    try {
+    // =====================================================
+    // FORMAT DATE
+    // =====================================================
 
-        const response = await fetch(
-            '/api/discipline/student/my-cases',
+    function formatDate(dateValue) {
+
+        if (!dateValue) {
+            return '—';
+        }
+
+        const date = new Date(dateValue);
+
+        if (Number.isNaN(date.getTime())) {
+            return '—';
+        }
+
+        return date.toLocaleDateString(
+            undefined,
             {
-                method: 'GET',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
             }
         );
 
-
-        const data =
-            await response.json();
+    }
 
 
-        if (!response.ok) {
+    // =====================================================
+    // FORMAT STATUS
+    // =====================================================
 
-            throw new Error(
-                data.message ||
-                'Failed to load discipline records.'
+    function formatStatus(status) {
+
+        if (!status) {
+            return 'Reported';
+        }
+
+        return String(status)
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, letter =>
+                letter.toUpperCase()
+            );
+
+    }
+
+
+    // =====================================================
+    // FORMAT SEVERITY
+    // =====================================================
+
+    function formatSeverity(severity) {
+
+        if (!severity) {
+            return 'Low';
+        }
+
+        return String(severity)
+            .replace(/\b\w/g, letter =>
+                letter.toUpperCase()
+            );
+
+    }
+
+
+    // =====================================================
+    // REPORTER NAME
+    // =====================================================
+
+    function getReporterName(reportedBy) {
+
+        if (
+            reportedBy &&
+            typeof reportedBy === 'object'
+        ) {
+
+            return (
+                reportedBy.name ||
+                reportedBy.fullName ||
+                reportedBy.username ||
+                reportedBy.email ||
+                'School Administrator'
             );
 
         }
 
 
-        studentDisciplineCases =
-            Array.isArray(data.discipline)
-                ? data.discipline
-                : [];
+        if (
+            typeof reportedBy === 'string' &&
+            reportedBy.trim()
+        ) {
 
-
-        renderStudentDiscipline();
-
-
-    } catch (err) {
-
-        console.error(
-            '[STUDENT DISCIPLINE]',
-            err
-        );
-
-
-        if (error) {
-
-            error.textContent =
-                err.message ||
-                'Failed to load discipline records.';
-
-            error.style.display = 'block';
+            return reportedBy.trim();
 
         }
 
-    } finally {
+
+        return 'School Administrator';
+
+    }
+
+
+    // =====================================================
+    // LOADING
+    // =====================================================
+
+    function showLoading() {
+
+        const loading =
+            getElement('studentDisciplineLoading');
+
+        const error =
+            getElement('studentDisciplineError');
+
+        const empty =
+            getElement('studentDisciplineEmpty');
+
+        const records =
+            getElement('studentDisciplineRecords');
+
+
+        if (loading) {
+            loading.style.display = 'flex';
+        }
+
+        if (error) {
+            error.style.display = 'none';
+        }
+
+        if (empty) {
+            empty.style.display = 'none';
+        }
+
+        if (records) {
+            records.innerHTML = '';
+        }
+
+    }
+
+
+    // =====================================================
+    // HIDE LOADING
+    // =====================================================
+
+    function hideLoading() {
+
+        const loading =
+            getElement('studentDisciplineLoading');
 
         if (loading) {
             loading.style.display = 'none';
@@ -107,494 +205,814 @@ async function loadStudentDiscipline() {
 
     }
 
-}
+
+    // =====================================================
+    // ERROR
+    // =====================================================
+
+    function showError(message) {
+
+        hideLoading();
+
+        const error =
+            getElement('studentDisciplineError');
+
+        const errorMessage =
+            getElement('studentDisciplineErrorMessage');
 
 
-// =====================================================
-// RENDER
-// =====================================================
+        if (errorMessage) {
 
-function renderStudentDiscipline() {
-
-    const records =
-        document.getElementById(
-            'studentDisciplineRecords'
-        );
-
-    const empty =
-        document.getElementById(
-            'studentDisciplineEmpty'
-        );
-
-
-    if (!records) {
-        return;
-    }
-
-
-    records.innerHTML = '';
-
-
-    updateStudentDisciplineSummary();
-
-
-    if (
-        studentDisciplineCases.length === 0
-    ) {
-
-        if (empty) {
-            empty.style.display = 'block';
-        }
-
-        return;
-
-    }
-
-
-    if (empty) {
-        empty.style.display = 'none';
-    }
-
-
-    studentDisciplineCases.forEach(
-        discipline => {
-
-            records.appendChild(
-                createStudentDisciplineCard(
-                    discipline
-                )
-            );
+            errorMessage.textContent =
+                message ||
+                'Unable to load discipline records.';
 
         }
-    );
 
-}
+        if (error) {
+            error.style.display = 'flex';
+        }
 
-
-// =====================================================
-// SUMMARY
-// =====================================================
-
-function updateStudentDisciplineSummary() {
-
-    const total =
-        studentDisciplineCases.length;
+    }
 
 
-    const active =
-        studentDisciplineCases.filter(
-            item =>
+    // =====================================================
+    // UPDATE SUMMARY
+    // =====================================================
+
+    function updateSummary(cases) {
+
+        const total =
+            cases.length;
+
+
+        const active =
+            cases.filter(item =>
                 ![
                     'resolved',
                     'dismissed'
                 ].includes(
-                    String(
-                        item.status || ''
-                    ).toLowerCase()
+                    String(item.status || '').toLowerCase()
                 )
-        ).length;
+            ).length;
 
 
-    const resolved =
-        studentDisciplineCases.filter(
-            item =>
-                String(
-                    item.status || ''
-                ).toLowerCase() === 'resolved'
-        ).length;
+        const resolved =
+            cases.filter(item =>
+                String(item.status || '').toLowerCase() ===
+                'resolved'
+            ).length;
 
 
-    const highCritical =
-        studentDisciplineCases.filter(
-            item =>
-                [
-                    'high',
-                    'critical'
-                ].includes(
+        const high =
+            cases.filter(item => {
+
+                const severity =
                     String(
                         item.severity || ''
-                    ).toLowerCase()
-                )
-        ).length;
+                    ).toLowerCase();
+
+                return (
+                    severity === 'high' ||
+                    severity === 'critical'
+                );
+
+            }).length;
 
 
-    setText(
-        'studentDisciplineTotal',
-        total
-    );
+        const totalElement =
+            getElement('studentDisciplineTotal');
 
-    setText(
-        'studentDisciplineActive',
-        active
-    );
+        const activeElement =
+            getElement('studentDisciplineActive');
 
-    setText(
-        'studentDisciplineResolved',
-        resolved
-    );
+        const resolvedElement =
+            getElement('studentDisciplineResolved');
 
-    setText(
-        'studentDisciplineHigh',
-        highCritical
-    );
-
-}
+        const highElement =
+            getElement('studentDisciplineHigh');
 
 
-// =====================================================
-// CREATE CARD
-// =====================================================
-
-function createStudentDisciplineCard(
-    discipline
-) {
-
-    const card =
-        document.createElement('div');
-
-
-    card.className =
-        'student-discipline-card';
-
-
-    const severity =
-        String(
-            discipline.severity || 'low'
-        ).toLowerCase();
-
-
-    const status =
-        String(
-            discipline.status || 'reported'
-        ).toLowerCase();
-
-
-    const category =
-        discipline.category ||
-        'Other';
-
-
-    const description =
-        discipline.description ||
-        'No description provided.';
-
-
-    const date =
-        formatStudentDisciplineDate(
-            discipline.incidentDate
-        );
-
-
-    const actionTaken =
-        discipline.actionTaken ||
-        'No action recorded.';
-
-
-    const resolutionNotes =
-        discipline.resolutionNotes ||
-        '';
-
-
-    const reporter =
-        getStudentDisciplineReporter(
-            discipline.reportedBy
-        );
-
-
-    card.innerHTML = `
-
-        <div class="student-discipline-card-header">
-
-            <div>
-
-                <span
-                    class="discipline-severity severity-${severity}"
-                >
-                    ${escapeStudentHtml(
-                        severity.toUpperCase()
-                    )}
-                </span>
-
-                <h3>
-                    ${escapeStudentHtml(
-                        category
-                    )}
-                </h3>
-
-            </div>
-
-            <span
-                class="discipline-status status-${status}"
-            >
-                ${formatStudentDisciplineStatus(
-                    status
-                )}
-            </span>
-
-        </div>
-
-
-        <div class="student-discipline-date">
-            ${escapeStudentHtml(date)}
-        </div>
-
-
-        <div class="student-discipline-description">
-
-            <strong>
-                Incident
-            </strong>
-
-            <p>
-                ${escapeStudentHtml(
-                    description
-                )}
-            </p>
-
-        </div>
-
-
-        <div class="student-discipline-info">
-
-            <div>
-
-                <strong>
-                    Reported By
-                </strong>
-
-                <span>
-                    ${escapeStudentHtml(
-                        reporter
-                    )}
-                </span>
-
-            </div>
-
-
-            <div>
-
-                <strong>
-                    Action Taken
-                </strong>
-
-                <span>
-                    ${escapeStudentHtml(
-                        actionTaken
-                    )}
-                </span>
-
-            </div>
-
-        </div>
-
-
-        ${
-            resolutionNotes
-                ? `
-                    <div class="student-discipline-resolution">
-
-                        <strong>
-                            Resolution Notes
-                        </strong>
-
-                        <p>
-                            ${escapeStudentHtml(
-                                resolutionNotes
-                            )}
-                        </p>
-
-                    </div>
-                `
-                : ''
+        if (totalElement) {
+            totalElement.textContent = total;
         }
 
-    `;
+        if (activeElement) {
+            activeElement.textContent = active;
+        }
 
+        if (resolvedElement) {
+            resolvedElement.textContent = resolved;
+        }
 
-    return card;
-
-}
-
-
-// =====================================================
-// REPORTER
-// =====================================================
-
-function getStudentDisciplineReporter(
-    reportedBy
-) {
-
-    if (
-        reportedBy &&
-        typeof reportedBy === 'object'
-    ) {
-
-        return (
-            String(
-                reportedBy.name || ''
-            ).trim() ||
-
-            String(
-                reportedBy.fullName || ''
-            ).trim() ||
-
-            String(
-                reportedBy.username || ''
-            ).trim() ||
-
-            String(
-                reportedBy.email || ''
-            ).trim() ||
-
-            'Administrator'
-        );
+        if (highElement) {
+            highElement.textContent = high;
+        }
 
     }
 
 
-    if (
-        typeof reportedBy === 'string'
-    ) {
+    // =====================================================
+    // BADGE
+    // =====================================================
+
+    function severityBadge(severity) {
 
         const value =
-            reportedBy.trim();
+            String(
+                severity || 'low'
+            ).toLowerCase();
 
-        if (value) {
-            return value;
+
+        return `
+            <span class="discipline-badge badge-${escapeHtml(value)}">
+                ${escapeHtml(formatSeverity(value))}
+            </span>
+        `;
+
+    }
+
+
+    function statusBadge(status) {
+
+        const value =
+            String(
+                status || 'reported'
+            ).toLowerCase();
+
+
+        return `
+            <span class="discipline-badge badge-${escapeHtml(value)}">
+                ${escapeHtml(formatStatus(value))}
+            </span>
+        `;
+
+    }
+
+
+    // =====================================================
+    // CREATE RECORD CARD
+    // =====================================================
+
+    function createDisciplineCard(record, index) {
+
+        const category =
+            record.category ||
+            'Other';
+
+
+        const severity =
+            record.severity ||
+            'low';
+
+
+        const status =
+            record.status ||
+            'reported';
+
+
+        const description =
+            record.description ||
+            'No description provided.';
+
+
+        const actionTaken =
+            record.actionTaken ||
+            'No action recorded.';
+
+
+        const reporter =
+            getReporterName(
+                record.reportedBy
+            );
+
+
+        return `
+
+            <article
+                class="discipline-record-card"
+            >
+
+                <div class="discipline-record-top">
+
+                    <div>
+
+                        <h3 class="discipline-record-title">
+
+                            ${escapeHtml(category)}
+
+                        </h3>
+
+                        <div class="discipline-record-date">
+
+                            <i class="far fa-calendar-alt"></i>
+
+                            Incident date:
+                            ${escapeHtml(
+                                formatDate(
+                                    record.incidentDate
+                                )
+                            )}
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="discipline-badges">
+
+                        ${severityBadge(severity)}
+
+                        ${statusBadge(status)}
+
+                    </div>
+
+                </div>
+
+
+                <p class="discipline-record-description">
+
+                    ${escapeHtml(description)}
+
+                </p>
+
+
+                <div class="discipline-record-meta">
+
+                    <div>
+
+                        <span class="discipline-meta-label">
+                            Reported By
+                        </span>
+
+                        <span class="discipline-meta-value">
+                            ${escapeHtml(reporter)}
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <span class="discipline-meta-label">
+                            Action Taken
+                        </span>
+
+                        <span class="discipline-meta-value">
+
+                            ${escapeHtml(
+                                actionTaken
+                            )}
+
+                        </span>
+
+                    </div>
+
+
+                    <div>
+
+                        <span class="discipline-meta-label">
+                            Case Status
+                        </span>
+
+                        <span class="discipline-meta-value">
+
+                            ${escapeHtml(
+                                formatStatus(status)
+                            )}
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    style="
+                        margin-top:18px;
+                        display:flex;
+                        justify-content:flex-end;
+                    "
+                >
+
+                    <button
+                        type="button"
+                        class="discipline-view-button"
+                        onclick="openStudentDisciplineModal(${index})"
+                    >
+
+                        <i class="fas fa-eye"></i>
+
+                        View Details
+
+                    </button>
+
+                </div>
+
+            </article>
+
+        `;
+
+    }
+
+
+    // =====================================================
+    // RENDER RECORDS
+    // =====================================================
+
+    function renderRecords(cases) {
+
+        const records =
+            getElement('studentDisciplineRecords');
+
+        const empty =
+            getElement('studentDisciplineEmpty');
+
+
+        if (!records) {
+            return;
+        }
+
+
+        records.innerHTML = '';
+
+
+        if (!cases.length) {
+
+            if (empty) {
+                empty.style.display = 'block';
+            }
+
+            return;
+
+        }
+
+
+        if (empty) {
+            empty.style.display = 'none';
+        }
+
+
+        records.innerHTML =
+            cases
+                .map(
+                    (record, index) =>
+                        createDisciplineCard(
+                            record,
+                            index
+                        )
+                )
+                .join('');
+
+    }
+
+
+    // =====================================================
+    // LOAD DISCIPLINE
+    // =====================================================
+
+    async function loadStudentDiscipline() {
+
+        console.log(
+            '[STUDENT DISCIPLINE] Loading...'
+        );
+
+
+        showLoading();
+
+
+        try {
+
+            const response =
+                await fetch(
+                    API_URL,
+                    {
+                        method: 'GET',
+
+                        credentials: 'include',
+
+                        headers: {
+                            'Accept':
+                                'application/json'
+                        }
+                    }
+                );
+
+
+            console.log(
+                '[STUDENT DISCIPLINE] HTTP:',
+                response.status
+            );
+
+
+            let data = null;
+
+
+            try {
+
+                data =
+                    await response.json();
+
+            } catch (jsonError) {
+
+                throw new Error(
+                    'Server returned an invalid response.'
+                );
+
+            }
+
+
+            console.log(
+                '[STUDENT DISCIPLINE] Response:',
+                data
+            );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data?.message ||
+                    `Failed to load discipline records (${response.status}).`
+                );
+
+            }
+
+
+            if (
+                data?.success !== true
+            ) {
+
+                throw new Error(
+                    data?.message ||
+                    'Unable to load discipline records.'
+                );
+
+            }
+
+
+            disciplineCases =
+                Array.isArray(
+                    data.discipline
+                )
+                    ? data.discipline
+                    : [];
+
+
+            updateSummary(
+                disciplineCases
+            );
+
+
+            renderRecords(
+                disciplineCases
+            );
+
+
+            hideLoading();
+
+
+            console.log(
+                '[STUDENT DISCIPLINE] Loaded:',
+                disciplineCases.length
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                '[STUDENT DISCIPLINE]',
+                error
+            );
+
+
+            showError(
+                error.message ||
+                'Unable to load your discipline records.'
+            );
+
         }
 
     }
 
 
-    return 'Administrator';
+    // =====================================================
+    // OPEN MODAL
+    // =====================================================
 
-}
+    window.openStudentDisciplineModal =
+        function (index) {
 
-
-// =====================================================
-// STATUS
-// =====================================================
-
-function formatStudentDisciplineStatus(
-    status
-) {
-
-    const labels = {
-
-        reported:
-            'Reported',
-
-        under_investigation:
-            'Under Investigation',
-
-        hearing_scheduled:
-            'Hearing Scheduled',
-
-        action_taken:
-            'Action Taken',
-
-        resolved:
-            'Resolved',
-
-        dismissed:
-            'Dismissed'
-
-    };
+            const record =
+                disciplineCases[index];
 
 
-    return labels[status] ||
-        'Reported';
-
-}
-
-
-// =====================================================
-// DATE
-// =====================================================
-
-function formatStudentDisciplineDate(
-    date
-) {
-
-    if (!date) {
-        return 'Date not available';
-    }
+            if (!record) {
+                return;
+            }
 
 
-    const parsed =
-        new Date(date);
+            const modal =
+                getElement(
+                    'studentDisciplineModal'
+                );
+
+            const title =
+                getElement(
+                    'studentDisciplineModalTitle'
+                );
+
+            const body =
+                getElement(
+                    'studentDisciplineModalBody'
+                );
 
 
-    if (
-        Number.isNaN(
-            parsed.getTime()
-        )
-    ) {
-
-        return 'Date not available';
-
-    }
+            if (!modal || !body) {
+                return;
+            }
 
 
-    return parsed.toLocaleDateString(
-        undefined,
-        {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
+            const reporter =
+                getReporterName(
+                    record.reportedBy
+                );
+
+
+            if (title) {
+
+                title.textContent =
+                    record.category ||
+                    'Discipline Case';
+
+            }
+
+
+            body.innerHTML = `
+
+                <div class="discipline-detail-row">
+
+                    <span class="discipline-detail-label">
+                        Category
+                    </span>
+
+                    <div class="discipline-detail-value">
+
+                        ${escapeHtml(
+                            record.category ||
+                            'Other'
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="discipline-detail-row">
+
+                    <span class="discipline-detail-label">
+                        Incident Date
+                    </span>
+
+                    <div class="discipline-detail-value">
+
+                        ${escapeHtml(
+                            formatDate(
+                                record.incidentDate
+                            )
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="discipline-detail-row">
+
+                    <span class="discipline-detail-label">
+                        Severity
+                    </span>
+
+                    <div class="discipline-detail-value">
+
+                        ${severityBadge(
+                            record.severity
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="discipline-detail-row">
+
+                    <span class="discipline-detail-label">
+                        Status
+                    </span>
+
+                    <div class="discipline-detail-value">
+
+                        ${statusBadge(
+                            record.status
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="discipline-detail-row">
+
+                    <span class="discipline-detail-label">
+                        Description
+                    </span>
+
+                    <div class="discipline-detail-value">
+
+                        ${escapeHtml(
+                            record.description ||
+                            'No description provided.'
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="discipline-detail-row">
+
+                    <span class="discipline-detail-label">
+                        Action Taken
+                    </span>
+
+                    <div class="discipline-action-box">
+
+                        ${escapeHtml(
+                            record.actionTaken ||
+                            'No action recorded.'
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="discipline-detail-row">
+
+                    <span class="discipline-detail-label">
+                        Reported By
+                    </span>
+
+                    <div class="discipline-detail-value">
+
+                        ${escapeHtml(
+                            reporter
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                ${
+                    record.resolutionNotes
+                        ? `
+
+                    <div class="discipline-detail-row">
+
+                        <span class="discipline-detail-label">
+                            Resolution Notes
+                        </span>
+
+                        <div class="discipline-action-box">
+
+                            ${escapeHtml(
+                                record.resolutionNotes
+                            )}
+
+                        </div>
+
+                    </div>
+
+                    `
+                        : ''
+                }
+
+
+                ${
+                    record.resolvedAt
+                        ? `
+
+                    <div class="discipline-detail-row">
+
+                        <span class="discipline-detail-label">
+                            Resolved On
+                        </span>
+
+                        <div class="discipline-detail-value">
+
+                            ${escapeHtml(
+                                formatDate(
+                                    record.resolvedAt
+                                )
+                            )}
+
+                        </div>
+
+                    </div>
+
+                    `
+                        : ''
+                }
+
+            `;
+
+
+            modal.style.display =
+                'block';
+
+            modal.setAttribute(
+                'aria-hidden',
+                'false'
+            );
+
+
+            document.body.style.overflow =
+                'hidden';
+
+        };
+
+
+    // =====================================================
+    // CLOSE MODAL
+    // =====================================================
+
+    window.closeStudentDisciplineModal =
+        function () {
+
+            const modal =
+                getElement(
+                    'studentDisciplineModal'
+                );
+
+
+            if (!modal) {
+                return;
+            }
+
+
+            modal.style.display =
+                'none';
+
+            modal.setAttribute(
+                'aria-hidden',
+                'true'
+            );
+
+
+            document.body.style.overflow =
+                '';
+
+        };
+
+
+    // =====================================================
+    // ESC KEY
+    // =====================================================
+
+    document.addEventListener(
+        'keydown',
+        function (event) {
+
+            if (
+                event.key === 'Escape'
+            ) {
+
+                closeStudentDisciplineModal();
+
+            }
+
         }
     );
 
-}
+
+    // =====================================================
+    // INITIALIZE
+    // =====================================================
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        function () {
+
+            console.log(
+                '[STUDENT DISCIPLINE] Initializing page...'
+            );
 
 
-// =====================================================
-// TEXT HELPER
-// =====================================================
+            loadStudentDiscipline();
 
-function setText(
-    id,
-    value
-) {
-
-    const element =
-        document.getElementById(id);
-
-    if (element) {
-        element.textContent = value;
-    }
-
-}
+        }
+    );
 
 
-// =====================================================
-// ESCAPE HTML
-// =====================================================
-
-function escapeStudentHtml(
-    value
-) {
-
-    return String(value ?? '')
-        .replace(
-            /&/g,
-            '&amp;'
-        )
-        .replace(
-            /</g,
-            '&lt;'
-        )
-        .replace(
-            />/g,
-            '&gt;'
-        )
-        .replace(
-            /"/g,
-            '&quot;'
-        )
-        .replace(
-            /'/g,
-            '&#039;'
-        );
-
-}
+})();
