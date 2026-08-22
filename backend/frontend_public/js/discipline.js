@@ -706,42 +706,51 @@ async function loadDiscipline() {
 
 function getReporterName(reportedBy) {
 
+    // -----------------------------------------------
     // Populated User object
+    // -----------------------------------------------
     if (
         reportedBy &&
         typeof reportedBy === "object"
     ) {
 
         return (
-            reportedBy.name ||
-            reportedBy.fullName ||
-            reportedBy.username ||
-            reportedBy.email ||
+            String(reportedBy.name || "").trim() ||
+            String(reportedBy.fullName || "").trim() ||
+            String(reportedBy.username || "").trim() ||
+            String(reportedBy.email || "").trim() ||
             "Administrator"
         );
     }
 
+
+    // -----------------------------------------------
     // Old records may contain a plain string
-    if (
-        typeof reportedBy === "string" &&
-        reportedBy.trim()
-    ) {
+    // -----------------------------------------------
+    if (typeof reportedBy === "string") {
 
-        // If this looks like a MongoDB ID,
-        // don't display the ID to the admin.
-        if (
-            /^[a-f\d]{24}$/i.test(
-                reportedBy.trim()
-            )
-        ) {
+        const value = reportedBy.trim();
 
-            return reportedBy.trim();
+        if (value) {
+
+            // If this is a MongoDB ID,
+            // return it for now rather than crashing.
+            if (
+                /^[a-f\d]{24}$/i.test(value)
+            ) {
+
+                return value;
+            }
+
+            return value;
         }
-
-        return reportedBy.trim();
     }
 
-   return reportedBy.trim();
+
+    // -----------------------------------------------
+    // Missing reporter
+    // -----------------------------------------------
+    return "Administrator";
 }
 
 
