@@ -1,0 +1,152 @@
+<!-- =====================================================
+     STUDENT DISCIPLINE TAB
+===================================================== -->
+
+<section
+    id="disciplineTab"
+    class="student-tab-content"
+    style="display: none;"
+>
+
+    <div class="discipline-header">
+
+        <div>
+            <h2>Discipline</h2>
+
+            <p>
+                View your discipline records and case history.
+            </p>
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         SUMMARY
+    ================================================= -->
+
+    <div class="discipline-summary">
+
+        <div class="discipline-summary-card">
+
+            <div class="summary-label">
+                Total Cases
+            </div>
+
+            <div
+                id="studentDisciplineTotal"
+                class="summary-value"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="discipline-summary-card">
+
+            <div class="summary-label">
+                Active Cases
+            </div>
+
+            <div
+                id="studentDisciplineActive"
+                class="summary-value"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="discipline-summary-card">
+
+            <div class="summary-label">
+                Resolved
+            </div>
+
+            <div
+                id="studentDisciplineResolved"
+                class="summary-value"
+            >
+                0
+            </div>
+
+        </div>
+
+
+        <div class="discipline-summary-card">
+
+            <div class="summary-label">
+                High / Critical
+            </div>
+
+            <div
+                id="studentDisciplineHigh"
+                class="summary-value"
+            >
+                0
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         LOADING
+    ================================================= -->
+
+    <div
+        id="studentDisciplineLoading"
+        class="discipline-loading"
+        style="display: none;"
+    >
+        Loading your discipline records...
+    </div>
+
+
+    <!-- =================================================
+         ERROR
+    ================================================= -->
+
+    <div
+        id="studentDisciplineError"
+        class="discipline-error"
+        style="display: none;"
+    ></div>
+
+
+    <!-- =================================================
+         EMPTY STATE
+    ================================================= -->
+
+    <div
+        id="studentDisciplineEmpty"
+        class="discipline-empty"
+        style="display: none;"
+    >
+
+        <div class="empty-icon">
+            ✓
+        </div>
+
+        <h3>No Discipline Records</h3>
+
+        <p>
+            You currently have no discipline records.
+        </p>
+
+    </div>
+
+
+    <!-- =================================================
+         RECORDS
+    ================================================= -->
+
+    <div
+        id="studentDisciplineRecords"
+        class="student-discipline-records"
+    ></div>
+
+</section>
