@@ -4,6 +4,37 @@ const User = require('../models/User');
 
 
 // =====================================================
+// HELPERS
+// =====================================================
+
+const getSchoolId = (req) => {
+    return (
+        req.user?.school ||
+        req.school?._id ||
+        req.school
+    );
+};
+
+
+const getUserId = (req) => {
+    return (
+        req.user?._id ||
+        req.user?.id ||
+        req.user?.userId
+    );
+};
+
+
+const getUserRole = (req) => {
+    return String(
+        req.user?.role || ''
+    )
+        .toLowerCase()
+        .trim();
+};
+
+
+// =====================================================
 // CREATE DISCIPLINE CASE
 // =====================================================
 
@@ -28,28 +59,55 @@ const createDisciplineCase = async (req, res) => {
         console.log('======================================');
         console.log('[DISCIPLINE CREATE]');
         console.log('User:', {
-            id: req.user?._id || req.user?.id,
-            role: req.user?.role,
-            school: req.user?.school
+            id: getUserId(req),
+            role: getUserRole(req),
+            school: getSchoolId(req),
+            name: req.user?.name,
+            email: req.user?.email
         });
         console.log('Body:', req.body);
         console.log('======================================');
 
 
         // =================================================
-        // SCHOOL
+        // AUTHENTICATED USER
         // =================================================
 
-        const schoolId =
-            req.user?.school ||
-            req.school?._id ||
-            req.school;
+        const userId = getUserId(req);
+        const role = getUserRole(req);
+        const schoolId = getSchoolId(req);
+
+
+        if (!userId) {
+
+            return res.status(401).json({
+                success: false,
+                message: 'Authenticated user could not be determined.'
+            });
+
+        }
 
 
         if (!schoolId) {
 
             return res.status(400).json({
+                success: false,
                 message: 'School could not be determined.'
+            });
+
+        }
+
+
+        // =================================================
+        // ONLY ADMIN + TEACHER
+        // =================================================
+
+        if (!['admin', 'teacher'].includes(role)) {
+
+            return res.status(403).json({
+                success: false,
+                message:
+                    'Only administrators and teachers can report discipline cases.'
             });
 
         }
@@ -62,6 +120,7 @@ const createDisciplineCase = async (req, res) => {
         if (!student) {
 
             return res.status(400).json({
+                success: false,
                 message: 'Student is required.'
             });
 
@@ -71,6 +130,7 @@ const createDisciplineCase = async (req, res) => {
         if (!category) {
 
             return res.status(400).json({
+                success: false,
                 message: 'Discipline category is required.'
             });
 
@@ -80,6 +140,7 @@ const createDisciplineCase = async (req, res) => {
         if (!description) {
 
             return res.status(400).json({
+                success: false,
                 message: 'Incident description is required.'
             });
 
@@ -89,7 +150,29 @@ const createDisciplineCase = async (req, res) => {
         if (!incidentDate) {
 
             return res.status(400).json({
+                success: false,
                 message: 'Incident date is required.'
+            });
+
+        }
+
+
+        // =================================================
+        // VERIFY REPORTING USER
+        // =================================================
+
+        const reportingUser = await User.findOne({
+            _id: userId,
+            school: schoolId
+        }).select('_id name fullName email role');
+
+
+        if (!reportingUser) {
+
+            return res.status(403).json({
+                success: false,
+                message:
+                    'Authenticated user does not belong to this school.'
             });
 
         }
@@ -150,7 +233,7 @@ const createDisciplineCase = async (req, res) => {
         if (!studentUser) {
 
             const searchName =
-                student.trim();
+                String(student).trim();
 
 
             studentUser =
@@ -176,6 +259,8 @@ const createDisciplineCase = async (req, res) => {
         if (!studentUser) {
 
             return res.status(404).json({
+
+                success: false,
 
                 message:
                     'Student not found in this school. Please enter the student ID, admission number, or exact student name.'
@@ -217,7 +302,10 @@ const createDisciplineCase = async (req, res) => {
                     '',
 
                 className:
-                    className || '',
+                    className ||
+                    studentUser.class ||
+                    studentUser.classAssigned ||
+                    '',
 
                 category,
 
@@ -225,19 +313,28 @@ const createDisciplineCase = async (req, res) => {
                     severity || 'low',
 
                 description:
-
-                    description.trim(),
+                    String(description).trim(),
 
                 incidentDate:
-
                     new Date(incidentDate),
 
-                reportedBy:
 
-                    req.user?.name ||
-                    req.user?.fullName ||
-                    req.user?.email ||
-                    'Administrator',
+                // =================================================
+                // IMPORTANT
+                //
+                // Store ACTUAL USER ID.
+                //
+                // Do NOT store name/email here.
+                // =================================================
+
+                reportedBy:
+                    reportingUser._id,
+
+
+                // Keep role of person reporting
+                reportedByRole:
+                    role,
+
 
                 actionTaken:
                     actionTaken || '',
@@ -252,15 +349,20 @@ const createDisciplineCase = async (req, res) => {
 
 
         // =================================================
-        // POPULATE STUDENT
+        // POPULATE RESPONSE
         // =================================================
 
         const populated =
             await Discipline.findById(
                 discipline._id
-            ).populate(
+            )
+            .populate(
                 'student',
-                'name fullName email admissionNumber'
+                'name fullName email admissionNumber class classAssigned'
+            )
+            .populate(
+                'reportedBy',
+                'name fullName email role'
             );
 
 
@@ -318,34 +420,150 @@ const createDisciplineCase = async (req, res) => {
 // =====================================================
 // GET ALL DISCIPLINE CASES
 // =====================================================
+//
+// ADMIN:
+//     All cases in their school
+//
+// TEACHER:
+//     ONLY cases they personally reported
+//
+// =====================================================
 
 const getDisciplineCases = async (req, res) => {
 
     try {
 
         const schoolId =
-            req.user?.school ||
-            req.school?._id ||
-            req.school;
+            getSchoolId(req);
 
+        const userId =
+            getUserId(req);
+
+        const role =
+            getUserRole(req);
+
+
+        // =================================================
+        // AUTH CHECK
+        // =================================================
+
+        if (!schoolId) {
+
+            return res.status(400).json({
+                success: false,
+                message: 'School could not be determined.'
+            });
+
+        }
+
+
+        if (!userId) {
+
+            return res.status(401).json({
+                success: false,
+                message:
+                    'Authenticated user could not be determined.'
+            });
+
+        }
+
+
+        // =================================================
+        // ROLE CHECK
+        // =================================================
+
+        if (
+            !['admin', 'teacher'].includes(role)
+        ) {
+
+            return res.status(403).json({
+
+                success: false,
+
+                message:
+                    'You are not authorized to view discipline cases.'
+
+            });
+
+        }
+
+
+        // =================================================
+        // BASE FILTER
+        // =================================================
+
+        const filter = {
+
+            school:
+                schoolId
+
+        };
+
+
+        // =================================================
+        // TEACHER SECURITY
+        //
+        // A teacher can ONLY see cases where
+        // reportedBy === their actual User ID.
+        // =================================================
+
+        if (role === 'teacher') {
+
+            filter.reportedBy =
+                userId;
+
+        }
+
+
+        console.log(
+            '[DISCIPLINE GET] User:',
+            {
+                id: userId,
+                role,
+                school: schoolId
+            }
+        );
+
+
+        console.log(
+            '[DISCIPLINE GET] SECURITY FILTER:',
+            filter
+        );
+
+
+        // =================================================
+        // FETCH
+        // =================================================
 
         const cases =
-            await Discipline.find({
-                school: schoolId
-            })
-            .populate(
-                'student',
-                'name fullName email admissionNumber'
-            )
-            .sort({
-                createdAt: -1
-            });
+            await Discipline.find(filter)
+                .populate(
+                    'student',
+                    'name fullName email admissionNumber class classAssigned'
+                )
+                .populate(
+                    'reportedBy',
+                    'name fullName email role'
+                )
+                .sort({
+                    createdAt: -1
+                });
 
 
         return res.json({
 
+            success: true,
+
             discipline:
-                cases
+                cases,
+
+            count:
+                cases.length,
+
+            access:
+                role === 'admin'
+                    ? 'all_cases'
+                    : 'own_reports'
 
         });
 
@@ -359,6 +577,8 @@ const getDisciplineCases = async (req, res) => {
 
 
         return res.status(500).json({
+
+            success: false,
 
             message:
                 'Failed to load discipline records',
@@ -376,29 +596,104 @@ const getDisciplineCases = async (req, res) => {
 // =====================================================
 // GET SINGLE CASE
 // =====================================================
+//
+// ADMIN:
+//     Any case in school
+//
+// TEACHER:
+//     Only their own case
+//
+// =====================================================
 
 const getDisciplineCase = async (req, res) => {
 
     try {
 
         const schoolId =
-            req.user?.school ||
-            req.school?._id ||
-            req.school;
+            getSchoolId(req);
 
+        const userId =
+            getUserId(req);
+
+        const role =
+            getUserRole(req);
+
+
+        if (!schoolId || !userId) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    'Authentication information is incomplete.'
+
+            });
+
+        }
+
+
+        if (
+            !['admin', 'teacher'].includes(role)
+        ) {
+
+            return res.status(403).json({
+
+                success: false,
+
+                message:
+                    'You are not authorized to view discipline cases.'
+
+            });
+
+        }
+
+
+        // =================================================
+        // SECURITY FILTER
+        // =================================================
+
+        const filter = {
+
+            _id:
+                req.params.id,
+
+            school:
+                schoolId
+
+        };
+
+
+        // Teacher can only access own case
+        if (role === 'teacher') {
+
+            filter.reportedBy =
+                userId;
+
+        }
+
+
+        console.log(
+            '[DISCIPLINE GET ONE] Filter:',
+            filter
+        );
+
+
+        // =================================================
+        // FIND
+        // =================================================
 
         const discipline =
-            await Discipline.findOne({
-
-                _id:
-                    req.params.id,
-
-                school:
-                    schoolId
-
-            }).populate(
+            await Discipline.findOne(
+                filter
+            )
+            .populate(
                 'student',
-                'name fullName email admissionNumber'
+                'name fullName email admissionNumber class classAssigned'
+            )
+            .populate(
+                'reportedBy',
+                'name fullName email role'
             );
 
 
@@ -406,8 +701,10 @@ const getDisciplineCase = async (req, res) => {
 
             return res.status(404).json({
 
+                success: false,
+
                 message:
-                    'Discipline case not found'
+                    'Discipline case not found or you are not authorized to view it.'
 
             });
 
@@ -415,6 +712,8 @@ const getDisciplineCase = async (req, res) => {
 
 
         return res.json({
+
+            success: true,
 
             discipline
 
@@ -430,6 +729,8 @@ const getDisciplineCase = async (req, res) => {
 
 
         return res.status(500).json({
+
+            success: false,
 
             message:
                 'Failed to load discipline case',
@@ -447,16 +748,62 @@ const getDisciplineCase = async (req, res) => {
 // =====================================================
 // UPDATE CASE
 // =====================================================
+//
+// ADMIN:
+//     Can update any case
+//
+// TEACHER:
+//     Can update only cases they reported
+//
+// =====================================================
 
 const updateDisciplineCase = async (req, res) => {
 
     try {
 
         const schoolId =
-            req.user?.school ||
-            req.school?._id ||
-            req.school;
+            getSchoolId(req);
 
+        const userId =
+            getUserId(req);
+
+        const role =
+            getUserRole(req);
+
+
+        if (!schoolId || !userId) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    'Authentication information is incomplete.'
+
+            });
+
+        }
+
+
+        if (
+            !['admin', 'teacher'].includes(role)
+        ) {
+
+            return res.status(403).json({
+
+                success: false,
+
+                message:
+                    'You are not authorized to update discipline cases.'
+
+            });
+
+        }
+
+
+        // =================================================
+        // ALLOWED FIELDS
+        // =================================================
 
         const allowedFields = [
 
@@ -488,6 +835,10 @@ const updateDisciplineCase = async (req, res) => {
         });
 
 
+        // =================================================
+        // RESOLUTION DATE
+        // =================================================
+
         if (
             updates.status === 'resolved'
         ) {
@@ -498,16 +849,55 @@ const updateDisciplineCase = async (req, res) => {
         }
 
 
+        if (
+            updates.status &&
+            updates.status !== 'resolved'
+        ) {
+
+            updates.resolvedAt =
+                null;
+
+        }
+
+
+        // =================================================
+        // SECURITY FILTER
+        // =================================================
+
+        const filter = {
+
+            _id:
+                req.params.id,
+
+            school:
+                schoolId
+
+        };
+
+
+        // Teacher can only update own case
+        if (role === 'teacher') {
+
+            filter.reportedBy =
+                userId;
+
+        }
+
+
+        console.log(
+            '[DISCIPLINE UPDATE] Filter:',
+            filter
+        );
+
+
+        // =================================================
+        // UPDATE
+        // =================================================
+
         const discipline =
             await Discipline.findOneAndUpdate(
 
-                {
-                    _id:
-                        req.params.id,
-
-                    school:
-                        schoolId
-                },
+                filter,
 
                 updates,
 
@@ -516,9 +906,14 @@ const updateDisciplineCase = async (req, res) => {
                     runValidators: true
                 }
 
-            ).populate(
+            )
+            .populate(
                 'student',
-                'name fullName email admissionNumber'
+                'name fullName email admissionNumber class classAssigned'
+            )
+            .populate(
+                'reportedBy',
+                'name fullName email role'
             );
 
 
@@ -526,8 +921,10 @@ const updateDisciplineCase = async (req, res) => {
 
             return res.status(404).json({
 
+                success: false,
+
                 message:
-                    'Discipline case not found'
+                    'Discipline case not found or you are not authorized to update it.'
 
             });
 
@@ -556,6 +953,8 @@ const updateDisciplineCase = async (req, res) => {
 
         return res.status(500).json({
 
+            success: false,
+
             message:
                 'Failed to update discipline case',
 
@@ -572,35 +971,107 @@ const updateDisciplineCase = async (req, res) => {
 // =====================================================
 // DELETE CASE
 // =====================================================
+//
+// ADMIN:
+//     Can delete any case
+//
+// TEACHER:
+//     Can delete only cases they reported
+//
+// =====================================================
 
 const deleteDisciplineCase = async (req, res) => {
 
     try {
 
         const schoolId =
-            req.user?.school ||
-            req.school?._id ||
-            req.school;
+            getSchoolId(req);
+
+        const userId =
+            getUserId(req);
+
+        const role =
+            getUserRole(req);
 
 
-        const discipline =
-            await Discipline.findOneAndDelete({
+        if (!schoolId || !userId) {
 
-                _id:
-                    req.params.id,
+            return res.status(401).json({
 
-                school:
-                    schoolId
+                success: false,
+
+                message:
+                    'Authentication information is incomplete.'
 
             });
+
+        }
+
+
+        if (
+            !['admin', 'teacher'].includes(role)
+        ) {
+
+            return res.status(403).json({
+
+                success: false,
+
+                message:
+                    'You are not authorized to delete discipline cases.'
+
+            });
+
+        }
+
+
+        // =================================================
+        // SECURITY FILTER
+        // =================================================
+
+        const filter = {
+
+            _id:
+                req.params.id,
+
+            school:
+                schoolId
+
+        };
+
+
+        // Teacher can only delete own case
+        if (role === 'teacher') {
+
+            filter.reportedBy =
+                userId;
+
+        }
+
+
+        console.log(
+            '[DISCIPLINE DELETE] Filter:',
+            filter
+        );
+
+
+        // =================================================
+        // DELETE
+        // =================================================
+
+        const discipline =
+            await Discipline.findOneAndDelete(
+                filter
+            );
 
 
         if (!discipline) {
 
             return res.status(404).json({
 
+                success: false,
+
                 message:
-                    'Discipline case not found'
+                    'Discipline case not found or you are not authorized to delete it.'
 
             });
 
@@ -626,6 +1097,8 @@ const deleteDisciplineCase = async (req, res) => {
 
 
         return res.status(500).json({
+
+            success: false,
 
             message:
                 'Failed to delete discipline case',
