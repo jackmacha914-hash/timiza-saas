@@ -567,134 +567,127 @@
 
     }
 
+async function loadStudentDiscipline() {
 
-    // =====================================================
-    // LOAD DISCIPLINE
-    // =====================================================
+    console.log(
+        '[STUDENT DISCIPLINE] Loading...'
+    );
 
-    async function loadStudentDiscipline() {
+    showLoading();
+
+    try {
+
+        const token = localStorage.getItem('token');
 
         console.log(
-            '[STUDENT DISCIPLINE] Loading...'
+            '[STUDENT DISCIPLINE] Token exists:',
+            !!token
         );
 
+        if (!token) {
+            throw new Error(
+                'Your session has expired. Please log in again.'
+            );
+        }
 
-        showLoading();
+        const response =
+            await fetch(
+                API_URL,
+                {
+                    method: 'GET',
 
+                    headers: {
+                        'Accept':
+                            'application/json',
+
+                        'Authorization':
+                            `Bearer ${token}`
+                    }
+                }
+            );
+
+        console.log(
+            '[STUDENT DISCIPLINE] HTTP:',
+            response.status
+        );
+
+        let data = null;
 
         try {
 
-            const response =
-                await fetch(
-                    API_URL,
-                    {
-                        method: 'GET',
+            data =
+                await response.json();
 
-                        credentials: 'include',
+        } catch (jsonError) {
 
-                        headers: {
-                            'Accept':
-                                'application/json'
-                        }
-                    }
-                );
-
-
-            console.log(
-                '[STUDENT DISCIPLINE] HTTP:',
-                response.status
-            );
-
-
-            let data = null;
-
-
-            try {
-
-                data =
-                    await response.json();
-
-            } catch (jsonError) {
-
-                throw new Error(
-                    'Server returned an invalid response.'
-                );
-
-            }
-
-
-            console.log(
-                '[STUDENT DISCIPLINE] Response:',
-                data
-            );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data?.message ||
-                    `Failed to load discipline records (${response.status}).`
-                );
-
-            }
-
-
-            if (
-                data?.success !== true
-            ) {
-
-                throw new Error(
-                    data?.message ||
-                    'Unable to load discipline records.'
-                );
-
-            }
-
-
-            disciplineCases =
-                Array.isArray(
-                    data.discipline
-                )
-                    ? data.discipline
-                    : [];
-
-
-            updateSummary(
-                disciplineCases
-            );
-
-
-            renderRecords(
-                disciplineCases
-            );
-
-
-            hideLoading();
-
-
-            console.log(
-                '[STUDENT DISCIPLINE] Loaded:',
-                disciplineCases.length
-            );
-
-
-        } catch (error) {
-
-            console.error(
-                '[STUDENT DISCIPLINE]',
-                error
-            );
-
-
-            showError(
-                error.message ||
-                'Unable to load your discipline records.'
+            throw new Error(
+                'Server returned an invalid response.'
             );
 
         }
 
+        console.log(
+            '[STUDENT DISCIPLINE] Response:',
+            data
+        );
+
+        if (!response.ok) {
+
+            throw new Error(
+                data?.message ||
+                `Failed to load discipline records (${response.status}).`
+            );
+
+        }
+
+        if (
+            data?.success !== true
+        ) {
+
+            throw new Error(
+                data?.message ||
+                'Unable to load discipline records.'
+            );
+
+        }
+
+        disciplineCases =
+            Array.isArray(
+                data.discipline
+            )
+                ? data.discipline
+                : [];
+
+        updateSummary(
+            disciplineCases
+        );
+
+        renderRecords(
+            disciplineCases
+        );
+
+        hideLoading();
+
+        console.log(
+            '[STUDENT DISCIPLINE] Loaded:',
+            disciplineCases.length
+        );
+
+    } catch (error) {
+
+        console.error(
+            '[STUDENT DISCIPLINE]',
+            error
+        );
+
+        showError(
+            error.message ||
+            'Unable to load your discipline records.'
+        );
+
     }
 
+}
 
     // =====================================================
     // OPEN MODAL
