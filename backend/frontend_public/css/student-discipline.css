@@ -1,0 +1,508 @@
+/* =====================================================
+   STUDENT DISCIPLINE
+===================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f7fb;
+    color: #1f2937;
+}
+
+.student-discipline-page {
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.discipline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.discipline-eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.discipline-header h1 {
+    margin: 0 0 8px;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.discipline-header p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 15px;
+}
+
+.discipline-header-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111827;
+    color: #fff;
+    font-size: 24px;
+}
+
+
+/* =====================================================
+   SUMMARY
+===================================================== */
+
+.discipline-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 30px;
+}
+
+.discipline-summary-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.discipline-summary-icon {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 12px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+}
+
+.summary-label {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 5px;
+}
+
+.summary-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #111827;
+}
+
+
+/* =====================================================
+   LOADING
+===================================================== */
+
+.discipline-loading {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    color: #6b7280;
+    margin-bottom: 20px;
+}
+
+.discipline-spinner {
+    width: 22px;
+    height: 22px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #111827;
+    border-radius: 50%;
+    animation: disciplineSpin 0.8s linear infinite;
+}
+
+@keyframes disciplineSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* =====================================================
+   ERROR
+===================================================== */
+
+.discipline-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+
+/* =====================================================
+   EMPTY
+===================================================== */
+
+.discipline-empty {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 60px 30px;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 25px;
+}
+
+.discipline-empty h2 {
+    margin: 0 0 8px;
+}
+
+.discipline-empty p {
+    margin: 0;
+    color: #6b7280;
+}
+
+
+/* =====================================================
+   RECORDS
+===================================================== */
+
+.student-discipline-records {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+
+/* =====================================================
+   RECORD CARD
+===================================================== */
+
+.discipline-record-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.discipline-record-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.discipline-record-title {
+    margin: 0 0 7px;
+    font-size: 18px;
+}
+
+.discipline-record-date {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.discipline-record-description {
+    color: #4b5563;
+    line-height: 1.6;
+    margin: 0 0 18px;
+}
+
+.discipline-record-meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 18px;
+}
+
+.discipline-meta-label {
+    display: block;
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 5px;
+}
+
+.discipline-meta-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+
+/* =====================================================
+   BADGES
+===================================================== */
+
+.discipline-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.discipline-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.badge-low {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.badge-medium {
+    background: #fffbeb;
+    color: #b45309;
+}
+
+.badge-high {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.badge-critical {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.badge-reported {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.badge-under_investigation {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.badge-hearing_scheduled {
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+.badge-action_taken {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-resolved {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.badge-dismissed {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+
+/* =====================================================
+   BUTTON
+===================================================== */
+
+.discipline-view-button {
+    border: none;
+    background: #111827;
+    color: #fff;
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.discipline-view-button:hover {
+    opacity: 0.9;
+}
+
+
+/* =====================================================
+   MODAL
+===================================================== */
+
+.student-discipline-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+}
+
+.student-discipline-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.student-discipline-modal-content {
+    position: relative;
+    width: calc(100% - 30px);
+    max-width: 700px;
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.student-discipline-modal-header {
+    padding: 22px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.student-discipline-modal-header h2 {
+    margin: 0;
+}
+
+.student-discipline-modal-close {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 8px;
+    background: #f3f4f6;
+    cursor: pointer;
+    font-size: 17px;
+}
+
+.student-discipline-modal-body {
+    padding: 22px;
+}
+
+.student-discipline-modal-footer {
+    padding: 18px 22px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.student-discipline-close-button {
+    border: none;
+    background: #111827;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+
+/* =====================================================
+   MODAL DETAILS
+===================================================== */
+
+.discipline-detail-row {
+    margin-bottom: 20px;
+}
+
+.discipline-detail-label {
+    display: block;
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.discipline-detail-value {
+    color: #374151;
+    line-height: 1.6;
+}
+
+.discipline-action-box {
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 10px;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 1000px) {
+
+    .discipline-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .discipline-record-meta {
+        grid-template-columns: 1fr 1fr;
+    }
+
+}
+
+
+@media (max-width: 650px) {
+
+    .student-discipline-page {
+        padding: 18px;
+    }
+
+    .discipline-header {
+        align-items: flex-start;
+    }
+
+    .discipline-header-icon {
+        display: none;
+    }
+
+    .discipline-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .discipline-record-top {
+        flex-direction: column;
+    }
+
+    .discipline-record-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .discipline-view-button {
+        width: 100%;
+    }
+
+}
