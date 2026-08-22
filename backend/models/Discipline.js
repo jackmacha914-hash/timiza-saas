@@ -1,4 +1,3 @@
-models discpline
 
 const mongoose = require('mongoose');
 
