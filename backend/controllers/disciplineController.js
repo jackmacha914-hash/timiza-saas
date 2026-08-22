@@ -1112,7 +1112,7 @@ const deleteDisciplineCase = async (req, res) => {
 
 };
 
-// =====================================================
+/// =====================================================
 // GET MY DISCIPLINE CASES
 // Student can only see their own discipline records
 // =====================================================
@@ -1229,6 +1229,6 @@ module.exports = {
 
     deleteDisciplineCase,
 
-     getMyDisciplineCases
+    getMyDisciplineCases
 
 };
