@@ -1,5 +1,3 @@
-
-
 const express = require('express');
 
 const router = express.Router();
@@ -9,12 +7,25 @@ const {
     getDisciplineCases,
     getDisciplineCase,
     updateDisciplineCase,
-    deleteDisciplineCase
+    deleteDisciplineCase,
+    getMyDisciplineCases
 } = require('../controllers/disciplineController');
 
 const {
     authorize
 } = require('../middleware/auth');
+
+
+// =====================================================
+// STUDENT - GET MY DISCIPLINE CASES
+// Student can only see their own discipline records
+// =====================================================
+
+router.get(
+    '/student/my-cases',
+    authorize('student'),
+    getMyDisciplineCases
+);
 
 
 // =====================================================
