@@ -1,3 +1,5 @@
+discpile routes
+
 const express = require('express');
 
 const router = express.Router();
@@ -11,22 +13,13 @@ const {
 } = require('../controllers/disciplineController');
 
 const {
-    protect,
     authorize
 } = require('../middleware/auth');
 
 
 // =====================================================
-// ALL DISCIPLINE ROUTES
-// User must be authenticated
-// =====================================================
-
-router.use(protect);
-
-
-// =====================================================
 // GET ALL DISCIPLINE CASES
-// Authenticated school users
+// Authenticated users in the school
 // =====================================================
 
 router.get(
@@ -37,7 +30,6 @@ router.get(
 
 // =====================================================
 // GET ONE DISCIPLINE CASE
-// Authenticated school users
 // =====================================================
 
 router.get(
