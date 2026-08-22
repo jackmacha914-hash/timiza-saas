@@ -106,15 +106,15 @@ function initializeDiscipline() {
             handleStudentChange
         );
 
-    // close student history modal
+
+    // CLOSE STUDENT HISTORY MODAL
+
     document
-    .getElementById(
-        "closeStudentHistoryModal"
-    )
-    ?.addEventListener(
-        "click",
-        closeStudentHistory
-    );
+        .getElementById("closeStudentHistoryModal")
+        ?.addEventListener(
+            "click",
+            closeStudentHistory
+        );
 
 
     // LOAD DATA
@@ -536,8 +536,6 @@ function handleClassChange(event) {
     }
 
 
-    // Reset student
-
     studentSelect.innerHTML = `
         <option value="">
             Select student
@@ -547,8 +545,6 @@ function handleClassChange(event) {
 
     studentSelect.disabled = true;
 
-
-    // Clear automatic fields
 
     const admissionInput =
         document.getElementById(
@@ -844,6 +840,7 @@ function renderDiscipline() {
             "disciplineList"
         );
 
+
     if (!list) {
         return;
     }
@@ -877,6 +874,7 @@ function renderDiscipline() {
                 const student =
                     item.student?.name ||
                     item.student?.fullName ||
+                    item.studentName ||
                     "";
 
 
@@ -955,69 +953,9 @@ function renderDiscipline() {
         }
     );
 
-
-    // =================================================
-    // HISTORY BUTTONS
-    // =================================================
-
-    document
-        .querySelectorAll(
-            ".view-history-btn"
-        )
-        .forEach(
-            button => {
-
-                button.addEventListener(
-                    "click",
-                    () => {
-
-                        const studentId =
-                            button.dataset.studentId;
-
-
-                        if (!studentId) {
-
-                            showToast(
-                                "Unable to identify this student.",
-                                "error"
-                            );
-
-                            return;
-
-                        }
-
-
-                        openStudentHistory(
-                            studentId
-                        );
-
-                    }
-                );
-
-            }
-        );
-
 }
 
 
-const detailsButton =
-    card.querySelector(".view-details-btn");
-
-if (detailsButton) {
-
-    detailsButton.addEventListener(
-        "click",
-        event => {
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            openDisciplineDetails(item);
-
-        }
-    );
-
-}
 // =====================================================
 // DISCIPLINE CARD
 // =====================================================
@@ -1081,6 +1019,7 @@ function createDisciplineCard(item) {
                     <span>
                         ${escapeHtml(
                             item.admissionNumber ||
+                            item.student?.admissionNumber ||
                             "No admission number"
                         )}
                     </span>
@@ -1106,7 +1045,8 @@ function createDisciplineCard(item) {
                     <strong>
 
                         ${escapeHtml(
-                            item.category || ""
+                            item.category ||
+                            "Discipline Incident"
                         )}
 
                     </strong>
@@ -1130,7 +1070,8 @@ function createDisciplineCard(item) {
             <p class="record-description">
 
                 ${escapeHtml(
-                    item.description
+                    item.description ||
+                    "No description provided."
                 )}
 
             </p>
@@ -1169,23 +1110,39 @@ function createDisciplineCard(item) {
                 </span>
 
 
-                ${
-                    studentId
-                        ? `
-                            <button
-                                type="button"
-                                class="view-history-btn"
-                                data-student-id="${escapeHtml(studentId)}"
-                            >
+                <div class="record-actions">
 
-                                <i class="fas fa-clock-rotate-left"></i>
+                    <button
+                        type="button"
+                        class="view-details-btn"
+                    >
 
-                                View History
+                        <i class="fas fa-eye"></i>
 
-                            </button>
-                        `
-                        : ""
-                }
+                        View Details
+
+                    </button>
+
+
+                    ${
+                        studentId
+                            ? `
+                                <button
+                                    type="button"
+                                    class="view-history-btn"
+                                    data-student-id="${escapeHtml(studentId)}"
+                                >
+
+                                    <i class="fas fa-clock-rotate-left"></i>
+
+                                    View History
+
+                                </button>
+                            `
+                            : ""
+                    }
+
+                </div>
 
             </div>
 
@@ -1193,6 +1150,39 @@ function createDisciplineCard(item) {
 
     `;
 
+
+    // =================================================
+    // VIEW DETAILS
+    // =================================================
+
+    const detailsButton =
+        card.querySelector(
+            ".view-details-btn"
+        );
+
+
+    if (detailsButton) {
+
+        detailsButton.addEventListener(
+            "click",
+            event => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                openDisciplineDetails(
+                    item
+                );
+
+            }
+        );
+
+    }
+
+
+    // =================================================
+    // VIEW STUDENT HISTORY
+    // =================================================
 
     const historyButton =
         card.querySelector(
@@ -1204,7 +1194,22 @@ function createDisciplineCard(item) {
 
         historyButton.addEventListener(
             "click",
-            () => {
+            event => {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (!studentId) {
+
+                    showToast(
+                        "Unable to identify this student.",
+                        "error"
+                    );
+
+                    return;
+
+                }
+
 
                 openStudentHistory(
                     studentId,
@@ -1220,7 +1225,11 @@ function createDisciplineCard(item) {
     return card;
 
 }
-//details function
+
+
+// =====================================================
+// OPEN DISCIPLINE DETAILS
+// =====================================================
 
 function openDisciplineDetails(item) {
 
@@ -1229,10 +1238,12 @@ function openDisciplineDetails(item) {
             "disciplineDetailsModal"
         );
 
+
     const content =
         document.getElementById(
             "disciplineDetailsContent"
         );
+
 
     if (!modal || !content) {
 
@@ -1240,8 +1251,15 @@ function openDisciplineDetails(item) {
             "[DISCIPLINE DETAILS] Modal not found"
         );
 
+        showToast(
+            "Discipline details modal could not be found.",
+            "error"
+        );
+
         return;
+
     }
+
 
     const student =
         item.student?.name ||
@@ -1249,10 +1267,12 @@ function openDisciplineDetails(item) {
         item.studentName ||
         "Unknown Student";
 
+
     const admissionNumber =
         item.admissionNumber ||
         item.student?.admissionNumber ||
         "Not available";
+
 
     const className =
         item.className ||
@@ -1260,13 +1280,16 @@ function openDisciplineDetails(item) {
         item.student?.class ||
         "Not available";
 
+
     const severity =
         item.severity ||
         "low";
 
+
     const status =
         item.status ||
         "reported";
+
 
     content.innerHTML = `
 
@@ -1275,8 +1298,11 @@ function openDisciplineDetails(item) {
             <div class="case-student">
 
                 <div class="case-avatar">
+
                     <i class="fas fa-user"></i>
+
                 </div>
+
 
                 <div>
 
@@ -1284,10 +1310,12 @@ function openDisciplineDetails(item) {
                         ${escapeHtml(student)}
                     </h3>
 
+
                     <p>
                         Admission:
                         ${escapeHtml(admissionNumber)}
                     </p>
+
 
                     <p>
                         Class:
@@ -1298,24 +1326,33 @@ function openDisciplineDetails(item) {
 
             </div>
 
+
             <div class="case-badges">
 
                 <span
                     class="history-severity ${escapeHtml(severity)}"
                 >
+
                     ${escapeHtml(
                         severity.toUpperCase()
                     )}
+
                 </span>
+
 
                 <span
                     class="history-status ${escapeHtml(
-                        status.replaceAll("_", "-")
+                        status.replaceAll(
+                            "_",
+                            "-"
+                        )
                     )}"
                 >
+
                     ${escapeHtml(
                         formatStatus(status)
                     )}
+
                 </span>
 
             </div>
@@ -1332,10 +1369,12 @@ function openDisciplineDetails(item) {
                 </span>
 
                 <strong>
+
                     ${escapeHtml(
                         item.category ||
                         "Not specified"
                     )}
+
                 </strong>
 
             </div>
@@ -1348,9 +1387,11 @@ function openDisciplineDetails(item) {
                 </span>
 
                 <strong>
+
                     ${formatDate(
                         item.incidentDate
                     )}
+
                 </strong>
 
             </div>
@@ -1363,10 +1404,12 @@ function openDisciplineDetails(item) {
                 </span>
 
                 <strong>
+
                     ${escapeHtml(
                         item.reportedBy ||
                         "Administrator"
                     )}
+
                 </strong>
 
             </div>
@@ -1379,9 +1422,11 @@ function openDisciplineDetails(item) {
                 </span>
 
                 <strong>
+
                     ${escapeHtml(
                         formatStatus(status)
                     )}
+
                 </strong>
 
             </div>
@@ -1392,15 +1437,21 @@ function openDisciplineDetails(item) {
         <div class="case-detail-section">
 
             <h4>
+
                 <i class="fas fa-file-lines"></i>
+
                 Incident Description
+
             </h4>
 
+
             <p>
+
                 ${escapeHtml(
                     item.description ||
                     "No description provided."
                 )}
+
             </p>
 
         </div>
@@ -1409,15 +1460,21 @@ function openDisciplineDetails(item) {
         <div class="case-detail-section">
 
             <h4>
+
                 <i class="fas fa-gavel"></i>
+
                 Action Taken
+
             </h4>
 
+
             <p>
+
                 ${escapeHtml(
                     item.actionTaken ||
                     "No action recorded."
                 )}
+
             </p>
 
         </div>
@@ -1426,20 +1483,28 @@ function openDisciplineDetails(item) {
         ${
             item.investigationNotes
                 ? `
+
                     <div class="case-detail-section">
 
                         <h4>
+
                             <i class="fas fa-magnifying-glass"></i>
+
                             Investigation Notes
+
                         </h4>
 
+
                         <p>
+
                             ${escapeHtml(
                                 item.investigationNotes
                             )}
+
                         </p>
 
                     </div>
+
                 `
                 : ""
         }
@@ -1448,20 +1513,28 @@ function openDisciplineDetails(item) {
         ${
             item.resolution
                 ? `
+
                     <div class="case-detail-section">
 
                         <h4>
+
                             <i class="fas fa-circle-check"></i>
+
                             Resolution
+
                         </h4>
 
+
                         <p>
+
                             ${escapeHtml(
                                 item.resolution
                             )}
+
                         </p>
 
                     </div>
+
                 `
                 : ""
         }
@@ -1470,20 +1543,28 @@ function openDisciplineDetails(item) {
         ${
             item.followUpDate
                 ? `
+
                     <div class="case-detail-section">
 
                         <h4>
+
                             <i class="fas fa-calendar-check"></i>
+
                             Follow-up Date
+
                         </h4>
 
+
                         <p>
+
                             ${formatDate(
                                 item.followUpDate
                             )}
+
                         </p>
 
                     </div>
+
                 `
                 : ""
         }
@@ -1492,9 +1573,13 @@ function openDisciplineDetails(item) {
         <div class="case-detail-section">
 
             <h4>
+
                 <i class="fas fa-user-shield"></i>
+
                 Parent Notification
+
             </h4>
+
 
             <p>
 
@@ -1516,16 +1601,22 @@ function openDisciplineDetails(item) {
                 class="secondary-btn"
                 id="closeDisciplineDetailsBtn"
             >
+
                 Close
+
             </button>
+
 
             <button
                 type="button"
                 class="primary-btn"
                 id="editDisciplineCaseBtn"
             >
+
                 <i class="fas fa-pen"></i>
+
                 Edit Case
+
             </button>
 
         </div>
@@ -1533,9 +1624,14 @@ function openDisciplineDetails(item) {
     `;
 
 
-    modal.classList.add("is-open");
+    modal.classList.add(
+        "is-open"
+    );
 
-    modal.style.display = "flex";
+
+    modal.style.display =
+        "flex";
+
 
     document.body.classList.add(
         "modal-open"
@@ -1560,14 +1656,34 @@ function openDisciplineDetails(item) {
             "click",
             () => {
 
-                editDisciplineCase(item);
+                if (
+                    typeof editDisciplineCase ===
+                    "function"
+                ) {
+
+                    editDisciplineCase(
+                        item
+                    );
+
+                } else {
+
+                    showToast(
+                        "Edit function is not available yet.",
+                        "error"
+                    );
+
+                }
 
             }
         );
 
 }
 
-//close details modal
+
+// =====================================================
+// CLOSE DISCIPLINE DETAILS
+// =====================================================
+
 function closeDisciplineDetails() {
 
     const modal =
@@ -1575,15 +1691,20 @@ function closeDisciplineDetails() {
             "disciplineDetailsModal"
         );
 
+
     if (!modal) {
         return;
     }
+
 
     modal.classList.remove(
         "is-open"
     );
 
-    modal.style.display = "none";
+
+    modal.style.display =
+        "none";
+
 
     document.body.classList.remove(
         "modal-open"
@@ -1596,126 +1717,133 @@ function closeDisciplineDetails() {
 // OPEN STUDENT HISTORY
 // =====================================================
 
-async function openStudentHistory(
+function openStudentHistory(
     studentId,
     studentName = "Student"
 ) {
+
     console.log(
         "[DISCIPLINE HISTORY] Opening...",
         studentId,
         studentName
     );
 
+
     const modal =
-        document.getElementById("studentHistoryModal");
+        document.getElementById(
+            "studentHistoryModal"
+        );
+
 
     const timeline =
-        document.getElementById("studentHistoryTimeline");
+        document.getElementById(
+            "studentHistoryTimeline"
+        );
+
 
     if (!modal) {
+
         console.error(
             "[DISCIPLINE HISTORY] Modal not found"
         );
+
         return;
+
     }
 
+
     if (!timeline) {
+
         console.error(
             "[DISCIPLINE HISTORY] Timeline not found"
         );
+
         return;
+
     }
 
-    /*
-     * OPEN MODAL
-     */
-    modal.classList.add("is-open");
 
-    modal.style.display = "flex";
-    modal.style.visibility = "visible";
-    modal.style.opacity = "1";
+    // =================================================
+    // FIND ALL CASES FOR THIS STUDENT
+    // =================================================
 
-    document.body.classList.add("modal-open");
+    const history =
+        disciplineCases.filter(
+            item => {
 
-    /*
-     * UPDATE STUDENT NAME
-     */
-    const info =
-        document.getElementById(
-            "historyStudentInfo"
+                const id =
+                    item.student?._id ||
+                    item.student?.id ||
+                    item.studentId ||
+                    "";
+
+
+                return (
+                    String(id) ===
+                    String(studentId)
+                );
+
+            }
         );
 
-    if (info) {
-        info.textContent = studentName;
-    }
-
-    /*
-     * LOADING STATE
-     */
-    timeline.innerHTML = `
-        <div class="loading-state">
-            <i class="fas fa-spinner fa-spin"></i>
-            Loading discipline history...
-        </div>
-    `;
-
-    /*
-     * FIND HISTORY
-     */
-    const history =
-        disciplineCases.filter(item => {
-
-            const id =
-                item.student?._id ||
-                item.student?.id ||
-                item.studentId;
-
-            return String(id) ===
-                String(studentId);
-        });
 
     console.log(
         "[DISCIPLINE HISTORY] Records:",
         history
     );
 
-    /*
-     * BUILD HISTORY
-     */
-    timeline.innerHTML =
-        history.length
-            ? history
-                .slice()
-                .sort(
-                    (a, b) =>
-                        new Date(b.incidentDate) -
-                        new Date(a.incidentDate)
-                )
-                .map(
-                    item =>
-                        buildHistoryItem(item)
-                )
-                .join("")
-            : `
-                <div class="history-empty">
-                    <i class="fas fa-circle-check"></i>
 
-                    <h3>
-                        No discipline incidents
-                    </h3>
+    // =================================================
+    // OPEN MODAL
+    // =================================================
 
-                    <p>
-                        This student has no recorded
-                        discipline cases.
-                    </p>
-                </div>
-            `;
+    modal.classList.add(
+        "is-open"
+    );
 
-    /*
-     * UPDATE SUMMARY
-     */
+
+    modal.style.display =
+        "flex";
+
+
+    modal.style.visibility =
+        "visible";
+
+
+    modal.style.opacity =
+        "1";
+
+
+    document.body.classList.add(
+        "modal-open"
+    );
+
+
+    // =================================================
+    // UPDATE STUDENT NAME
+    // =================================================
+
+    const info =
+        document.getElementById(
+            "historyStudentInfo"
+        );
+
+
+    if (info) {
+
+        info.textContent =
+            studentName;
+
+    }
+
+
+    // =================================================
+    // UPDATE SUMMARY
+    // =================================================
+
     const total =
         history.length;
+
 
     const minor =
         history.filter(
@@ -1724,6 +1852,7 @@ async function openStudentHistory(
                 item.severity === "medium"
         ).length;
 
+
     const serious =
         history.filter(
             item =>
@@ -1731,11 +1860,13 @@ async function openStudentHistory(
                 item.severity === "critical"
         ).length;
 
+
     const resolved =
         history.filter(
             item =>
                 item.status === "resolved"
         ).length;
+
 
     const open =
         history.filter(
@@ -1744,36 +1875,104 @@ async function openStudentHistory(
                 item.status !== "dismissed"
         ).length;
 
+
     document.getElementById(
         "historyTotalCases"
     )?.replaceChildren(
-        document.createTextNode(total)
+        document.createTextNode(
+            total
+        )
     );
+
 
     document.getElementById(
         "historyMinorCases"
     )?.replaceChildren(
-        document.createTextNode(minor)
+        document.createTextNode(
+            minor
+        )
     );
+
 
     document.getElementById(
         "historySeriousCases"
     )?.replaceChildren(
-        document.createTextNode(serious)
+        document.createTextNode(
+            serious
+        )
     );
+
 
     document.getElementById(
         "historyResolvedCases"
     )?.replaceChildren(
-        document.createTextNode(resolved)
+        document.createTextNode(
+            resolved
+        )
     );
+
 
     document.getElementById(
         "historyOpenCases"
     )?.replaceChildren(
-        document.createTextNode(open)
+        document.createTextNode(
+            open
+        )
     );
+
+
+    // =================================================
+    // BUILD TIMELINE
+    // =================================================
+
+    timeline.innerHTML =
+        history.length
+
+            ? history
+                .slice()
+                .sort(
+                    (
+                        a,
+                        b
+                    ) =>
+                        new Date(
+                            b.incidentDate
+                        ) -
+                        new Date(
+                            a.incidentDate
+                        )
+                )
+                .map(
+                    item =>
+                        buildHistoryItem(
+                            item
+                        )
+                )
+                .join("")
+
+            : `
+
+                <div class="history-empty">
+
+                    <i class="fas fa-circle-check"></i>
+
+
+                    <h3>
+                        No discipline incidents
+                    </h3>
+
+
+                    <p>
+                        This student has no recorded
+                        discipline cases.
+                    </p>
+
+                </div>
+
+            `;
+
 }
+
 
 // =====================================================
 // BUILD STUDENT HISTORY
@@ -1832,8 +2031,6 @@ function buildStudentHistory(
 
     return `
 
-        <!-- STUDENT -->
-
         <div class="history-student">
 
             <div class="history-student-avatar">
@@ -1851,6 +2048,7 @@ function buildStudentHistory(
                     )}
                 </h3>
 
+
                 <p>
                     ${escapeHtml(
                         studentClass
@@ -1862,8 +2060,6 @@ function buildStudentHistory(
         </div>
 
 
-        <!-- SUMMARY -->
-
         <div class="discipline-history-summary">
 
             <div class="history-summary-card">
@@ -1871,6 +2067,7 @@ function buildStudentHistory(
                 <span>
                     Total Cases
                 </span>
+
 
                 <strong>
                     ${total}
@@ -1885,6 +2082,7 @@ function buildStudentHistory(
                     Minor
                 </span>
 
+
                 <strong>
                     ${minor}
                 </strong>
@@ -1897,6 +2095,7 @@ function buildStudentHistory(
                 <span>
                     Serious
                 </span>
+
 
                 <strong>
                     ${serious}
@@ -1911,6 +2110,7 @@ function buildStudentHistory(
                     Resolved
                 </span>
 
+
                 <strong>
                     ${resolved}
                 </strong>
@@ -1924,6 +2124,7 @@ function buildStudentHistory(
                     Open
                 </span>
 
+
                 <strong>
                     ${open}
                 </strong>
@@ -1933,8 +2134,6 @@ function buildStudentHistory(
         </div>
 
 
-        <!-- HISTORY -->
-
         <div class="history-header">
 
             <div>
@@ -1942,6 +2141,7 @@ function buildStudentHistory(
                 <h2>
                     Discipline History
                 </h2>
+
 
                 <p>
                     Complete history of disciplinary incidents.
@@ -1961,12 +2161,15 @@ function buildStudentHistory(
 
                         <i class="fas fa-circle-check"></i>
 
+
                         <h3>
                             No discipline incidents
                         </h3>
 
+
                         <p>
-                            This student has no recorded discipline cases.
+                            This student has no recorded
+                            discipline cases.
                         </p>
 
                     </div>
@@ -2009,6 +2212,7 @@ function buildStudentHistory(
 
 }
 
+
 // =====================================================
 // HISTORY TIMELINE ITEM
 // =====================================================
@@ -2026,7 +2230,7 @@ function buildHistoryItem(item) {
 
 
     const statusClass =
-        status
+        String(status)
             .replaceAll(
                 "_",
                 "-"
@@ -2047,7 +2251,6 @@ function buildHistoryItem(item) {
 
 
             <div class="history-incident">
-
 
                 <div class="history-incident-header">
 
@@ -2083,7 +2286,7 @@ function buildHistoryItem(item) {
                         >
 
                             ${escapeHtml(
-                                severity
+                                severity.toUpperCase()
                             )}
 
                         </span>
@@ -2105,10 +2308,31 @@ function buildHistoryItem(item) {
 
                 <div class="history-details">
 
+                    ${
+                        item.actionTaken
+                            ? `
+
+                                <div class="history-detail">
+
+                                    <strong>
+                                        Action Taken
+                                    </strong>
+
+                                    ${escapeHtml(
+                                        item.actionTaken
+                                    )}
+
+                                </div>
+
+                            `
+                            : ""
+                    }
+
 
                     ${
                         item.resolution
                             ? `
+
                                 <div class="history-detail">
 
                                     <strong>
@@ -2120,6 +2344,7 @@ function buildHistoryItem(item) {
                                     )}
 
                                 </div>
+
                             `
                             : ""
                     }
@@ -2128,6 +2353,7 @@ function buildHistoryItem(item) {
                     ${
                         item.followUpDate
                             ? `
+
                                 <div class="history-detail">
 
                                     <strong>
@@ -2139,6 +2365,7 @@ function buildHistoryItem(item) {
                                     )}
 
                                 </div>
+
                             `
                             : ""
                     }
@@ -2147,6 +2374,7 @@ function buildHistoryItem(item) {
                     ${
                         item.parentNotified !== undefined
                             ? `
+
                                 <div class="history-detail">
 
                                     <strong>
@@ -2160,6 +2388,7 @@ function buildHistoryItem(item) {
                                     }
 
                                 </div>
+
                             `
                             : ""
                     }
@@ -2168,6 +2397,7 @@ function buildHistoryItem(item) {
                     ${
                         item.investigationNotes
                             ? `
+
                                 <div class="history-detail">
 
                                     <strong>
@@ -2179,32 +2409,12 @@ function buildHistoryItem(item) {
                                     )}
 
                                 </div>
+
                             `
                             : ""
                     }
 
                 </div>
-
-
-                ${
-                    item.actionTaken
-                        ? `
-
-                            <div class="history-action">
-
-                                <strong>
-                                    Action Taken:
-                                </strong>
-
-                                ${escapeHtml(
-                                    item.actionTaken
-                                )}
-
-                            </div>
-
-                        `
-                        : ""
-                }
 
 
                 <div class="history-handler">
@@ -2213,6 +2423,7 @@ function buildHistoryItem(item) {
                         Handled by:
                     </strong>
 
+
                     ${escapeHtml(
                         item.handledBy ||
                         item.reportedBy ||
@@ -2220,7 +2431,6 @@ function buildHistoryItem(item) {
                     )}
 
                 </div>
-
 
             </div>
 
@@ -2234,31 +2444,48 @@ function buildHistoryItem(item) {
 // =====================================================
 // CLOSE STUDENT HISTORY
 // =====================================================
+
 function closeStudentHistory() {
 
     console.log(
         "[DISCIPLINE HISTORY] Closing..."
     );
 
+
     const modal =
         document.getElementById(
             "studentHistoryModal"
         );
 
+
     if (!modal) {
         return;
     }
 
-    modal.classList.remove("is-open");
 
-    modal.style.display = "none";
-    modal.style.visibility = "hidden";
-    modal.style.opacity = "0";
+    modal.classList.remove(
+        "is-open"
+    );
+
+
+    modal.style.display =
+        "none";
+
+
+    modal.style.visibility =
+        "hidden";
+
+
+    modal.style.opacity =
+        "0";
+
 
     document.body.classList.remove(
         "modal-open"
     );
+
 }
+
 
 // =====================================================
 // CREATE DISCIPLINE
@@ -2340,7 +2567,9 @@ async function createDiscipline(event) {
 
         if (button) {
 
-            button.disabled = true;
+            button.disabled =
+                true;
+
 
             button.innerHTML = `
 
@@ -2400,7 +2629,9 @@ async function createDiscipline(event) {
 
         if (button) {
 
-            button.disabled = false;
+            button.disabled =
+                false;
+
 
             button.innerHTML = `
 
@@ -2416,6 +2647,7 @@ async function createDiscipline(event) {
 
 }
 
+
 // =====================================================
 // OPEN DISCIPLINE MODAL
 // =====================================================
@@ -2423,39 +2655,66 @@ async function createDiscipline(event) {
 function openDisciplineModal() {
 
     const modal =
-        document.getElementById("disciplineModal");
+        document.getElementById(
+            "disciplineModal"
+        );
+
 
     if (!modal) {
+
         console.error(
             "[DISCIPLINE MODAL] #disciplineModal was not found in HTML"
         );
+
 
         showToast(
             "Discipline modal could not be found.",
             "error"
         );
 
+
         return;
+
     }
+
 
     console.log(
         "[DISCIPLINE MODAL] Opening..."
     );
 
-    // Make modal visible
-    modal.classList.add("is-open");
 
-    modal.style.display = "flex";
-    modal.style.visibility = "visible";
-    modal.style.opacity = "1";
+    modal.classList.add(
+        "is-open"
+    );
 
-    document.body.classList.add("modal-open");
 
-    // Set today's date
+    modal.style.display =
+        "flex";
+
+
+    modal.style.visibility =
+        "visible";
+
+
+    modal.style.opacity =
+        "1";
+
+
+    document.body.classList.add(
+        "modal-open"
+    );
+
+
     const incidentDate =
-        document.getElementById("incidentDate");
+        document.getElementById(
+            "incidentDate"
+        );
 
-    if (incidentDate && !incidentDate.value) {
+
+    if (
+        incidentDate &&
+        !incidentDate.value
+    ) {
 
         incidentDate.value =
             new Date()
@@ -2463,7 +2722,9 @@ function openDisciplineModal() {
                 .split("T")[0];
 
     }
+
 }
+
 
 // =====================================================
 // CLOSE DISCIPLINE MODAL
@@ -2472,37 +2733,64 @@ function openDisciplineModal() {
 function closeDisciplineModal() {
 
     const modal =
-        document.getElementById("disciplineModal");
+        document.getElementById(
+            "disciplineModal"
+        );
+
 
     if (!modal) {
         return;
     }
 
-    modal.classList.remove("is-open");
 
-    modal.style.display = "none";
-    modal.style.visibility = "hidden";
-    modal.style.opacity = "0";
+    modal.classList.remove(
+        "is-open"
+    );
+
+
+    modal.style.display =
+        "none";
+
+
+    modal.style.visibility =
+        "hidden";
+
+
+    modal.style.opacity =
+        "0";
+
 
     document.body.classList.remove(
         "modal-open"
     );
 
+
     document
-        .getElementById("disciplineForm")
+        .getElementById(
+            "disciplineForm"
+        )
         ?.reset();
 
-    // Reset class
+
     const classSelect =
-        document.getElementById("classFilter");
+        document.getElementById(
+            "classFilter"
+        );
+
 
     if (classSelect) {
-        classSelect.value = "";
+
+        classSelect.value =
+            "";
+
     }
 
-    // Reset student
+
     const studentSelect =
-        document.getElementById("student");
+        document.getElementById(
+            "student"
+        );
+
 
     if (studentSelect) {
 
@@ -2512,9 +2800,15 @@ function closeDisciplineModal() {
             </option>
         `;
 
-        studentSelect.disabled = true;
+
+        studentSelect.disabled =
+            true;
+
     }
+
 }
+
+
 // =====================================================
 // STATISTICS
 // =====================================================
@@ -2722,6 +3016,7 @@ function showToast(
                 : "fa-exclamation-circle"
         }"></i>
 
+
         <span>
 
             ${escapeHtml(
@@ -2744,3 +3039,4 @@ function showToast(
     );
 
 }
+
