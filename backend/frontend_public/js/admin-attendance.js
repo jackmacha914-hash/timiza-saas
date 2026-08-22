@@ -3,7 +3,7 @@ class AdminAttendanceManager {
         this.attendanceData = [];
         this.initEventListeners();
         this.setDefaultDateRange();
-        this.loadAttendanceData();
+        
     }
 
     initEventListeners() {
