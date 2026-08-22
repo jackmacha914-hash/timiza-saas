@@ -65,17 +65,8 @@ const disciplineSchema = new mongoose.Schema({
     },
 
     reportedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-
-    reportedByRole: {
         type: String,
-        enum: [
-            'admin',
-            'teacher'
-        ]
+        default: 'Administrator'
     },
 
     actionTaken: {
@@ -112,4 +103,5 @@ const disciplineSchema = new mongoose.Schema({
     timestamps: true
 });
 
-module.exports = mongoose.model('Discipline', disciplineSchema);
+module.exports =
+    mongoose.model('Discipline', disciplineSchema);
