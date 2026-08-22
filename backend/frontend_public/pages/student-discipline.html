@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Discipline | Timiza EduAnalytics
+    </title>
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <!-- Student Discipline CSS -->
+    <link
+        rel="stylesheet"
+        href="../css/student-discipline.css"
+    >
+
+</head>
+
+
+<body>
+
+<main class="student-discipline-page">
+
+    <!-- ======================================================
+         HEADER
+    ====================================================== -->
+
+    <header class="discipline-header">
+
+        <div>
+
+            <span class="discipline-eyebrow">
+                STUDENT RECORD
+            </span>
+
+            <h1>
+                Discipline
+            </h1>
+
+            <p>
+                View your discipline records, incidents,
+                actions taken, and case history.
+            </p>
+
+        </div>
+
+        <div class="discipline-header-icon">
+            <i class="fas fa-gavel"></i>
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         SUMMARY
+    ====================================================== -->
+
+    <section class="discipline-summary">
+
+        <!-- TOTAL -->
+
+        <div class="discipline-summary-card">
+
+            <div class="discipline-summary-icon">
+                <i class="fas fa-gavel"></i>
+            </div>
+
+            <div>
+
+                <div class="summary-label">
+                    Total Cases
+                </div>
+
+                <div
+                    id="studentDisciplineTotal"
+                    class="summary-value"
+                >
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ACTIVE -->
+
+        <div class="discipline-summary-card">
+
+            <div class="discipline-summary-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+
+            <div>
+
+                <div class="summary-label">
+                    Active Cases
+                </div>
+
+                <div
+                    id="studentDisciplineActive"
+                    class="summary-value"
+                >
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RESOLVED -->
+
+        <div class="discipline-summary-card">
+
+            <div class="discipline-summary-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+
+            <div>
+
+                <div class="summary-label">
+                    Resolved
+                </div>
+
+                <div
+                    id="studentDisciplineResolved"
+                    class="summary-value"
+                >
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- HIGH / CRITICAL -->
+
+        <div class="discipline-summary-card">
+
+            <div class="discipline-summary-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+
+            <div>
+
+                <div class="summary-label">
+                    High / Critical
+                </div>
+
+                <div
+                    id="studentDisciplineHigh"
+                    class="summary-value"
+                >
+                    0
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         LOADING
+    ====================================================== -->
+
+    <div
+        id="studentDisciplineLoading"
+        class="discipline-loading"
+        style="display:none;"
+    >
+
+        <div class="discipline-spinner"></div>
+
+        <span>
+            Loading your discipline records...
+        </span>
+
+    </div>
+
+
+    <!-- =====================================================
+         ERROR
+    ====================================================== -->
+
+    <div
+        id="studentDisciplineError"
+        class="discipline-error"
+        style="display:none;"
+        role="alert"
+    >
+
+        <i class="fas fa-exclamation-triangle"></i>
+
+        <span id="studentDisciplineErrorMessage">
+            Unable to load discipline records.
+        </span>
+
+    </div>
+
+
+    <!-- =====================================================
+         EMPTY
+    ====================================================== -->
+
+    <div
+        id="studentDisciplineEmpty"
+        class="discipline-empty"
+        style="display:none;"
+    >
+
+        <div class="empty-icon">
+            <i class="fas fa-check"></i>
+        </div>
+
+        <h2>
+            No Discipline Records
+        </h2>
+
+        <p>
+            You currently have no discipline records.
+        </p>
+
+    </div>
+
+
+    <!-- =====================================================
+         RECORDS
+    ====================================================== -->
+
+    <section
+        id="studentDisciplineRecords"
+        class="student-discipline-records"
+    ></section>
+
+</main>
+
+
+<!-- =====================================================
+     DETAILS MODAL
+====================================================== -->
+
+<div
+    id="studentDisciplineModal"
+    class="student-discipline-modal"
+    style="display:none;"
+    aria-hidden="true"
+>
+
+    <div
+        class="student-discipline-modal-overlay"
+        onclick="closeStudentDisciplineModal()"
+    ></div>
+
+
+    <div
+        class="student-discipline-modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="studentDisciplineModalTitle"
+    >
+
+        <div class="student-discipline-modal-header">
+
+            <div>
+
+                <span class="discipline-eyebrow">
+                    DISCIPLINE CASE
+                </span>
+
+                <h2 id="studentDisciplineModalTitle">
+                    Case Details
+                </h2>
+
+            </div>
+
+
+            <button
+                type="button"
+                class="student-discipline-modal-close"
+                onclick="closeStudentDisciplineModal()"
+                aria-label="Close"
+            >
+                <i class="fas fa-times"></i>
+            </button>
+
+        </div>
+
+
+        <div
+            id="studentDisciplineModalBody"
+            class="student-discipline-modal-body"
+        ></div>
+
+
+        <div class="student-discipline-modal-footer">
+
+            <button
+                type="button"
+                class="student-discipline-close-button"
+                onclick="closeStudentDisciplineModal()"
+            >
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
+
+<script src="../js/student-discipline.js"></script>
+
+</body>
+
+</html>
