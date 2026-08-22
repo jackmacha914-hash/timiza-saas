@@ -735,13 +735,13 @@ function getReporterName(reportedBy) {
             )
         ) {
 
-            return "Administrator";
+            return reportedBy.trim();
         }
 
         return reportedBy.trim();
     }
 
-    return "Administrator";
+   return reportedBy.trim();
 }
 
 
