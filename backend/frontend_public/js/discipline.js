@@ -1,5 +1,4 @@
-const API =
-    "https://timiza-saas.onrender.com/api";
+const API = "https://timiza-saas.onrender.com/api";
 
 let disciplineCases = [];
 let students = [];
@@ -10,100 +9,58 @@ let classes = [];
 // INITIALIZE
 // =====================================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    initializeDiscipline
-);
+document.addEventListener("DOMContentLoaded", initializeDiscipline);
 
 function initializeDiscipline() {
-
-    console.log(
-        "[DISCIPLINE] Initializing page..."
-    );
+    console.log("[DISCIPLINE] Initializing page...");
 
     document
         .getElementById("openDisciplineBtn")
-        ?.addEventListener(
-            "click",
-            openDisciplineModal
-        );
+        ?.addEventListener("click", openDisciplineModal);
 
     document
         .getElementById("closeDisciplineModal")
-        ?.addEventListener(
-            "click",
-            closeDisciplineModal
-        );
+        ?.addEventListener("click", closeDisciplineModal);
 
     document
         .getElementById("cancelDisciplineBtn")
-        ?.addEventListener(
-            "click",
-            closeDisciplineModal
-        );
+        ?.addEventListener("click", closeDisciplineModal);
 
     document
         .getElementById("disciplineForm")
-        ?.addEventListener(
-            "submit",
-            createDiscipline
-        );
+        ?.addEventListener("submit", createDiscipline);
 
     document
         .getElementById("refreshDisciplineBtn")
-        ?.addEventListener(
-            "click",
-            loadDiscipline
-        );
+        ?.addEventListener("click", loadDiscipline);
 
     document
         .getElementById("disciplineSearch")
-        ?.addEventListener(
-            "input",
-            renderDiscipline
-        );
+        ?.addEventListener("input", renderDiscipline);
 
     document
         .getElementById("severityFilter")
-        ?.addEventListener(
-            "change",
-            renderDiscipline
-        );
+        ?.addEventListener("change", renderDiscipline);
 
     document
         .getElementById("statusFilter")
-        ?.addEventListener(
-            "change",
-            renderDiscipline
-        );
+        ?.addEventListener("change", renderDiscipline);
 
     document
         .getElementById("classFilter")
-        ?.addEventListener(
-            "change",
-            handleClassChange
-        );
+        ?.addEventListener("change", handleClassChange);
 
     document
         .getElementById("student")
-        ?.addEventListener(
-            "change",
-            handleStudentChange
-        );
+        ?.addEventListener("change", handleStudentChange);
 
     document
         .getElementById("closeStudentHistoryModal")
-        ?.addEventListener(
-            "click",
-            closeStudentHistory
-        );
+        ?.addEventListener("click", closeStudentHistory);
 
     document
         .getElementById("closeDisciplineDetailsModal")
-        ?.addEventListener(
-            "click",
-            closeDisciplineDetails
-        );
+        ?.addEventListener("click", closeDisciplineDetails);
 
     loadDiscipline();
     loadStudents();
@@ -115,11 +72,7 @@ function initializeDiscipline() {
 // =====================================================
 
 function getToken() {
-
-    return localStorage.getItem(
-        "token"
-    );
-
+    return localStorage.getItem("token");
 }
 
 
@@ -127,62 +80,36 @@ function getToken() {
 // API
 // =====================================================
 
-async function api(
-    url,
-    options = {}
-) {
-
-    const token =
-        getToken();
+async function api(url, options = {}) {
+    const token = getToken();
 
     if (!token) {
-
-        throw new Error(
-            "Authentication required."
-        );
-
+        throw new Error("Authentication required.");
     }
 
-    const response =
-        await fetch(
-            `${API}${url}`,
-            {
-                ...options,
+    const response = await fetch(`${API}${url}`, {
+        ...options,
 
-                headers: {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            ...(options.headers || {})
+        }
+    });
 
-                    "Content-Type":
-                        "application/json",
-
-                    "Authorization":
-                        `Bearer ${token}`,
-
-                    ...(options.headers || {})
-
-                }
-
-            }
-        );
-
-    const data =
-        await response
-            .json()
-            .catch(
-                () => ({})
-            );
+    const data = await response
+        .json()
+        .catch(() => ({}));
 
     if (!response.ok) {
-
         throw new Error(
             data.message ||
             data.error ||
             `Request failed (${response.status})`
         );
-
     }
 
     return data;
-
 }
 
 
@@ -191,55 +118,33 @@ async function api(
 // =====================================================
 
 async function loadStudents() {
-
     const studentSelect =
-        document.getElementById(
-            "student"
-        );
+        document.getElementById("student");
 
     const classSelect =
-        document.getElementById(
-            "classFilter"
-        );
+        document.getElementById("classFilter");
 
     if (!studentSelect) {
-
-        console.warn(
-            "[DISCIPLINE] Student select not found"
-        );
-
+        console.warn("[DISCIPLINE] Student select not found");
         return;
-
     }
 
     studentSelect.innerHTML = `
-        <option value="">
-            Loading students...
-        </option>
+        <option value="">Loading students...</option>
     `;
 
     studentSelect.disabled = true;
 
     if (classSelect) {
-
         classSelect.innerHTML = `
-            <option value="">
-                Loading classes...
-            </option>
+            <option value="">Loading classes...</option>
         `;
-
     }
 
     try {
+        console.log("[DISCIPLINE] Loading students...");
 
-        console.log(
-            "[DISCIPLINE] Loading students..."
-        );
-
-        const response =
-            await api(
-                "/students"
-            );
+        const response = await api("/students");
 
         console.log(
             "[DISCIPLINE] Students response:",
@@ -259,166 +164,104 @@ async function loadStudents() {
         );
 
         if (!students.length) {
-
             studentSelect.innerHTML = `
-                <option value="">
-                    No students found
-                </option>
+                <option value="">No students found</option>
             `;
 
             studentSelect.disabled = true;
 
             if (classSelect) {
-
                 classSelect.innerHTML = `
-                    <option value="">
-                        No classes found
-                    </option>
+                    <option value="">No classes found</option>
                 `;
-
             }
 
             return;
-
         }
-
 
         // =================================================
         // BUILD UNIQUE CLASSES
         // =================================================
 
-        const classMap =
-            new Map();
+        const classMap = new Map();
 
-        students.forEach(
-            student => {
+        students.forEach(student => {
+            const className = getStudentClass(student);
 
-                const className =
-                    getStudentClass(
-                        student
-                    );
-
-                if (!className) {
-                    return;
-                }
-
-                const normalized =
-                    String(className)
-                        .trim();
-
-                if (!normalized) {
-                    return;
-                }
-
-                const key =
-                    normalized.toLowerCase();
-
-                if (!classMap.has(key)) {
-
-                    classMap.set(
-                        key,
-                        normalized
-                    );
-
-                }
-
+            if (!className) {
+                return;
             }
-        );
 
-        classes =
-            Array.from(
-                classMap.values()
-            )
-            .sort(
-                naturalClassSort
-            );
+            const normalized = String(className).trim();
 
+            if (!normalized) {
+                return;
+            }
+
+            const key = normalized.toLowerCase();
+
+            if (!classMap.has(key)) {
+                classMap.set(key, normalized);
+            }
+        });
+
+        classes = Array.from(classMap.values())
+            .sort(naturalClassSort);
 
         // =================================================
         // RENDER CLASSES
         // =================================================
 
         if (classSelect) {
-
             classSelect.innerHTML = `
-                <option value="">
-                    Select class
-                </option>
+                <option value="">Select class</option>
             `;
 
-            classes.forEach(
-                className => {
+            classes.forEach(className => {
+                const option =
+                    document.createElement("option");
 
-                    const option =
-                        document.createElement(
-                            "option"
-                        );
+                option.value = className;
+                option.textContent = className;
 
-                    option.value =
-                        className;
-
-                    option.textContent =
-                        className;
-
-                    classSelect.appendChild(
-                        option
-                    );
-
-                }
-            );
+                classSelect.appendChild(option);
+            });
 
             if (!classes.length) {
-
                 classSelect.innerHTML = `
-                    <option value="">
-                        No classes found
-                    </option>
+                    <option value="">No classes found</option>
                 `;
-
             }
-
         }
-
 
         // =================================================
         // STUDENT INITIAL STATE
         // =================================================
 
         studentSelect.innerHTML = `
-            <option value="">
-                Select class first
-            </option>
+            <option value="">Select class first</option>
         `;
 
         studentSelect.disabled = true;
 
     } catch (error) {
-
         console.error(
             "[DISCIPLINE STUDENTS LOAD]",
             error
         );
 
         studentSelect.innerHTML = `
-            <option value="">
-                Failed to load students
-            </option>
+            <option value="">Failed to load students</option>
         `;
 
         studentSelect.disabled = true;
 
         if (classSelect) {
-
             classSelect.innerHTML = `
-                <option value="">
-                    Failed to load classes
-                </option>
+                <option value="">Failed to load classes</option>
             `;
-
         }
-
     }
-
 }
 
 
@@ -427,7 +270,6 @@ async function loadStudents() {
 // =====================================================
 
 function getStudentClass(student) {
-
     return (
         student.class ||
         student.classAssigned ||
@@ -439,7 +281,6 @@ function getStudentClass(student) {
         student.form ||
         ""
     );
-
 }
 
 
@@ -447,11 +288,7 @@ function getStudentClass(student) {
 // SORT CLASSES
 // =====================================================
 
-function naturalClassSort(
-    a,
-    b
-) {
-
+function naturalClassSort(a, b) {
     return String(a).localeCompare(
         String(b),
         undefined,
@@ -460,7 +297,6 @@ function naturalClassSort(
             sensitivity: "base"
         }
     );
-
 }
 
 
@@ -469,137 +305,95 @@ function naturalClassSort(
 // =====================================================
 
 function handleClassChange(event) {
-
-    const selectedClass =
-        event.target.value;
+    const selectedClass = event.target.value;
 
     const studentSelect =
-        document.getElementById(
-            "student"
-        );
+        document.getElementById("student");
 
     if (!studentSelect) {
         return;
     }
 
     studentSelect.innerHTML = `
-        <option value="">
-            Select student
-        </option>
+        <option value="">Select student</option>
     `;
 
     studentSelect.disabled = true;
 
     const admissionInput =
-        document.getElementById(
-            "admissionNumber"
-        );
+        document.getElementById("admissionNumber");
 
     const classInput =
-        document.getElementById(
-            "className"
-        );
+        document.getElementById("className");
 
     if (admissionInput) {
-
         admissionInput.value = "";
-
     }
 
     if (classInput) {
-
-        classInput.value =
-            selectedClass || "";
-
+        classInput.value = selectedClass || "";
     }
 
     if (!selectedClass) {
-
         studentSelect.innerHTML = `
-            <option value="">
-                Select class first
-            </option>
+            <option value="">Select class first</option>
         `;
 
         return;
-
     }
 
-    const filteredStudents =
-        students.filter(
-            student => {
+    const filteredStudents = students.filter(student => {
+        const studentClass = getStudentClass(student);
 
-                const studentClass =
-                    getStudentClass(
-                        student
-                    );
-
-                return (
-                    String(studentClass)
-                        .trim()
-                        .toLowerCase()
-                    ===
-                    String(selectedClass)
-                        .trim()
-                        .toLowerCase()
-                );
-
-            }
+        return (
+            String(studentClass)
+                .trim()
+                .toLowerCase() ===
+            String(selectedClass)
+                .trim()
+                .toLowerCase()
         );
+    });
 
     console.log(
         `[DISCIPLINE] ${filteredStudents.length} students found in ${selectedClass}`
     );
 
     if (!filteredStudents.length) {
-
         studentSelect.innerHTML = `
-            <option value="">
-                No students in this class
-            </option>
+            <option value="">No students in this class</option>
         `;
 
         return;
-
     }
 
-    filteredStudents.forEach(
-        student => {
+    filteredStudents.forEach(student => {
+        const option =
+            document.createElement("option");
 
-            const option =
-                document.createElement(
-                    "option"
-                );
+        option.value =
+            student._id ||
+            student.id;
 
-            option.value =
-                student._id ||
-                student.id;
+        const name =
+            student.name ||
+            student.fullName ||
+            student.username ||
+            "Unnamed Student";
 
-            const name =
-                student.name ||
-                student.fullName ||
-                student.username ||
-                "Unnamed Student";
+        const admission =
+            student.admissionNumber ||
+            "";
 
-            const admission =
-                student.admissionNumber ||
-                "";
+        option.textContent =
+            admission
+                ? `${name} — ${admission}`
+                : name;
 
-            option.textContent =
-                admission
-                    ? `${name} — ${admission}`
-                    : name;
+        studentSelect.appendChild(option);
+    });
 
-            studentSelect.appendChild(
-                option
-            );
-
-        }
-    );
-
-    studentSelect.disabled =
-        false;
-
+    studentSelect.disabled = false;
 }
 
 
@@ -608,55 +402,38 @@ function handleClassChange(event) {
 // =====================================================
 
 function handleStudentChange(event) {
+    const studentId = event.target.value;
 
-    const studentId =
-        event.target.value;
-
-    const student =
-        students.find(
-            item =>
-                String(
-                    item._id ||
-                    item.id
-                ) ===
-                String(studentId)
-        );
+    const student = students.find(
+        item =>
+            String(
+                item._id ||
+                item.id
+            ) === String(studentId)
+    );
 
     if (!student) {
         return;
     }
 
     const studentClass =
-        getStudentClass(
-            student
-        );
+        getStudentClass(student);
 
     const admissionInput =
-        document.getElementById(
-            "admissionNumber"
-        );
+        document.getElementById("admissionNumber");
 
     const classInput =
-        document.getElementById(
-            "className"
-        );
+        document.getElementById("className");
 
     if (admissionInput) {
-
         admissionInput.value =
-            student.admissionNumber ||
-            "";
-
+            student.admissionNumber || "";
     }
 
     if (classInput) {
-
         classInput.value =
-            studentClass ||
-            "";
-
+            studentClass || "";
     }
-
 }
 
 
@@ -665,11 +442,8 @@ function handleStudentChange(event) {
 // =====================================================
 
 async function loadDiscipline() {
-
     const list =
-        document.getElementById(
-            "disciplineList"
-        );
+        document.getElementById("disciplineList");
 
     if (!list) {
         return;
@@ -683,11 +457,8 @@ async function loadDiscipline() {
     `;
 
     try {
-
         const response =
-            await api(
-                "/discipline"
-            );
+            await api("/discipline");
 
         disciplineCases =
             Array.isArray(response)
@@ -702,11 +473,9 @@ async function loadDiscipline() {
         );
 
         renderDiscipline();
-
         updateStatistics();
 
     } catch (error) {
-
         console.error(
             "[DISCIPLINE LOAD]",
             error
@@ -714,7 +483,6 @@ async function loadDiscipline() {
 
         list.innerHTML = `
             <div class="error-state">
-
                 <i class="fas fa-exclamation-circle"></i>
 
                 <h3>
@@ -722,16 +490,11 @@ async function loadDiscipline() {
                 </h3>
 
                 <p>
-                    ${escapeHtml(
-                        error.message
-                    )}
+                    ${escapeHtml(error.message)}
                 </p>
-
             </div>
         `;
-
     }
-
 }
 
 
@@ -740,11 +503,8 @@ async function loadDiscipline() {
 // =====================================================
 
 function renderDiscipline() {
-
     const list =
-        document.getElementById(
-            "disciplineList"
-        );
+        document.getElementById("disciplineList");
 
     if (!list) {
         return;
@@ -770,55 +530,45 @@ function renderDiscipline() {
         )?.value || "";
 
     const filtered =
-        disciplineCases.filter(
-            item => {
+        disciplineCases.filter(item => {
+            const student =
+                item.student?.name ||
+                item.student?.fullName ||
+                item.studentName ||
+                "";
 
-                const student =
-                    item.student?.name ||
-                    item.student?.fullName ||
-                    item.studentName ||
-                    "";
-
-                const matchesSearch =
-                    !search ||
-                    student
-                        .toLowerCase()
-                        .includes(search) ||
-                    String(
-                        item.category || ""
-                    )
+            const matchesSearch =
+                !search ||
+                student
                     .toLowerCase()
                     .includes(search) ||
-                    String(
-                        item.description || ""
-                    )
+                String(item.category || "")
+                    .toLowerCase()
+                    .includes(search) ||
+                String(item.description || "")
                     .toLowerCase()
                     .includes(search);
 
-                const matchesSeverity =
-                    !severity ||
-                    item.severity === severity;
+            const matchesSeverity =
+                !severity ||
+                item.severity === severity;
 
-                const matchesStatus =
-                    !status ||
-                    item.status === status;
+            const matchesStatus =
+                !status ||
+                item.status === status;
 
-                return (
-                    matchesSearch &&
-                    matchesSeverity &&
-                    matchesStatus
-                );
-
-            }
-        );
+            return (
+                matchesSearch &&
+                matchesSeverity &&
+                matchesStatus
+            );
+        });
 
     list.innerHTML = "";
 
     if (!filtered.length) {
-
         list.innerHTML = `
             <div class="empty-state">
-
                 <i class="fas fa-gavel"></i>
 
                 <h3>
@@ -828,24 +578,17 @@ function renderDiscipline() {
                 <p>
                     No records match your current filters.
                 </p>
-
             </div>
         `;
 
         return;
-
     }
 
-    filtered.forEach(
-        item => {
-
-            list.appendChild(
-                createDisciplineCard(item)
-            );
-
-        }
-    );
-
+    filtered.forEach(item => {
+        list.appendChild(
+            createDisciplineCard(item)
+        );
+    });
 }
 
 
@@ -854,11 +597,8 @@ function renderDiscipline() {
 // =====================================================
 
 function createDisciplineCard(item) {
-
     const card =
-        document.createElement(
-            "article"
-        );
+        document.createElement("article");
 
     card.className =
         "discipline-record";
@@ -876,22 +616,14 @@ function createDisciplineCard(item) {
         "";
 
     const severity =
-        item.severity ||
-        "low";
+        item.severity || "low";
 
     const status =
-        formatStatus(
-            item.status
-        );
+        formatStatus(item.status);
 
     card.innerHTML = `
-
         <div class="record-severity ${escapeHtml(severity)}">
-
-            ${escapeHtml(
-                severity.toUpperCase()
-            )}
-
+            ${escapeHtml(severity.toUpperCase())}
         </div>
 
         <div class="record-main">
@@ -899,7 +631,6 @@ function createDisciplineCard(item) {
             <div class="record-header">
 
                 <div>
-
                     <h3>
                         ${escapeHtml(student)}
                     </h3>
@@ -911,13 +642,10 @@ function createDisciplineCard(item) {
                             "No admission number"
                         )}
                     </span>
-
                 </div>
 
                 <span class="status-badge">
-
                     ${escapeHtml(status)}
-
                 </span>
 
             </div>
@@ -925,46 +653,33 @@ function createDisciplineCard(item) {
             <div class="record-details">
 
                 <div>
-
                     <i class="fas fa-gavel"></i>
 
                     <strong>
-
                         ${escapeHtml(
-                            item.category ||
-                            ""
+                            item.category || ""
                         )}
-
                     </strong>
-
                 </div>
 
                 <div>
-
                     <i class="fas fa-calendar"></i>
 
-                    ${formatDate(
-                        item.incidentDate
-                    )}
-
+                    ${formatDate(item.incidentDate)}
                 </div>
 
             </div>
 
             <p class="record-description">
-
                 ${escapeHtml(
-                    item.description ||
-                    ""
+                    item.description || ""
                 )}
-
             </p>
 
             ${
                 item.actionTaken
                     ? `
                         <div class="action-taken">
-
                             <strong>
                                 Action Taken:
                             </strong>
@@ -972,7 +687,6 @@ function createDisciplineCard(item) {
                             ${escapeHtml(
                                 item.actionTaken
                             )}
-
                         </div>
                     `
                     : ""
@@ -981,14 +695,11 @@ function createDisciplineCard(item) {
             <div class="record-footer">
 
                 <span>
-
                     Reported by
-
                     ${escapeHtml(
                         item.reportedBy ||
                         "Administrator"
                     )}
-
                 </span>
 
                 <div class="record-actions">
@@ -1020,9 +731,7 @@ function createDisciplineCard(item) {
             </div>
 
         </div>
-
     `;
-
 
     // =================================================
     // DETAILS BUTTON
@@ -1034,29 +743,19 @@ function createDisciplineCard(item) {
         );
 
     if (detailsButton) {
-
         detailsButton.addEventListener(
             "click",
             event => {
-
                 event.preventDefault();
                 event.stopPropagation();
 
-                openDisciplineDetails(
-                    item
-                );
-
+                openDisciplineDetails(item);
             }
         );
-
     }
-
 
     // =================================================
     // HISTORY BUTTON
-    //
-    // IMPORTANT:
-    // This is attached ONLY ONCE.
     // =================================================
 
     const historyButton =
@@ -1065,11 +764,9 @@ function createDisciplineCard(item) {
         );
 
     if (historyButton && studentId) {
-
         historyButton.addEventListener(
             "click",
             event => {
-
                 event.preventDefault();
                 event.stopPropagation();
 
@@ -1077,15 +774,11 @@ function createDisciplineCard(item) {
                     studentId,
                     student
                 );
-
             }
         );
-
     }
 
-
     return card;
-
 }
 
 
@@ -1094,7 +787,6 @@ function createDisciplineCard(item) {
 // =====================================================
 
 function openDisciplineDetails(item) {
-
     const modal =
         document.getElementById(
             "disciplineDetailsModal"
@@ -1106,13 +798,11 @@ function openDisciplineDetails(item) {
         );
 
     if (!modal || !content) {
-
         console.error(
             "[DISCIPLINE DETAILS] Modal not found"
         );
 
         return;
-
     }
 
     const student =
@@ -1133,15 +823,12 @@ function openDisciplineDetails(item) {
         "Not available";
 
     const severity =
-        item.severity ||
-        "low";
+        item.severity || "low";
 
     const status =
-        item.status ||
-        "reported";
+        item.status || "reported";
 
     content.innerHTML = `
-
         <div class="case-details-header">
 
             <div class="case-student">
@@ -1182,10 +869,7 @@ function openDisciplineDetails(item) {
 
                 <span
                     class="history-status ${escapeHtml(
-                        status.replaceAll(
-                            "_",
-                            "-"
-                        )
+                        status.replaceAll("_", "-")
                     )}"
                 >
                     ${escapeHtml(
@@ -1362,13 +1046,11 @@ function openDisciplineDetails(item) {
             </h4>
 
             <p>
-
                 ${
                     item.parentNotified
                         ? "Parent/Guardian has been notified."
                         : "Parent/Guardian has not been notified."
                 }
-
             </p>
 
         </div>
@@ -1393,19 +1075,13 @@ function openDisciplineDetails(item) {
             </button>
 
         </div>
-
     `;
 
-    modal.classList.add(
-        "is-open"
-    );
+    modal.classList.add("is-open");
 
-    modal.style.display =
-        "flex";
+    modal.style.display = "flex";
 
-    document.body.classList.add(
-        "modal-open"
-    );
+    document.body.classList.add("modal-open");
 
     document
         .getElementById(
@@ -1423,21 +1099,14 @@ function openDisciplineDetails(item) {
         ?.addEventListener(
             "click",
             () => {
-
                 if (
                     typeof editDisciplineCase ===
                     "function"
                 ) {
-
-                    editDisciplineCase(
-                        item
-                    );
-
+                    editDisciplineCase(item);
                 }
-
             }
         );
-
 }
 
 
@@ -1446,7 +1115,6 @@ function openDisciplineDetails(item) {
 // =====================================================
 
 function closeDisciplineDetails() {
-
     const modal =
         document.getElementById(
             "disciplineDetailsModal"
@@ -1456,17 +1124,13 @@ function closeDisciplineDetails() {
         return;
     }
 
-    modal.classList.remove(
-        "is-open"
-    );
+    modal.classList.remove("is-open");
 
-    modal.style.display =
-        "none";
+    modal.style.display = "none";
 
     document.body.classList.remove(
         "modal-open"
     );
-
 }
 
 
@@ -1478,7 +1142,6 @@ async function openStudentHistory(
     studentId,
     studentName = "Student"
 ) {
-
     console.log(
         "[DISCIPLINE HISTORY] Opening...",
         studentId,
@@ -1496,37 +1159,26 @@ async function openStudentHistory(
         );
 
     if (!modal || !timeline) {
-
         console.error(
             "[DISCIPLINE HISTORY] Modal/timeline not found"
         );
 
         return;
-
     }
-
 
     // =================================================
     // OPEN MODAL
     // =================================================
 
-    modal.classList.add(
-        "is-open"
-    );
+    modal.classList.add("is-open");
 
-    modal.style.display =
-        "flex";
-
-    modal.style.visibility =
-        "visible";
-
-    modal.style.opacity =
-        "1";
+    modal.style.display = "flex";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
 
     document.body.classList.add(
         "modal-open"
     );
-
 
     // =================================================
     // STUDENT NAME
@@ -1538,19 +1190,14 @@ async function openStudentHistory(
         );
 
     if (info) {
-
-        info.textContent =
-            studentName;
-
+        info.textContent = studentName;
     }
-
 
     // =================================================
     // LOADING
     // =================================================
 
     timeline.innerHTML = `
-
         <div class="loading-state">
 
             <i class="fas fa-spinner fa-spin"></i>
@@ -1558,42 +1205,31 @@ async function openStudentHistory(
             Loading discipline history...
 
         </div>
-
     `;
-
 
     // =================================================
     // FIND ALL CASES FOR STUDENT
-    //
-    // This intentionally searches ALL disciplineCases.
-    // Therefore one student can have unlimited cases.
     // =================================================
 
     const history =
-        disciplineCases.filter(
-            item => {
+        disciplineCases.filter(item => {
+            const id =
+                item.student?._id ||
+                item.student?.id ||
+                item.studentId ||
+                item.student;
 
-                const id =
-                    item.student?._id ||
-                    item.student?.id ||
-                    item.studentId ||
-                    item.student;
-
-                return (
-                    id &&
-                    String(id) ===
-                    String(studentId)
-                );
-
-            }
-        );
-
+            return (
+                id &&
+                String(id) ===
+                String(studentId)
+            );
+        });
 
     console.log(
         `[DISCIPLINE HISTORY] Found ${history.length} cases for ${studentName}`,
         history
     );
-
 
     // =================================================
     // SORT NEWEST FIRST
@@ -1612,7 +1248,6 @@ async function openStudentHistory(
                     )
             );
 
-
     // =================================================
     // RENDER TIMELINE
     // =================================================
@@ -1620,15 +1255,9 @@ async function openStudentHistory(
     timeline.innerHTML =
         sortedHistory.length
             ? sortedHistory
-                .map(
-                    item =>
-                        buildHistoryItem(
-                            item
-                        )
-                )
+                .map(buildHistoryItem)
                 .join("")
             : `
-
                 <div class="history-empty">
 
                     <i class="fas fa-circle-check"></i>
@@ -1643,16 +1272,13 @@ async function openStudentHistory(
                     </p>
 
                 </div>
-
             `;
-
 
     // =================================================
     // UPDATE SUMMARY
     // =================================================
 
-    const total =
-        history.length;
+    const total = history.length;
 
     const minor =
         history.filter(
@@ -1681,7 +1307,6 @@ async function openStudentHistory(
                 item.status !== "dismissed"
         ).length;
 
-
     setText(
         "historyTotalCases",
         total
@@ -1706,7 +1331,6 @@ async function openStudentHistory(
         "historyOpenCases",
         open
     );
-
 }
 
 
@@ -1715,23 +1339,16 @@ async function openStudentHistory(
 // =====================================================
 
 function buildHistoryItem(item) {
-
     const severity =
-        item.severity ||
-        "low";
+        item.severity || "low";
 
     const status =
-        item.status ||
-        "reported";
+        item.status || "reported";
 
     const statusClass =
-        status.replaceAll(
-            "_",
-            "-"
-        );
+        status.replaceAll("_", "-");
 
     return `
-
         <div
             class="discipline-history-item"
             data-case-id="${escapeHtml(
@@ -1742,11 +1359,9 @@ function buildHistoryItem(item) {
         >
 
             <span class="history-date">
-
                 ${formatDate(
                     item.incidentDate
                 )}
-
             </span>
 
             <div class="history-incident">
@@ -1756,12 +1371,10 @@ function buildHistoryItem(item) {
                     <div>
 
                         <h4>
-
                             ${escapeHtml(
                                 item.category ||
                                 "Discipline Incident"
                             )}
-
                         </h4>
 
                     </div>
@@ -1773,13 +1386,9 @@ function buildHistoryItem(item) {
                                 statusClass
                             )}"
                         >
-
                             ${escapeHtml(
-                                formatStatus(
-                                    status
-                                )
+                                formatStatus(status)
                             )}
-
                         </span>
 
                         <span
@@ -1787,11 +1396,9 @@ function buildHistoryItem(item) {
                                 severity
                             )}"
                         >
-
                             ${escapeHtml(
                                 severity.toUpperCase()
                             )}
-
                         </span>
 
                     </div>
@@ -1889,7 +1496,6 @@ function buildHistoryItem(item) {
                 ${
                     item.actionTaken
                         ? `
-
                             <div class="history-action">
 
                                 <strong>
@@ -1901,7 +1507,6 @@ function buildHistoryItem(item) {
                                 )}
 
                             </div>
-
                         `
                         : ""
                 }
@@ -1923,9 +1528,7 @@ function buildHistoryItem(item) {
             </div>
 
         </div>
-
     `;
-
 }
 
 
@@ -1934,7 +1537,6 @@ function buildHistoryItem(item) {
 // =====================================================
 
 function closeStudentHistory() {
-
     console.log(
         "[DISCIPLINE HISTORY] Closing..."
     );
@@ -1948,23 +1550,15 @@ function closeStudentHistory() {
         return;
     }
 
-    modal.classList.remove(
-        "is-open"
-    );
+    modal.classList.remove("is-open");
 
-    modal.style.display =
-        "none";
-
-    modal.style.visibility =
-        "hidden";
-
-    modal.style.opacity =
-        "0";
+    modal.style.display = "none";
+    modal.style.visibility = "hidden";
+    modal.style.opacity = "0";
 
     document.body.classList.remove(
         "modal-open"
     );
-
 }
 
 
@@ -1972,10 +1566,7 @@ function closeStudentHistory() {
 // CREATE DISCIPLINE
 // =====================================================
 
-async function createDiscipline(
-    event
-) {
-
+async function createDiscipline(event) {
     event.preventDefault();
 
     const button =
@@ -1989,7 +1580,6 @@ async function createDiscipline(
         );
 
     const payload = {
-
         student:
             studentInput?.value || "",
 
@@ -2027,37 +1617,25 @@ async function createDiscipline(
             document.getElementById(
                 "actionTaken"
             )?.value.trim() || ""
-
     };
 
-
     if (!payload.student) {
-
         showToast(
             "Please select a student.",
             "error"
         );
 
         return;
-
     }
 
-
     try {
-
         if (button) {
-
-            button.disabled =
-                true;
+            button.disabled = true;
 
             button.innerHTML = `
-
                 <i class="fas fa-spinner fa-spin"></i>
-
                 Saving...
-
             `;
-
         }
 
         const response =
@@ -2070,7 +1648,6 @@ async function createDiscipline(
                         JSON.stringify(
                             payload
                         )
-
                 }
             );
 
@@ -2085,7 +1662,6 @@ async function createDiscipline(
         await loadDiscipline();
 
     } catch (error) {
-
         console.error(
             "[DISCIPLINE CREATE]",
             error
@@ -2098,24 +1674,15 @@ async function createDiscipline(
         );
 
     } finally {
-
         if (button) {
-
-            button.disabled =
-                false;
+            button.disabled = false;
 
             button.innerHTML = `
-
                 <i class="fas fa-save"></i>
-
                 Save Incident
-
             `;
-
         }
-
     }
-
 }
 
 
@@ -2124,14 +1691,12 @@ async function createDiscipline(
 // =====================================================
 
 function openDisciplineModal() {
-
     const modal =
         document.getElementById(
             "disciplineModal"
         );
 
     if (!modal) {
-
         console.error(
             "[DISCIPLINE MODAL] #disciplineModal was not found"
         );
@@ -2142,25 +1707,17 @@ function openDisciplineModal() {
         );
 
         return;
-
     }
 
     console.log(
         "[DISCIPLINE MODAL] Opening..."
     );
 
-    modal.classList.add(
-        "is-open"
-    );
+    modal.classList.add("is-open");
 
-    modal.style.display =
-        "flex";
-
-    modal.style.visibility =
-        "visible";
-
-    modal.style.opacity =
-        "1";
+    modal.style.display = "flex";
+    modal.style.visibility = "visible";
+    modal.style.opacity = "1";
 
     document.body.classList.add(
         "modal-open"
@@ -2175,14 +1732,11 @@ function openDisciplineModal() {
         incidentDate &&
         !incidentDate.value
     ) {
-
         incidentDate.value =
             new Date()
                 .toISOString()
                 .split("T")[0];
-
     }
-
 }
 
 
@@ -2191,7 +1745,6 @@ function openDisciplineModal() {
 // =====================================================
 
 function closeDisciplineModal() {
-
     const modal =
         document.getElementById(
             "disciplineModal"
@@ -2201,18 +1754,11 @@ function closeDisciplineModal() {
         return;
     }
 
-    modal.classList.remove(
-        "is-open"
-    );
+    modal.classList.remove("is-open");
 
-    modal.style.display =
-        "none";
-
-    modal.style.visibility =
-        "hidden";
-
-    modal.style.opacity =
-        "0";
+    modal.style.display = "none";
+    modal.style.visibility = "hidden";
+    modal.style.opacity = "0";
 
     document.body.classList.remove(
         "modal-open"
@@ -2230,10 +1776,7 @@ function closeDisciplineModal() {
         );
 
     if (classSelect) {
-
-        classSelect.value =
-            "";
-
+        classSelect.value = "";
     }
 
     const studentSelect =
@@ -2242,18 +1785,14 @@ function closeDisciplineModal() {
         );
 
     if (studentSelect) {
-
         studentSelect.innerHTML = `
             <option value="">
                 Select class first
             </option>
         `;
 
-        studentSelect.disabled =
-            true;
-
+        studentSelect.disabled = true;
     }
-
 }
 
 
@@ -2262,7 +1801,6 @@ function closeDisciplineModal() {
 // =====================================================
 
 function updateStatistics() {
-
     const total =
         document.getElementById(
             "totalCases"
@@ -2284,45 +1822,35 @@ function updateStatistics() {
         );
 
     if (total) {
-
         total.textContent =
             disciplineCases.length;
-
     }
 
     if (investigation) {
-
         investigation.textContent =
             disciplineCases.filter(
                 item =>
                     item.status ===
                     "under_investigation"
             ).length;
-
     }
 
     if (serious) {
-
         serious.textContent =
             disciplineCases.filter(
                 item =>
                     item.severity === "high" ||
                     item.severity === "critical"
             ).length;
-
     }
 
     if (resolved) {
-
         resolved.textContent =
             disciplineCases.filter(
                 item =>
-                    item.status ===
-                    "resolved"
+                    item.status === "resolved"
             ).length;
-
     }
-
 }
 
 
@@ -2330,11 +1858,7 @@ function updateStatistics() {
 // HELPER - SET TEXT
 // =====================================================
 
-function setText(
-    elementId,
-    value
-) {
-
+function setText(elementId, value) {
     const element =
         document.getElementById(
             elementId
@@ -2346,51 +1870,36 @@ function setText(
 
     element.textContent =
         String(value);
-
 }
 
 
 // =====================================================
-// HELPERS
+// FORMAT STATUS
 // =====================================================
 
 function formatStatus(status) {
-
-    return String(
-        status || ""
-    )
-    .replaceAll(
-        "_",
-        " "
-    )
-    .replace(
-        /\b\w/g,
-        char =>
-            char.toUpperCase()
-    );
-
+    return String(status || "")
+        .replaceAll("_", " ")
+        .replace(
+            /\b\w/g,
+            char => char.toUpperCase()
+        );
 }
 
 
+// =====================================================
+// FORMAT DATE
+// =====================================================
+
 function formatDate(value) {
-
     if (!value) {
-
         return "Unknown date";
-
     }
 
-    const date =
-        new Date(value);
+    const date = new Date(value);
 
-    if (
-        isNaN(
-            date.getTime()
-        )
-    ) {
-
+    if (isNaN(date.getTime())) {
         return "Unknown date";
-
     }
 
     return date.toLocaleDateString(
@@ -2401,36 +1910,20 @@ function formatDate(value) {
             day: "numeric"
         }
     );
-
 }
 
 
+// =====================================================
+// ESCAPE HTML
+// =====================================================
+
 function escapeHtml(value) {
-
-    return String(
-        value ?? ""
-    )
-    .replaceAll(
-        "&",
-        "&amp;"
-    )
-    .replaceAll(
-        "<",
-        "&lt;"
-    )
-    .replaceAll(
-        ">",
-        "&gt;"
-    )
-    .replaceAll(
-        '"',
-        "&quot;"
-    )
-    .replaceAll(
-        "'",
-        "&#039;"
-    );
-
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 
@@ -2442,32 +1935,26 @@ function showToast(
     message,
     type = "success"
 ) {
-
     const container =
         document.getElementById(
             "disciplineToastContainer"
         );
 
     if (!container) {
-
         console.log(
             `[${type}] ${message}`
         );
 
         return;
-
     }
 
     const toast =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     toast.className =
         `toast ${type}`;
 
     toast.innerHTML = `
-
         <i class="fas ${
             type === "success"
                 ? "fa-check-circle"
@@ -2475,22 +1962,14 @@ function showToast(
         }"></i>
 
         <span>
-
-            ${escapeHtml(
-                message
-            )}
-
+            ${escapeHtml(message)}
         </span>
-
     `;
 
-    container.appendChild(
-        toast
-    );
+    container.appendChild(toast);
 
     setTimeout(
         () => toast.remove(),
         5000
     );
-
 }
