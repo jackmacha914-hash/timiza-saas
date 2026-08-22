@@ -64,14 +64,12 @@ const disciplineSchema = new mongoose.Schema({
         required: true
     },
 
-    // User who reported the discipline case
     reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
 
-    // Role of the person who reported the case
     reportedByRole: {
         type: String,
         enum: [
@@ -114,5 +112,4 @@ const disciplineSchema = new mongoose.Schema({
     timestamps: true
 });
 
-module.exports =
-    mongoose.model('Discipline', disciplineSchema);
+module.exports = mongoose.model('Discipline', disciplineSchema);
