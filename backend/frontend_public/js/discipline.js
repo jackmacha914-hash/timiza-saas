@@ -1012,10 +1012,9 @@ function createDisciplineCard(
                 <span>
 
                     Reported by
-                    ${escapeHtml(
-                        item.reportedBy ||
-                        "Administrator"
-                    )}
+${escapeHtml(
+    getReporterName(item.reportedBy)
+)}
 
                 </span>
 
@@ -1269,13 +1268,12 @@ function openDisciplineDetails(
                 <span>
                     Reported By
                 </span>
-
                 <strong>
-                    ${escapeHtml(
-                        item.reportedBy ||
-                        "Administrator"
-                    )}
-                </strong>
+    ${escapeHtml(
+        getReporterName(item.reportedBy)
+    )}
+</strong>
+
 
             </div>
 
@@ -2759,10 +2757,9 @@ function buildHistoryItem(
                     </strong>
 
                     ${escapeHtml(
-                        item.handledBy ||
-                        item.reportedBy ||
-                        "Administrator"
-                    )}
+    item.handledBy ||
+    getReporterName(item.reportedBy)
+)}
 
                 </div>
 
