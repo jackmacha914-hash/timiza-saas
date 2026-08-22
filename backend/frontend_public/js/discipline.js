@@ -700,6 +700,50 @@ async function loadDiscipline() {
     }
 }
 
+// =====================================================
+// GET REPORTER NAME
+// =====================================================
+
+function getReporterName(reportedBy) {
+
+    // Populated User object
+    if (
+        reportedBy &&
+        typeof reportedBy === "object"
+    ) {
+
+        return (
+            reportedBy.name ||
+            reportedBy.fullName ||
+            reportedBy.username ||
+            reportedBy.email ||
+            "Administrator"
+        );
+    }
+
+    // Old records may contain a plain string
+    if (
+        typeof reportedBy === "string" &&
+        reportedBy.trim()
+    ) {
+
+        // If this looks like a MongoDB ID,
+        // don't display the ID to the admin.
+        if (
+            /^[a-f\d]{24}$/i.test(
+                reportedBy.trim()
+            )
+        ) {
+
+            return "Administrator";
+        }
+
+        return reportedBy.trim();
+    }
+
+    return "Administrator";
+}
+
 
 // =====================================================
 // RENDER DISCIPLINE
