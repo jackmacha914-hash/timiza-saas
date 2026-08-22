@@ -46,6 +46,12 @@ const userSchema = new mongoose.Schema({
     default: 'student'
   },
 
+  isDisciplineMaster: {
+  type: Boolean,
+  default: false,
+  index: true
+},
+
   class: {
     type: String,
     default: '',
