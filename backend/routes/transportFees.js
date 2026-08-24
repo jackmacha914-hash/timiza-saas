@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const TransportFee = require('../models/TransportFee');
-const TransportRoute = require('../models/TransportRoute');
+const Route = require('../models/Route');
 const { protect } = require('../middleware/auth');
 
 
@@ -28,7 +28,7 @@ router.post('/', protect, async (req, res) => {
 
 
         // Make sure the route belongs to this school
-        const route = await TransportRoute.findOne({
+        const route = await Route.findOne({
             _id: routeId,
             school: req.user.school
         });
