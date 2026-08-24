@@ -2,178 +2,1094 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 
-// --------------------
-// SCHEMAS
-// --------------------
+const { protect } = require('../middleware/auth');
+const User = require('../models/User');
 
-// Bus Schema
+// ============================================================
+// BUS SCHEMA
+// ============================================================
+
 const busSchema = new mongoose.Schema({
-    number: String,
-    plate: String,
-    capacity: Number,
-    status: { type: String, default: "Active" }
-});
-const Bus = mongoose.model('Bus', busSchema);
 
-// Route Schema
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true,
+        index: true
+    },
+
+    number: {
+        type: String,
+        required: true,
+        trim: true
+    },
+
+    plate: {
+        type: String,
+        required: true,
+        trim: true
+    },
+
+    capacity: {
+        type: Number,
+        required: true
+    },
+
+    status: {
+        type: String,
+        enum: ['Active', 'Maintenance'],
+        default: 'Active'
+    }
+
+}, {
+    timestamps: true
+});
+
+busSchema.index({
+    school: 1,
+    number: 1
+});
+
+busSchema.index({
+    school: 1,
+    plate: 1
+});
+
+const Bus =
+    mongoose.models.Bus ||
+    mongoose.model('Bus', busSchema);
+
+
+// ============================================================
+// ROUTE SCHEMA
+// ============================================================
+
 const routeSchema = new mongoose.Schema({
-    name: String,
-    busId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bus' }
-});
-const Route = mongoose.model('Route', routeSchema);
 
-// Driver Schema
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true,
+        index: true
+    },
+
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+
+    busId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Bus',
+        required: true
+    }
+
+}, {
+    timestamps: true
+});
+
+routeSchema.index({
+    school: 1,
+    name: 1
+});
+
+const Route =
+    mongoose.models.Route ||
+    mongoose.model('Route', routeSchema);
+
+
+// ============================================================
+// DRIVER SCHEMA
+// ============================================================
+
 const driverSchema = new mongoose.Schema({
-    name: String,
-    license: String,
-    busId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bus' }
-});
-const Driver = mongoose.model('Driver', driverSchema);
 
-// Student Transport Assignment
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true,
+        index: true
+    },
+
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+
+    license: {
+        type: String,
+        required: true,
+        trim: true
+    },
+
+    busId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Bus'
+    }
+
+}, {
+    timestamps: true
+});
+
+driverSchema.index({
+    school: 1,
+    license: 1
+});
+
+const Driver =
+    mongoose.models.Driver ||
+    mongoose.model('Driver', driverSchema);
+
+
+// ============================================================
+// STUDENT TRANSPORT ASSIGNMENT SCHEMA
+// ============================================================
+
 const studentTransportSchema = new mongoose.Schema({
-    studentId: String,
-    routeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Route' },
-    busId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bus' }
-});
-const StudentTransport = mongoose.model('StudentTransport', studentTransportSchema);
 
-// --------------------
+    school: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'School',
+        required: true,
+        index: true
+    },
+
+    studentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+
+    routeId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Route',
+        required: true
+    },
+
+    busId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Bus',
+        required: true
+    }
+
+}, {
+    timestamps: true
+});
+
+studentTransportSchema.index({
+    school: 1,
+    studentId: 1
+});
+
+const StudentTransport =
+    mongoose.models.StudentTransport ||
+    mongoose.model(
+        'StudentTransport',
+        studentTransportSchema
+    );
+
+
+// ============================================================
 // BUS ROUTES
-// --------------------
-router.get('/buses', async (req, res) => {
-    const buses = await Bus.find();
-    res.json(buses);
+// ============================================================
+
+
+// GET ALL BUSES FOR CURRENT SCHOOL
+router.get('/buses', protect, async (req, res) => {
+
+    try {
+
+        const buses = await Bus.find({
+            school: req.user.school
+        }).sort({
+            number: 1
+        });
+
+        res.json(buses);
+
+    } catch (err) {
+
+        console.error('GET buses error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.post('/buses', async (req, res) => {
-    const bus = new Bus(req.body);
-    await bus.save();
-    res.json(bus);
+
+// CREATE BUS
+router.post('/buses', protect, async (req, res) => {
+
+    try {
+
+        const {
+            number,
+            plate,
+            capacity,
+            status
+        } = req.body;
+
+
+        if (!number || !plate || !capacity) {
+
+            return res.status(400).json({
+                error: 'Bus number, plate and capacity are required'
+            });
+
+        }
+
+
+        const existingBus = await Bus.findOne({
+            school: req.user.school,
+            $or: [
+                { number },
+                { plate }
+            ]
+        });
+
+
+        if (existingBus) {
+
+            return res.status(400).json({
+                error: 'A bus with this number or plate already exists in this school'
+            });
+
+        }
+
+
+        const bus = new Bus({
+
+            school: req.user.school,
+
+            number,
+
+            plate,
+
+            capacity,
+
+            status: status || 'Active'
+
+        });
+
+
+        await bus.save();
+
+
+        res.status(201).json({
+            success: true,
+            message: 'Bus created successfully',
+            bus
+        });
+
+
+    } catch (err) {
+
+        console.error('POST bus error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.put('/buses/:id', async (req, res) => {
-    const bus = await Bus.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(bus);
+
+// UPDATE BUS
+router.put('/buses/:id', protect, async (req, res) => {
+
+    try {
+
+        const bus = await Bus.findOneAndUpdate(
+
+            {
+                _id: req.params.id,
+                school: req.user.school
+            },
+
+            req.body,
+
+            {
+                new: true,
+                runValidators: true
+            }
+
+        );
+
+
+        if (!bus) {
+
+            return res.status(404).json({
+                error: 'Bus not found'
+            });
+
+        }
+
+
+        res.json(bus);
+
+
+    } catch (err) {
+
+        console.error('PUT bus error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.delete('/buses/:id', async (req, res) => {
-    await Bus.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Bus deleted' });
+
+// DELETE BUS
+router.delete('/buses/:id', protect, async (req, res) => {
+
+    try {
+
+        const bus = await Bus.findOneAndDelete({
+
+            _id: req.params.id,
+
+            school: req.user.school
+
+        });
+
+
+        if (!bus) {
+
+            return res.status(404).json({
+                error: 'Bus not found'
+            });
+
+        }
+
+
+        res.json({
+            success: true,
+            message: 'Bus deleted successfully'
+        });
+
+
+    } catch (err) {
+
+        console.error('DELETE bus error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-// --------------------
+
+// ============================================================
 // ROUTE ROUTES
-// --------------------
-router.get('/routes', async (req, res) => {
-    const routes = await Route.find().populate('busId');
-    res.json(routes);
+// ============================================================
+
+
+// GET ALL ROUTES
+router.get('/routes', protect, async (req, res) => {
+
+    try {
+
+        const routes = await Route.find({
+
+            school: req.user.school
+
+        })
+        .populate('busId', 'number plate capacity status')
+        .sort({
+            name: 1
+        });
+
+
+        res.json(routes);
+
+
+    } catch (err) {
+
+        console.error('GET routes error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.post('/routes', async (req, res) => {
-    const route = new Route(req.body);
-    await route.save();
-    res.json(route);
+
+// CREATE ROUTE
+router.post('/routes', protect, async (req, res) => {
+
+    try {
+
+        const {
+            name,
+            busId
+        } = req.body;
+
+
+        if (!name || !busId) {
+
+            return res.status(400).json({
+                error: 'Route name and bus are required'
+            });
+
+        }
+
+
+        // Make sure bus belongs to this school
+        const bus = await Bus.findOne({
+
+            _id: busId,
+
+            school: req.user.school
+
+        });
+
+
+        if (!bus) {
+
+            return res.status(404).json({
+                error: 'Bus not found for this school'
+            });
+
+        }
+
+
+        const route = new Route({
+
+            school: req.user.school,
+
+            name,
+
+            busId
+
+        });
+
+
+        await route.save();
+
+
+        res.status(201).json({
+
+            success: true,
+
+            message: 'Route created successfully',
+
+            route
+
+        });
+
+
+    } catch (err) {
+
+        console.error('POST route error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.put('/routes/:id', async (req, res) => {
-    const route = await Route.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(route);
+
+// UPDATE ROUTE
+router.put('/routes/:id', protect, async (req, res) => {
+
+    try {
+
+        const {
+            name,
+            busId
+        } = req.body;
+
+
+        if (busId) {
+
+            const bus = await Bus.findOne({
+
+                _id: busId,
+
+                school: req.user.school
+
+            });
+
+
+            if (!bus) {
+
+                return res.status(404).json({
+                    error: 'Bus not found for this school'
+                });
+
+            }
+
+        }
+
+
+        const route = await Route.findOneAndUpdate(
+
+            {
+                _id: req.params.id,
+
+                school: req.user.school
+
+            },
+
+            {
+                ...(name !== undefined && { name }),
+                ...(busId !== undefined && { busId })
+            },
+
+            {
+                new: true,
+                runValidators: true
+            }
+
+        );
+
+
+        if (!route) {
+
+            return res.status(404).json({
+                error: 'Route not found'
+            });
+
+        }
+
+
+        res.json(route);
+
+
+    } catch (err) {
+
+        console.error('PUT route error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.delete('/routes/:id', async (req, res) => {
-    await Route.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Route deleted' });
+
+// DELETE ROUTE
+router.delete('/routes/:id', protect, async (req, res) => {
+
+    try {
+
+        const route = await Route.findOneAndDelete({
+
+            _id: req.params.id,
+
+            school: req.user.school
+
+        });
+
+
+        if (!route) {
+
+            return res.status(404).json({
+                error: 'Route not found'
+            });
+
+        }
+
+
+        res.json({
+
+            success: true,
+
+            message: 'Route deleted successfully'
+
+        });
+
+
+    } catch (err) {
+
+        console.error('DELETE route error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-// --------------------
+
+// ============================================================
 // DRIVER ROUTES
-// --------------------
-router.get('/drivers', async (req, res) => {
-    const drivers = await Driver.find().populate('busId');
-    res.json(drivers);
+// ============================================================
+
+
+// GET ALL DRIVERS
+router.get('/drivers', protect, async (req, res) => {
+
+    try {
+
+        const drivers = await Driver.find({
+
+            school: req.user.school
+
+        })
+        .populate(
+            'busId',
+            'number plate'
+        )
+        .sort({
+            name: 1
+        });
+
+
+        res.json(drivers);
+
+
+    } catch (err) {
+
+        console.error('GET drivers error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.post('/drivers', async (req, res) => {
-    const driver = new Driver(req.body);
-    await driver.save();
-    res.json(driver);
+
+// CREATE DRIVER
+router.post('/drivers', protect, async (req, res) => {
+
+    try {
+
+        const {
+            name,
+            license,
+            busId
+        } = req.body;
+
+
+        if (!name || !license || !busId) {
+
+            return res.status(400).json({
+                error: 'Driver name, license and bus are required'
+            });
+
+        }
+
+
+        const bus = await Bus.findOne({
+
+            _id: busId,
+
+            school: req.user.school
+
+        });
+
+
+        if (!bus) {
+
+            return res.status(404).json({
+                error: 'Bus not found for this school'
+            });
+
+        }
+
+
+        const driver = new Driver({
+
+            school: req.user.school,
+
+            name,
+
+            license,
+
+            busId
+
+        });
+
+
+        await driver.save();
+
+
+        res.status(201).json({
+
+            success: true,
+
+            message: 'Driver created successfully',
+
+            driver
+
+        });
+
+
+    } catch (err) {
+
+        console.error('POST driver error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.put('/drivers/:id', async (req, res) => {
-    const driver = await Driver.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(driver);
+
+// UPDATE DRIVER
+router.put('/drivers/:id', protect, async (req, res) => {
+
+    try {
+
+        const {
+            name,
+            license,
+            busId
+        } = req.body;
+
+
+        if (busId) {
+
+            const bus = await Bus.findOne({
+
+                _id: busId,
+
+                school: req.user.school
+
+            });
+
+
+            if (!bus) {
+
+                return res.status(404).json({
+                    error: 'Bus not found for this school'
+                });
+
+            }
+
+        }
+
+
+        const driver = await Driver.findOneAndUpdate(
+
+            {
+                _id: req.params.id,
+
+                school: req.user.school
+
+            },
+
+            {
+                ...(name !== undefined && { name }),
+                ...(license !== undefined && { license }),
+                ...(busId !== undefined && { busId })
+            },
+
+            {
+                new: true,
+                runValidators: true
+            }
+
+        );
+
+
+        if (!driver) {
+
+            return res.status(404).json({
+                error: 'Driver not found'
+            });
+
+        }
+
+
+        res.json(driver);
+
+
+    } catch (err) {
+
+        console.error('PUT driver error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.delete('/drivers/:id', async (req, res) => {
-    await Driver.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Driver deleted' });
+
+// DELETE DRIVER
+router.delete('/drivers/:id', protect, async (req, res) => {
+
+    try {
+
+        const driver = await Driver.findOneAndDelete({
+
+            _id: req.params.id,
+
+            school: req.user.school
+
+        });
+
+
+        if (!driver) {
+
+            return res.status(404).json({
+                error: 'Driver not found'
+            });
+
+        }
+
+
+        res.json({
+
+            success: true,
+
+            message: 'Driver deleted successfully'
+
+        });
+
+
+    } catch (err) {
+
+        console.error('DELETE driver error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-// --------------------
+
+// ============================================================
 // STUDENT TRANSPORT ASSIGNMENTS
-// --------------------
-router.get('/assignments', async (req, res) => {
-    const assignments = await StudentTransport.find().populate('busId routeId');
-    res.json(assignments);
+// ============================================================
+
+
+// GET ALL ASSIGNMENTS
+router.get('/assignments', protect, async (req, res) => {
+
+    try {
+
+        const assignments =
+            await StudentTransport.find({
+
+                school: req.user.school
+
+            })
+            .populate(
+                'studentId',
+                'name email class'
+            )
+            .populate(
+                'routeId',
+                'name'
+            )
+            .populate(
+                'busId',
+                'number plate'
+            );
+
+
+        res.json(assignments);
+
+
+    } catch (err) {
+
+        console.error('GET assignments error:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.post('/assignments', async (req, res) => {
-    const assignment = new StudentTransport(req.body);
-    await assignment.save();
-    res.json(assignment);
+
+// CREATE ASSIGNMENT
+router.post('/assignments', protect, async (req, res) => {
+
+    try {
+
+        const {
+            studentId,
+            routeId,
+            busId
+        } = req.body;
+
+
+        if (!studentId || !routeId || !busId) {
+
+            return res.status(400).json({
+                error: 'Student, route and bus are required'
+            });
+
+        }
+
+
+        // Verify student belongs to school
+        const student = await User.findOne({
+
+            _id: studentId,
+
+            school: req.user.school,
+
+            role: 'student'
+
+        });
+
+
+        if (!student) {
+
+            return res.status(404).json({
+                error: 'Student not found for this school'
+            });
+
+        }
+
+
+        // Verify route belongs to school
+        const route = await Route.findOne({
+
+            _id: routeId,
+
+            school: req.user.school
+
+        });
+
+
+        if (!route) {
+
+            return res.status(404).json({
+                error: 'Route not found for this school'
+            });
+
+        }
+
+
+        // Verify bus belongs to school
+        const bus = await Bus.findOne({
+
+            _id: busId,
+
+            school: req.user.school
+
+        });
+
+
+        if (!bus) {
+
+            return res.status(404).json({
+                error: 'Bus not found for this school'
+            });
+
+        }
+
+
+        const assignment = new StudentTransport({
+
+            school: req.user.school,
+
+            studentId,
+
+            routeId,
+
+            busId
+
+        });
+
+
+        await assignment.save();
+
+
+        res.status(201).json({
+
+            success: true,
+
+            message: 'Student transport assigned successfully',
+
+            assignment
+
+        });
+
+
+    } catch (err) {
+
+        console.error(
+            'POST assignment error:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
-router.delete('/assignments/:id', async (req, res) => {
-    await StudentTransport.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Assignment deleted' });
-});
-// --------------------
-// TRANSPORT PAYMENTS (Schema-less)
-// --------------------
-const transportPaymentsCollection = mongoose.connection.collection('transportpayments');
 
-// CREATE payment
-router.post('/payments', async (req, res) => {
-  try {
-    const data = { ...req.body, createdAt: new Date() }; // add createdAt for sorting
-    const result = await transportPaymentsCollection.insertOne(data);
-    res.status(201).json(result.ops[0] || data);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// DELETE ASSIGNMENT
+router.delete('/assignments/:id', protect, async (req, res) => {
 
-// GET payments with optional filters
-router.get('/payments', async (req, res) => {
-  try {
-    const { term, year, studentId, routeId } = req.query;
-    const filter = {};
-    if (term) filter.term = term;
-    if (year) filter.year = parseInt(year);
-    if (studentId) filter.studentId = studentId;
-    if (routeId) filter.routeId = routeId;
+    try {
 
-    const payments = await transportPaymentsCollection
-      .find(filter)
-      .sort({ createdAt: -1 })
-      .toArray();
+        const assignment =
+            await StudentTransport.findOneAndDelete({
 
-    res.json(payments);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+                _id: req.params.id,
 
-// DELETE payment
-router.delete('/payments/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await transportPaymentsCollection.deleteOne({ _id: new mongoose.Types.ObjectId(id) });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+                school: req.user.school
+
+            });
+
+
+        if (!assignment) {
+
+            return res.status(404).json({
+                error: 'Transport assignment not found'
+            });
+
+        }
+
+
+        res.json({
+
+            success: true,
+
+            message:
+                'Transport assignment deleted successfully'
+
+        });
+
+
+    } catch (err) {
+
+        console.error(
+            'DELETE assignment error:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
 });
 
 
