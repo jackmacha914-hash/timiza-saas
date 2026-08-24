@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const TransportFee = require('../models/TransportFee');
+const TransportRoute = require('../models/TransportRoute');
 const { protect } = require('../middleware/auth');
 
 
@@ -13,26 +14,60 @@ router.post('/', protect, async (req, res) => {
 
         const { routeId, amount } = req.body;
 
+        if (!routeId || amount === undefined || amount === null) {
+            return res.status(400).json({
+                error: 'Route and amount are required'
+            });
+        }
+
+        if (Number(amount) < 0) {
+            return res.status(400).json({
+                error: 'Fee amount cannot be negative'
+            });
+        }
+
+
+        // Make sure the route belongs to this school
+        const route = await TransportRoute.findOne({
+            _id: routeId,
+            school: req.user.school
+        });
+
+        if (!route) {
+            return res.status(404).json({
+                error: 'Route not found for this school'
+            });
+        }
+
+
         const fee = await TransportFee.findOneAndUpdate(
             {
                 school: req.user.school,
                 routeId
             },
             {
-                school: req.user.school,
-                routeId,
-                amount
+                $set: {
+                    school: req.user.school,
+                    routeId,
+                    amount: Number(amount)
+                }
             },
             {
                 new: true,
-                upsert: true
+                upsert: true,
+                runValidators: true
             }
         );
 
         res.json(fee);
 
     } catch (err) {
-        console.error('Transport Fee POST error:', err);
+
+        console.error(
+            'Transport Fee POST error:',
+            err
+        );
+
         res.status(500).json({
             error: err.message
         });
@@ -48,12 +83,18 @@ router.get('/', protect, async (req, res) => {
 
         const fees = await TransportFee.find({
             school: req.user.school
-        }).populate('routeId', 'name');
+        })
+        .populate('routeId', 'name');
 
         res.json(fees);
 
     } catch (err) {
-        console.error('Transport Fee GET error:', err);
+
+        console.error(
+            'Transport Fee GET error:',
+            err
+        );
+
         res.status(500).json({
             error: err.message
         });
@@ -79,16 +120,22 @@ router.delete('/:id', protect, async (req, res) => {
         }
 
         res.json({
+            success: true,
             message: 'Fee deleted successfully'
         });
 
     } catch (err) {
-        console.error('Transport Fee DELETE error:', err);
+
+        console.error(
+            'Transport Fee DELETE error:',
+            err
+        );
+
         res.status(500).json({
             error: err.message
         });
     }
 });
 
-module.exports = router;
 
+module.exports = router;
