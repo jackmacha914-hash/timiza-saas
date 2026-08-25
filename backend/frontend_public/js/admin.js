@@ -177,7 +177,8 @@ if (document.readyState === 'loading') {
 })(); // Close the IIFE
 
 // =====================================================
-// USER MANAGEMENT
+// SCHOOL USER MANAGEMENT
+// Students + Teachers
 // =====================================================
 
 (function () {
@@ -187,64 +188,62 @@ if (document.readyState === 'loading') {
     let managementUsers = [];
 
 
-    // =================================================
+    // =====================================================
     // ELEMENTS
-    // =================================================
+    // =====================================================
 
     const form =
-        document.getElementById(
-            'management-add-user-form'
-        );
+        document.getElementById('management-add-user-form');
 
     const roleSelect =
-        document.getElementById(
-            'management-user-role'
-        );
+        document.getElementById('management-user-role');
 
     const subjectContainer =
-        document.getElementById(
-            'management-subject-container'
-        );
+        document.getElementById('management-subject-container');
 
     const classContainer =
-        document.getElementById(
-            'management-class-container'
-        );
+        document.getElementById('management-class-container');
 
     const tableBody =
-        document.getElementById(
-            'management-users-table-body'
-        );
+        document.getElementById('management-users-table-body');
 
 
-    // =================================================
-    // ROLE FIELD DISPLAY
-    // =================================================
+    // =====================================================
+    // ROLE FIELDS
+    // =====================================================
 
     function updateRoleFields() {
 
-        const role = roleSelect.value;
+        if (!roleSelect) return;
+
+        const role =
+            String(roleSelect.value || '').toLowerCase();
 
         if (role === 'teacher') {
 
-            subjectContainer.style.display =
-                'block';
+            if (subjectContainer) {
+                subjectContainer.style.display = 'block';
+            }
 
-            classContainer.style.display =
-                'none';
+            if (classContainer) {
+                classContainer.style.display = 'none';
+            }
 
         } else {
 
-            subjectContainer.style.display =
-                'none';
+            if (subjectContainer) {
+                subjectContainer.style.display = 'none';
+            }
 
-            classContainer.style.display =
-                'block';
+            if (classContainer) {
+                classContainer.style.display = 'block';
+            }
         }
     }
 
 
     if (roleSelect) {
+
         roleSelect.addEventListener(
             'change',
             updateRoleFields
@@ -254,9 +253,9 @@ if (document.readyState === 'loading') {
     }
 
 
-    // =================================================
+    // =====================================================
     // LOAD USERS
-    // =================================================
+    // =====================================================
 
     async function loadManagementUsers() {
 
@@ -270,26 +269,48 @@ if (document.readyState === 'loading') {
                 'management-users-error'
             );
 
-        loading.style.display = 'block';
-        errorBox.style.display = 'none';
+        if (loading) {
+            loading.style.display = 'block';
+        }
+
+        if (errorBox) {
+            errorBox.style.display = 'none';
+            errorBox.textContent = '';
+        }
 
 
         try {
 
-            const search =
+            const searchInput =
                 document.getElementById(
                     'management-user-search'
-                ).value.trim();
+                );
 
-            const role =
+            const roleFilter =
                 document.getElementById(
                     'management-role-filter'
-                ).value;
+                );
 
-            const active =
+            const statusFilter =
                 document.getElementById(
                     'management-status-filter'
-                ).value;
+                );
+
+
+            const search =
+                searchInput
+                    ? searchInput.value.trim()
+                    : '';
+
+            const role =
+                roleFilter
+                    ? roleFilter.value
+                    : '';
+
+            const status =
+                statusFilter
+                    ? statusFilter.value
+                    : '';
 
 
             const params =
@@ -297,25 +318,32 @@ if (document.readyState === 'loading') {
 
 
             if (search) {
-                params.set(
-                    'search',
-                    search
-                );
+                params.set('search', search);
             }
 
             if (role) {
-                params.set(
-                    'role',
-                    role
-                );
+                params.set('role', role);
             }
 
-            if (active) {
-                params.set(
-                    'active',
-                    active
-                );
+            // IMPORTANT:
+            // Backend expects "status", NOT "active"
+            if (status) {
+                params.set('status', status);
             }
+
+
+            const token =
+                localStorage.getItem('token');
+
+
+            console.log(
+                '[USER MANAGEMENT] Loading users',
+                {
+                    search,
+                    role,
+                    status
+                }
+            );
 
 
             const response =
@@ -323,13 +351,20 @@ if (document.readyState === 'loading') {
                     `${API_URL}?${params.toString()}`,
                     {
                         method: 'GET',
+
                         credentials: 'include',
+
                         headers: {
+
                             'Content-Type':
                                 'application/json',
 
-                            'Authorization':
-                                `Bearer ${localStorage.getItem('token') || ''}`
+                            ...(token
+                                ? {
+                                    'Authorization':
+                                        `Bearer ${token}`
+                                }
+                                : {})
                         }
                     }
                 );
@@ -339,7 +374,14 @@ if (document.readyState === 'loading') {
                 await response.json();
 
 
+            console.log(
+                '[USER MANAGEMENT] API response:',
+                result
+            );
+
+
             if (!response.ok) {
+
                 throw new Error(
                     result.message ||
                     'Failed to load users'
@@ -348,7 +390,9 @@ if (document.readyState === 'loading') {
 
 
             managementUsers =
-                result.data || [];
+                Array.isArray(result.data)
+                    ? result.data
+                    : [];
 
 
             renderManagementUsers();
@@ -357,29 +401,43 @@ if (document.readyState === 'loading') {
         } catch (error) {
 
             console.error(
-                '[USER MANAGEMENT]',
+                '[USER MANAGEMENT] Load error:',
                 error
             );
 
-            errorBox.textContent =
-                error.message;
 
-            errorBox.style.display =
-                'block';
+            if (errorBox) {
+
+                errorBox.textContent =
+                    error.message ||
+                    'Failed to load users';
+
+                errorBox.style.display =
+                    'block';
+            }
 
         } finally {
 
-            loading.style.display =
-                'none';
+            if (loading) {
+                loading.style.display = 'none';
+            }
         }
     }
 
 
-    // =================================================
+    // =====================================================
     // RENDER USERS
-    // =================================================
+    // =====================================================
 
     function renderManagementUsers() {
+
+        if (!tableBody) {
+            console.error(
+                '[USER MANAGEMENT] Table body not found'
+            );
+            return;
+        }
+
 
         tableBody.innerHTML = '';
 
@@ -390,49 +448,81 @@ if (document.readyState === 'loading') {
             );
 
 
-        // Statistics
+        // =================================================
+        // STATISTICS
+        // =================================================
+
         const total =
             managementUsers.length;
 
+
         const active =
             managementUsers.filter(
-                user => user.active === true
+                user =>
+                    String(user.status || '')
+                        .toLowerCase() === 'active'
             ).length;
+
 
         const suspended =
             managementUsers.filter(
-                user => user.active === false
+                user =>
+                    String(user.status || '')
+                        .toLowerCase() === 'suspended'
             ).length;
 
 
-        document.getElementById(
-            'management-total-users'
-        ).textContent = total;
+        const totalElement =
+            document.getElementById(
+                'management-total-users'
+            );
+
+        const activeElement =
+            document.getElementById(
+                'management-active-users'
+            );
+
+        const suspendedElement =
+            document.getElementById(
+                'management-suspended-users'
+            );
 
 
-        document.getElementById(
-            'management-active-users'
-        ).textContent = active;
+        if (totalElement) {
+            totalElement.textContent = total;
+        }
 
+        if (activeElement) {
+            activeElement.textContent = active;
+        }
 
-        document.getElementById(
-            'management-suspended-users'
-        ).textContent = suspended;
-
-
-        if (!managementUsers.length) {
-
-            empty.style.display =
-                'block';
-
-            return;
-
+        if (suspendedElement) {
+            suspendedElement.textContent = suspended;
         }
 
 
-        empty.style.display =
-            'none';
+        // =================================================
+        // EMPTY
+        // =================================================
 
+        if (!managementUsers.length) {
+
+            if (empty) {
+                empty.style.display = 'block';
+            }
+
+            return;
+        }
+
+
+        if (empty) {
+            empty.style.display = 'none';
+        }
+
+
+        // =================================================
+        // TABLE
+        // =================================================
 
         managementUsers.forEach(user => {
 
@@ -453,39 +543,63 @@ if (document.readyState === 'loading') {
 
             const details =
                 role === 'teacher'
-                    ? (user.subject || '—')
-                    : (user.studentClass || '—');
+                    ? (
+                        user.subject ||
+                        '—'
+                    )
+                    : (
+                        user.studentClass ||
+                        '—'
+                    );
+
+
+            const status =
+                String(
+                    user.status || 'Active'
+                );
 
 
             const isActive =
-                user.active === true;
+                status.toLowerCase() === 'active';
 
 
             row.innerHTML = `
 
                 <td>
                     <strong>
-                        ${escapeHtml(user.name || '—')}
+                        ${escapeHtml(
+                            user.name || '—'
+                        )}
                     </strong>
                 </td>
 
-                <td>
-                    ${escapeHtml(user.email || '—')}
-                </td>
 
                 <td>
+                    ${escapeHtml(
+                        user.email || '—'
+                    )}
+                </td>
+
+
+                <td>
+
                     <span class="badge ${
                         role === 'teacher'
                             ? 'bg-info'
                             : 'bg-primary'
                     }">
+
                         ${roleLabel}
+
                     </span>
+
                 </td>
+
 
                 <td>
                     ${escapeHtml(details)}
                 </td>
+
 
                 <td>
 
@@ -505,6 +619,7 @@ if (document.readyState === 'loading') {
 
                 </td>
 
+
                 <td class="text-end">
 
                     ${
@@ -513,11 +628,15 @@ if (document.readyState === 'loading') {
                         ? `
 
                             <button
+                                type="button"
                                 class="btn btn-sm btn-warning"
                                 onclick="suspendManagementUser('${user._id}')"
                             >
+
                                 <i class="fas fa-pause"></i>
+
                                 Suspend
+
                             </button>
 
                         `
@@ -525,11 +644,15 @@ if (document.readyState === 'loading') {
                         : `
 
                             <button
+                                type="button"
                                 class="btn btn-sm btn-success"
                                 onclick="activateManagementUser('${user._id}')"
                             >
+
                                 <i class="fas fa-check"></i>
+
                                 Activate
+
                             </button>
 
                         `
@@ -537,13 +660,17 @@ if (document.readyState === 'loading') {
 
 
                     <button
+                        type="button"
                         class="btn btn-sm btn-outline-danger"
                         onclick="deleteManagementUser('${user._id}')"
                     >
+
                         <i class="fas fa-trash"></i>
+
                     </button>
 
                 </td>
+
             `;
 
 
@@ -554,9 +681,9 @@ if (document.readyState === 'loading') {
     }
 
 
-    // =================================================
+    // =====================================================
     // CREATE USER
-    // =================================================
+    // =====================================================
 
     if (form) {
 
@@ -574,42 +701,69 @@ if (document.readyState === 'loading') {
 
 
                 const role =
-                    roleSelect.value;
+                    roleSelect
+                        ? roleSelect.value
+                        : 'student';
+
+
+                const name =
+                    document.getElementById(
+                        'management-user-name'
+                    ).value.trim();
+
+
+                const email =
+                    document.getElementById(
+                        'management-user-email'
+                    ).value.trim();
+
+
+                const password =
+                    document.getElementById(
+                        'management-user-password'
+                    ).value;
+
+
+                const subjectElement =
+                    document.getElementById(
+                        'management-user-subject'
+                    );
+
+
+                const classElement =
+                    document.getElementById(
+                        'management-user-class'
+                    );
 
 
                 const body = {
 
-                    name:
-                        document.getElementById(
-                            'management-user-name'
-                        ).value.trim(),
+                    name,
 
-                    email:
-                        document.getElementById(
-                            'management-user-email'
-                        ).value.trim(),
+                    email,
 
-                    password:
-                        document.getElementById(
-                            'management-user-password'
-                        ).value,
+                    password,
 
-                    role: role,
+                    role,
 
                     subject:
-                        document.getElementById(
-                            'management-user-subject'
-                        ).value.trim(),
+                        subjectElement
+                            ? subjectElement.value.trim()
+                            : '',
 
                     studentClass:
-                        document.getElementById(
-                            'management-user-class'
-                        ).value.trim()
+                        classElement
+                            ? classElement.value.trim()
+                            : ''
 
                 };
 
 
                 try {
+
+                    const token =
+                        localStorage.getItem('token');
+
 
                     const response =
                         await fetch(
@@ -625,8 +779,12 @@ if (document.readyState === 'loading') {
                                     'Content-Type':
                                         'application/json',
 
-                                    'Authorization':
-                                        `Bearer ${localStorage.getItem('token') || ''}`
+                                    ...(token
+                                        ? {
+                                            'Authorization':
+                                                `Bearer ${token}`
+                                        }
+                                        : {})
 
                                 },
 
@@ -641,6 +799,7 @@ if (document.readyState === 'loading') {
 
 
                     if (!response.ok) {
+
                         throw new Error(
                             result.message ||
                             'Failed to create user'
@@ -648,14 +807,17 @@ if (document.readyState === 'loading') {
                     }
 
 
-                    message.textContent =
-                        'User created successfully.';
+                    if (message) {
 
-                    message.className =
-                        'alert alert-success';
+                        message.textContent =
+                            'User created successfully.';
 
-                    message.style.display =
-                        'block';
+                        message.className =
+                            'alert alert-success';
+
+                        message.style.display =
+                            'block';
+                    }
 
 
                     form.reset();
@@ -667,14 +829,23 @@ if (document.readyState === 'loading') {
 
                 } catch (error) {
 
-                    message.textContent =
-                        error.message;
+                    console.error(
+                        '[USER MANAGEMENT] CREATE ERROR:',
+                        error
+                    );
 
-                    message.className =
-                        'alert alert-danger';
 
-                    message.style.display =
-                        'block';
+                    if (message) {
+
+                        message.textContent =
+                            error.message;
+
+                        message.className =
+                            'alert alert-danger';
+
+                        message.style.display =
+                            'block';
+                    }
 
                 }
 
@@ -684,24 +855,37 @@ if (document.readyState === 'loading') {
     }
 
 
-    // =================================================
+    // =====================================================
     // ACTIVATE
-    // =================================================
+    // =====================================================
 
     window.activateManagementUser =
         async function (id) {
 
             try {
 
+                const token =
+                    localStorage.getItem('token');
+
+
                 const response =
                     await fetch(
                         `${API_URL}/${id}/activate`,
                         {
                             method: 'PATCH',
-                            credentials: 'include',
+
+                            credentials:
+                                'include',
+
                             headers: {
-                                'Authorization':
-                                    `Bearer ${localStorage.getItem('token') || ''}`
+
+                                ...(token
+                                    ? {
+                                        'Authorization':
+                                            `Bearer ${token}`
+                                    }
+                                    : {})
+
                             }
                         }
                     );
@@ -712,6 +896,7 @@ if (document.readyState === 'loading') {
 
 
                 if (!response.ok) {
+
                     throw new Error(
                         result.message ||
                         'Failed to activate account'
@@ -724,15 +909,21 @@ if (document.readyState === 'loading') {
 
             } catch (error) {
 
+                console.error(
+                    '[USER MANAGEMENT] ACTIVATE ERROR:',
+                    error
+                );
+
                 alert(error.message);
 
             }
+
         };
 
 
-    // =================================================
+    // =====================================================
     // SUSPEND
-    // =================================================
+    // =====================================================
 
     window.suspendManagementUser =
         async function (id) {
@@ -748,15 +939,28 @@ if (document.readyState === 'loading') {
 
             try {
 
+                const token =
+                    localStorage.getItem('token');
+
+
                 const response =
                     await fetch(
                         `${API_URL}/${id}/suspend`,
                         {
                             method: 'PATCH',
-                            credentials: 'include',
+
+                            credentials:
+                                'include',
+
                             headers: {
-                                'Authorization':
-                                    `Bearer ${localStorage.getItem('token') || ''}`
+
+                                ...(token
+                                    ? {
+                                        'Authorization':
+                                            `Bearer ${token}`
+                                    }
+                                    : {})
+
                             }
                         }
                     );
@@ -767,6 +971,7 @@ if (document.readyState === 'loading') {
 
 
                 if (!response.ok) {
+
                     throw new Error(
                         result.message ||
                         'Failed to suspend account'
@@ -779,15 +984,21 @@ if (document.readyState === 'loading') {
 
             } catch (error) {
 
+                console.error(
+                    '[USER MANAGEMENT] SUSPEND ERROR:',
+                    error
+                );
+
                 alert(error.message);
 
             }
+
         };
 
 
-    // =================================================
+    // =====================================================
     // DELETE
-    // =================================================
+    // =====================================================
 
     window.deleteManagementUser =
         async function (id) {
@@ -803,15 +1014,28 @@ if (document.readyState === 'loading') {
 
             try {
 
+                const token =
+                    localStorage.getItem('token');
+
+
                 const response =
                     await fetch(
                         `${API_URL}/${id}`,
                         {
                             method: 'DELETE',
-                            credentials: 'include',
+
+                            credentials:
+                                'include',
+
                             headers: {
-                                'Authorization':
-                                    `Bearer ${localStorage.getItem('token') || ''}`
+
+                                ...(token
+                                    ? {
+                                        'Authorization':
+                                            `Bearer ${token}`
+                                    }
+                                    : {})
+
                             }
                         }
                     );
@@ -822,6 +1046,7 @@ if (document.readyState === 'loading') {
 
 
                 if (!response.ok) {
+
                     throw new Error(
                         result.message ||
                         'Failed to delete user'
@@ -834,15 +1059,21 @@ if (document.readyState === 'loading') {
 
             } catch (error) {
 
+                console.error(
+                    '[USER MANAGEMENT] DELETE ERROR:',
+                    error
+                );
+
                 alert(error.message);
 
             }
+
         };
 
 
-    // =================================================
-    // SEARCH / FILTERS
-    // =================================================
+    // =====================================================
+    // SEARCH
+    // =====================================================
 
     document
         .getElementById(
@@ -854,6 +1085,10 @@ if (document.readyState === 'loading') {
         );
 
 
+    // =====================================================
+    // ROLE FILTER
+    // =====================================================
+
     document
         .getElementById(
             'management-role-filter'
@@ -863,6 +1098,10 @@ if (document.readyState === 'loading') {
             loadManagementUsers
         );
 
+
+    // =====================================================
+    // STATUS FILTER
+    // =====================================================
 
     document
         .getElementById(
@@ -874,6 +1113,10 @@ if (document.readyState === 'loading') {
         );
 
 
+    // =====================================================
+    // REFRESH
+    // =====================================================
+
     document
         .getElementById(
             'management-refresh-btn'
@@ -884,6 +1127,10 @@ if (document.readyState === 'loading') {
         );
 
 
+    // =====================================================
+    // SEARCH ENTER
+    // =====================================================
+
     document
         .getElementById(
             'management-user-search'
@@ -893,16 +1140,20 @@ if (document.readyState === 'loading') {
             function (event) {
 
                 if (event.key === 'Enter') {
+
+                    event.preventDefault();
+
                     loadManagementUsers();
+
                 }
 
             }
         );
 
 
-    // =================================================
-    // HTML ESCAPE
-    // =================================================
+    // =====================================================
+    // ESCAPE HTML
+    // =====================================================
 
     function escapeHtml(value) {
 
@@ -916,10 +1167,23 @@ if (document.readyState === 'loading') {
     }
 
 
-    // =================================================
+    // =====================================================
     // INITIAL LOAD
-    // =================================================
+    // =====================================================
 
-    loadManagementUsers();
+    if (
+        document.readyState === 'loading'
+    ) {
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            loadManagementUsers
+        );
+
+    } else {
+
+        loadManagementUsers();
+
+    }
 
 })();
