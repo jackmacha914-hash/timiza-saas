@@ -1,192 +1,18 @@
-(function() {
-// Admin User Management - Initialize DOM elements safely
-function getElementSafely(id, context = document) {
-    const element = context.getElementById ? context.getElementById(id) : null;
-    if (!element) {
-        console.warn(`Element with ID '${id}' not found`);
-    }
-    return element;
-}
-
-// Main UI Elements
-const elements = {
-    // Export button
-    userExportBtn: getElementSafely('export-users-btn'),
-    // Forms and Tables
-    addUserForm: getElementSafely('add-user-form'),
-    userAddMsg: getElementSafely('user-add-msg'),
-    userTableBody: document.querySelector('#user-table tbody'),
-    userSearch: getElementSafely('user-search'),
-    usersBulkToolbar: getElementSafely('users-bulk-toolbar'),
-    usersBulkDelete: getElementSafely('users-bulk-delete'),
-    usersBulkExport: getElementSafely('users-bulk-export'),
-    selectAllUsers: getElementSafely('select-all-users'),
-    userRoleFilter: getElementSafely('user-role-filter'),
-    userStatusFilter: getElementSafely('user-status-filter'),
-    
-    // Edit Form Elements
-    editUserId: getElementSafely('edit-user-id'),
-    editName: getElementSafely('edit-user-name'),
-    editEmail: getElementSafely('edit-user-email'),
-    editUsername: getElementSafely('edit-user-username'),
-    editRole: getElementSafely('edit-user-role'),
-    
-    // Modals
-    modals: {
-        edit: {
-            modal: getElementSafely('user-edit-modal'),
-            closeBtn: getElementSafely('close-user-edit-modal'),
-            form: getElementSafely('user-edit-form'),
-            msg: getElementSafely('user-edit-msg')
-        },
-        confirm: {
-            modal: getElementSafely('universal-confirm-modal'),
-            closeBtn: getElementSafely('close-universal-confirm-modal'),
-            title: getElementSafely('universal-confirm-title'),
-            message: getElementSafely('universal-confirm-message'),
-            yesBtn: getElementSafely('universal-confirm-yes'),
-            noBtn: getElementSafely('universal-confirm-no')
-        }
-    }
-};
-
-// Initialize modals
-function initializeModals() {
-    // Close modal buttons
-    if (elements.modals.edit.closeBtn && elements.modals.edit.modal) {
-        elements.modals.edit.closeBtn.onclick = () => closeModal('edit');
-    }
-    
-    if (elements.modals.confirm.closeBtn && elements.modals.confirm.modal) {
-        elements.modals.confirm.closeBtn.onclick = () => closeModal('confirm');
-    }
-    
-    // Close modals when clicking outside
-    document.addEventListener('click', (event) => {
-        if (event.target.classList.contains('modal')) {
-            const modal = event.target;
-            const modalType = Object.keys(elements.modals).find(
-                key => elements.modals[key].modal === modal
-            );
-            if (modalType) {
-                closeModal(modalType);
-            }
-        }
-    });
-}
-
-// Open modal function
-function openModal(modalType) {
-    const modal = elements.modals[modalType]?.modal;
-    if (modal) {
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-    }
-}
-
-// Close modal function
-function closeModal(modalType) {
-    const modal = elements.modals[modalType]?.modal;
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-}
-
-// Initialize the page
-function initializeAdminPage() {
-    // Initialize modals
-    initializeModals();
-    
-    // Initialize event listeners
-    if (elements.userSearch) {
-        elements.userSearch.addEventListener('input', debounce(loadUsersWithFilters, 300));
-    }
-    
-    if (elements.userRoleFilter) {
-        elements.userRoleFilter.addEventListener('change', loadUsersWithFilters);
-    }
-    
-    if (elements.userStatusFilter) {
-        elements.userStatusFilter.addEventListener('change', loadUsersWithFilters);
-    }
-    
-    // Initialize bulk actions
-    if (elements.usersBulkDelete) {
-        elements.usersBulkDelete.addEventListener('click', handleBulkDelete);
-    }
-    
-    if (elements.usersBulkExport) {
-        elements.usersBulkExport.addEventListener('click', handleBulkExport);
-    }
-    
-    // Load initial data
-    loadUsersWithFilters();
-}
-
-// Debounce function
-function debounce(func, wait) {
-    let timeout;
-    return function() {
-        const context = this, args = arguments;
-        const later = function() {
-            timeout = null;
-            func.apply(context, args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Load users with filters
-async function loadUsersWithFilters() {
-    try {
-        // TODO: Implement user filtering logic
-        console.log('Loading users with filters...');
-    } catch (error) {
-        console.error('Error loading users:', error);
-    }
-}
-
-// Handle bulk delete action
-async function handleBulkDelete() {
-    try {
-        // TODO: Implement bulk delete logic
-        console.log('Bulk delete clicked');
-    } catch (error) {
-        console.error('Error in bulk delete:', error);
-    }
-}
-
-// Handle bulk export action
-async function handleBulkExport() {
-    try {
-        // TODO: Implement bulk export logic
-        console.log('Bulk export clicked');
-    } catch (error) {
-        console.error('Error in bulk export:', error);
-    }
-}
-
-// Initialize the page when DOM is loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeAdminPage);
-} else {
-    initializeAdminPage();
-}
-})(); // Close the IIFE
-
 // =====================================================
-// SCHOOL USER MANAGEMENT
-// Students + Teachers
-// Uses existing User model via /api/management-users
+// ADMIN USER MANAGEMENT
+// =====================================================
+// Uses EXISTING /api/users collection
+// Students + Teachers only
+//
+// IMPORTANT:
+// This replaces the old /api/management-users frontend.
 // =====================================================
 
 (function () {
 
     'use strict';
 
-    const API_URL = '/api/management-users';
+    const API_URL = '/api/users';
 
     let managementUsers = [];
 
@@ -194,6 +20,11 @@ if (document.readyState === 'loading') {
     // =====================================================
     // HELPERS
     // =====================================================
+
+    function getElement(id) {
+        return document.getElementById(id);
+    }
+
 
     function getToken() {
         return localStorage.getItem('token') || '';
@@ -212,30 +43,36 @@ if (document.readyState === 'loading') {
     }
 
 
-    function getElement(id) {
-        return document.getElementById(id);
-    }
+    function getStatus(user) {
 
-
-    function getUserStatus(user) {
+        /*
+         * Existing User records may not have status.
+         * If status is missing, treat the account as Active.
+         */
 
         const status =
             String(user?.status || 'Active')
                 .trim()
                 .toLowerCase();
 
-        return status === 'suspended'
-            ? 'Suspended'
-            : 'Active';
+        if (
+            status === 'suspended' ||
+            status === 'inactive' ||
+            status === 'disabled'
+        ) {
+            return 'Suspended';
+        }
+
+        return 'Active';
     }
 
 
-    function getUserClass(user) {
+    function getClass(user) {
 
         return (
-            user?.studentClass ||
             user?.classAssigned ||
             user?.class ||
+            user?.studentClass ||
             user?.profile?.class ||
             ''
         );
@@ -243,10 +80,18 @@ if (document.readyState === 'loading') {
     }
 
 
-    function getUserSubject(user) {
+    function getSubject(user) {
 
         if (user?.subject) {
             return user.subject;
+        }
+
+        if (user?.specialization) {
+            return user.specialization;
+        }
+
+        if (user?.profile?.specialization) {
+            return user.profile.specialization;
         }
 
         if (
@@ -263,15 +108,23 @@ if (document.readyState === 'loading') {
             return user.profile.subjects.join(', ');
         }
 
-        if (user?.profile?.specialization) {
-            return user.profile.specialization;
-        }
-
-        if (user?.specialization) {
-            return user.specialization;
-        }
-
         return '';
+
+    }
+
+
+    function showMessage(element, text, type) {
+
+        if (!element) {
+            return;
+        }
+
+        element.textContent = text;
+
+        element.className =
+            `alert alert-${type}`;
+
+        element.style.display = 'block';
 
     }
 
@@ -281,19 +134,33 @@ if (document.readyState === 'loading') {
     // =====================================================
 
     const form =
-        getElement('management-add-user-form');
+        getElement(
+            'management-add-user-form'
+        );
+
 
     const roleSelect =
-        getElement('management-user-role');
+        getElement(
+            'management-user-role'
+        );
+
 
     const subjectContainer =
-        getElement('management-subject-container');
+        getElement(
+            'management-subject-container'
+        );
+
 
     const classContainer =
-        getElement('management-class-container');
+        getElement(
+            'management-class-container'
+        );
+
 
     const tableBody =
-        getElement('management-users-table-body');
+        getElement(
+            'management-users-table-body'
+        );
 
 
     // =====================================================
@@ -344,8 +211,6 @@ if (document.readyState === 'loading') {
             updateRoleFields
         );
 
-        updateRoleFields();
-
     }
 
 
@@ -356,32 +221,49 @@ if (document.readyState === 'loading') {
     async function loadManagementUsers() {
 
         const loading =
-            getElement('management-users-loading');
+            getElement(
+                'management-users-loading'
+            );
+
 
         const errorBox =
-            getElement('management-users-error');
+            getElement(
+                'management-users-error'
+            );
 
 
         if (loading) {
             loading.style.display = 'block';
         }
 
+
         if (errorBox) {
+
             errorBox.style.display = 'none';
+
             errorBox.textContent = '';
+
         }
 
 
         try {
 
             const searchInput =
-                getElement('management-user-search');
+                getElement(
+                    'management-user-search'
+                );
+
 
             const roleFilter =
-                getElement('management-role-filter');
+                getElement(
+                    'management-role-filter'
+                );
+
 
             const statusFilter =
-                getElement('management-status-filter');
+                getElement(
+                    'management-status-filter'
+                );
 
 
             const search =
@@ -390,71 +272,35 @@ if (document.readyState === 'loading') {
                     : '';
 
 
-            const role =
+            const selectedRole =
                 roleFilter
-                    ? roleFilter.value.trim()
+                    ? roleFilter.value.trim().toLowerCase()
                     : '';
 
 
-            const status =
+            const selectedStatus =
                 statusFilter
-                    ? statusFilter.value.trim()
+                    ? statusFilter.value.trim().toLowerCase()
                     : '';
 
 
-            const params =
-                new URLSearchParams();
-
-
-            if (search) {
-                params.set(
-                    'search',
-                    search
-                );
-            }
-
-
-            if (role) {
-                params.set(
-                    'role',
-                    role
-                );
-            }
-
-
-            // IMPORTANT:
-            // Backend expects status, not active.
-            if (status) {
-                params.set(
-                    'status',
-                    status
-                );
-            }
+            console.log(
+                '[USER MANAGEMENT] Loading from /api/users',
+                {
+                    search,
+                    role: selectedRole,
+                    status: selectedStatus
+                }
+            );
 
 
             const token =
                 getToken();
 
 
-            console.log(
-                '[USER MANAGEMENT] Loading users',
-                {
-                    search,
-                    role,
-                    status
-                }
-            );
-
-
-            const url =
-                params.toString()
-                    ? `${API_URL}?${params.toString()}`
-                    : API_URL;
-
-
             const response =
                 await fetch(
-                    url,
+                    API_URL,
                     {
                         method: 'GET',
 
@@ -482,7 +328,7 @@ if (document.readyState === 'loading') {
 
 
             console.log(
-                '[USER MANAGEMENT] API response:',
+                '[USER MANAGEMENT] /api/users response:',
                 result
             );
 
@@ -497,10 +343,151 @@ if (document.readyState === 'loading') {
             }
 
 
+            /*
+             * /api/users returns:
+             *
+             * [
+             *   {...},
+             *   {...}
+             * ]
+             *
+             * NOT:
+             *
+             * { data: [...] }
+             */
+
+            let users =
+                Array.isArray(result)
+                    ? result
+                    : Array.isArray(result.data)
+                        ? result.data
+                        : [];
+
+
+            console.log(
+                '[USER MANAGEMENT] Raw users:',
+                users.length
+            );
+
+
+            // =================================================
+            // ONLY STUDENTS + TEACHERS
+            // =================================================
+
+            users =
+                users.filter(
+                    user => {
+
+                        const role =
+                            String(
+                                user?.role || ''
+                            )
+                                .toLowerCase()
+                                .trim();
+
+                        return (
+                            role === 'student' ||
+                            role === 'teacher'
+                        );
+
+                    }
+                );
+
+
+            // =================================================
+            // SEARCH
+            // =================================================
+
+            if (search) {
+
+                const searchLower =
+                    search.toLowerCase();
+
+
+                users =
+                    users.filter(
+                        user => {
+
+                            const name =
+                                String(
+                                    user?.name || ''
+                                ).toLowerCase();
+
+
+                            const email =
+                                String(
+                                    user?.email || ''
+                                ).toLowerCase();
+
+
+                            const userClass =
+                                String(
+                                    getClass(user)
+                                ).toLowerCase();
+
+
+                            const subject =
+                                String(
+                                    getSubject(user)
+                                ).toLowerCase();
+
+
+                            return (
+                                name.includes(searchLower) ||
+                                email.includes(searchLower) ||
+                                userClass.includes(searchLower) ||
+                                subject.includes(searchLower)
+                            );
+
+                        }
+                    );
+
+            }
+
+
+            // =================================================
+            // ROLE FILTER
+            // =================================================
+
+            if (
+                selectedRole &&
+                (
+                    selectedRole === 'student' ||
+                    selectedRole === 'teacher'
+                )
+            ) {
+
+                users =
+                    users.filter(
+                        user =>
+                            String(
+                                user?.role || ''
+                            )
+                                .toLowerCase()
+                                .trim() === selectedRole
+                    );
+
+            }
+
+
+            // =================================================
+            // STATUS FILTER
+            // =================================================
+
+            if (selectedStatus) {
+
+                users =
+                    users.filter(
+                        user =>
+                            getStatus(user)
+                                .toLowerCase() === selectedStatus
+                    );
+
+            }
+
+
             managementUsers =
-                Array.isArray(result.data)
-                    ? result.data
-                    : [];
+                users;
 
 
             console.log(
@@ -549,7 +536,7 @@ if (document.readyState === 'loading') {
 
 
     // =====================================================
-    // RENDER USERS
+    // RENDER
     // =====================================================
 
     function renderManagementUsers() {
@@ -584,14 +571,14 @@ if (document.readyState === 'loading') {
         const active =
             managementUsers.filter(
                 user =>
-                    getUserStatus(user) === 'Active'
+                    getStatus(user) === 'Active'
             ).length;
 
 
         const suspended =
             managementUsers.filter(
                 user =>
-                    getUserStatus(user) === 'Suspended'
+                    getStatus(user) === 'Suspended'
             ).length;
 
 
@@ -629,7 +616,7 @@ if (document.readyState === 'loading') {
 
 
         // =================================================
-        // EMPTY STATE
+        // EMPTY
         // =================================================
 
         if (!managementUsers.length) {
@@ -639,6 +626,7 @@ if (document.readyState === 'loading') {
             }
 
             return;
+
         }
 
 
@@ -648,140 +636,172 @@ if (document.readyState === 'loading') {
 
 
         // =================================================
-        // TABLE ROWS
+        // TABLE
         // =================================================
 
-        managementUsers.forEach(user => {
+        managementUsers.forEach(
+            user => {
 
-            const row =
-                document.createElement('tr');
-
-
-            const role =
-                String(user.role || '')
-                    .toLowerCase()
-                    .trim();
+                const row =
+                    document.createElement('tr');
 
 
-            const roleLabel =
-                role === 'teacher'
-                    ? 'Teacher'
-                    : 'Student';
-
-
-            const details =
-                role === 'teacher'
-                    ? (
-                        getUserSubject(user) ||
-                        '—'
+                const role =
+                    String(
+                        user?.role || ''
                     )
-                    : (
-                        getUserClass(user) ||
-                        '—'
+                        .toLowerCase()
+                        .trim();
+
+
+                const roleLabel =
+                    role === 'teacher'
+                        ? 'Teacher'
+                        : 'Student';
+
+
+                const details =
+                    role === 'teacher'
+                        ? (
+                            getSubject(user) ||
+                            '—'
+                        )
+                        : (
+                            getClass(user) ||
+                            '—'
+                        );
+
+
+                const status =
+                    getStatus(user);
+
+
+                const isActive =
+                    status === 'Active';
+
+
+                const userId =
+                    String(
+                        user?._id || ''
                     );
 
 
-            const status =
-                getUserStatus(user);
+                row.innerHTML = `
+
+                    <td>
+                        <strong>
+                            ${escapeHtml(
+                                user?.name || '—'
+                            )}
+                        </strong>
+                    </td>
 
 
-            const isActive =
-                status === 'Active';
-
-
-            const userId =
-                String(user._id || '');
-
-
-            row.innerHTML = `
-
-                <td>
-                    <strong>
+                    <td>
                         ${escapeHtml(
-                            user.name || '—'
+                            user?.email || '—'
                         )}
-                    </strong>
-                </td>
-
-                <td>
-                    ${escapeHtml(
-                        user.email || '—'
-                    )}
-                </td>
-
-                <td>
-                    <span class="badge ${
-                        role === 'teacher'
-                            ? 'bg-info'
-                            : 'bg-primary'
-                    }">
-                        ${roleLabel}
-                    </span>
-                </td>
-
-                <td>
-                    ${escapeHtml(details)}
-                </td>
-
-                <td>
-                    <span class="badge ${
-                        isActive
-                            ? 'bg-success'
-                            : 'bg-danger'
-                    }">
-                        ${status}
-                    </span>
-                </td>
-
-                <td class="text-end">
-
-                    ${
-                        isActive
-
-                        ? `
-
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-warning"
-                                onclick="suspendManagementUser('${userId}')"
-                            >
-                                <i class="fas fa-pause"></i>
-                                Suspend
-                            </button>
-
-                        `
-
-                        : `
-
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-success"
-                                onclick="activateManagementUser('${userId}')"
-                            >
-                                <i class="fas fa-check"></i>
-                                Activate
-                            </button>
-
-                        `
-                    }
-
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-danger"
-                        onclick="deleteManagementUser('${userId}')"
-                        title="Delete user"
-                    >
-                        <i class="fas fa-trash"></i>
-                    </button>
-
-                </td>
-
-            `;
+                    </td>
 
 
-            tableBody.appendChild(row);
+                    <td>
 
-        });
+                        <span class="badge ${
+                            role === 'teacher'
+                                ? 'bg-info'
+                                : 'bg-primary'
+                        }">
+
+                            ${roleLabel}
+
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        ${escapeHtml(
+                            details
+                        )}
+
+                    </td>
+
+
+                    <td>
+
+                        <span class="badge ${
+                            isActive
+                                ? 'bg-success'
+                                : 'bg-danger'
+                        }">
+
+                            ${status}
+
+                        </span>
+
+                    </td>
+
+
+                    <td class="text-end">
+
+                        ${
+                            isActive
+
+                            ? `
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-warning"
+                                    onclick="suspendManagementUser('${userId}')"
+                                >
+
+                                    <i class="fas fa-pause"></i>
+
+                                    Suspend
+
+                                </button>
+
+                            `
+
+                            : `
+
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-success"
+                                    onclick="activateManagementUser('${userId}')"
+                                >
+
+                                    <i class="fas fa-check"></i>
+
+                                    Activate
+
+                                </button>
+
+                            `
+                        }
+
+
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            onclick="deleteManagementUser('${userId}')"
+                            title="Delete user"
+                        >
+
+                            <i class="fas fa-trash"></i>
+
+                        </button>
+
+                    </td>
+
+                `;
+
+
+                tableBody.appendChild(row);
+
+            }
+        );
 
     }
 
@@ -809,7 +829,9 @@ if (document.readyState === 'loading') {
                     roleSelect
                         ? String(
                             roleSelect.value || ''
-                        ).toLowerCase().trim()
+                        )
+                            .toLowerCase()
+                            .trim()
                         : 'student';
 
 
@@ -873,9 +895,9 @@ if (document.readyState === 'loading') {
                         : '';
 
 
-                // -----------------------------------------
-                // CLIENT VALIDATION
-                // -----------------------------------------
+                // =================================================
+                // VALIDATION
+                // =================================================
 
                 if (!name) {
 
@@ -886,6 +908,7 @@ if (document.readyState === 'loading') {
                     );
 
                     return;
+
                 }
 
 
@@ -898,6 +921,7 @@ if (document.readyState === 'loading') {
                     );
 
                     return;
+
                 }
 
 
@@ -910,12 +934,15 @@ if (document.readyState === 'loading') {
                     );
 
                     return;
+
                 }
 
 
                 if (
-                    !['student', 'teacher']
-                        .includes(role)
+                    ![
+                        'student',
+                        'teacher'
+                    ].includes(role)
                 ) {
 
                     showMessage(
@@ -925,37 +952,13 @@ if (document.readyState === 'loading') {
                     );
 
                     return;
+
                 }
 
 
-                const body = {
-
-                    name,
-
-                    email,
-
-                    password,
-
-                    role,
-
-                    subject,
-
-                    studentClass
-
-                };
-
-
-                console.log(
-                    '[USER MANAGEMENT] Creating user:',
-                    {
-                        name,
-                        email,
-                        role,
-                        subject,
-                        studentClass
-                    }
-                );
-
+                // =================================================
+                // CREATE
+                // =================================================
 
                 try {
 
@@ -987,7 +990,37 @@ if (document.readyState === 'loading') {
                                 },
 
                                 body:
-                                    JSON.stringify(body)
+                                    JSON.stringify({
+
+                                        name,
+
+                                        email,
+
+                                        password,
+
+                                        role,
+
+                                        class:
+                                            role === 'student'
+                                                ? studentClass
+                                                : '',
+
+                                        classAssigned:
+                                            role === 'student'
+                                                ? studentClass
+                                                : '',
+
+                                        subject:
+                                            role === 'teacher'
+                                                ? subject
+                                                : '',
+
+                                        specialization:
+                                            role === 'teacher'
+                                                ? subject
+                                                : ''
+
+                                    })
 
                             }
                         );
@@ -1027,7 +1060,6 @@ if (document.readyState === 'loading') {
                     updateRoleFields();
 
 
-                    // Reload table immediately
                     await loadManagementUsers();
 
 
@@ -1055,35 +1087,6 @@ if (document.readyState === 'loading') {
 
 
     // =====================================================
-    // MESSAGE
-    // =====================================================
-
-    function showMessage(
-        element,
-        text,
-        type
-    ) {
-
-        if (!element) {
-            return;
-        }
-
-
-        element.textContent =
-            text;
-
-
-        element.className =
-            `alert alert-${type}`;
-
-
-        element.style.display =
-            'block';
-
-    }
-
-
-    // =====================================================
     // ACTIVATE
     // =====================================================
 
@@ -1091,6 +1094,15 @@ if (document.readyState === 'loading') {
         async function (id) {
 
             if (!id) {
+                return;
+            }
+
+
+            if (
+                !confirm(
+                    'Activate this account?'
+                )
+            ) {
                 return;
             }
 
@@ -1357,7 +1369,7 @@ if (document.readyState === 'loading') {
 
 
     // =====================================================
-    // SEARCH BUTTON
+    // SEARCH
     // =====================================================
 
     const searchButton =
@@ -1370,9 +1382,7 @@ if (document.readyState === 'loading') {
 
         searchButton.addEventListener(
             'click',
-            function () {
-                loadManagementUsers();
-            }
+            loadManagementUsers
         );
 
     }
@@ -1392,9 +1402,7 @@ if (document.readyState === 'loading') {
 
         roleFilter.addEventListener(
             'change',
-            function () {
-                loadManagementUsers();
-            }
+            loadManagementUsers
         );
 
     }
@@ -1414,16 +1422,14 @@ if (document.readyState === 'loading') {
 
         statusFilter.addEventListener(
             'change',
-            function () {
-                loadManagementUsers();
-            }
+            loadManagementUsers
         );
 
     }
 
 
     // =====================================================
-    // REFRESH BUTTON
+    // REFRESH
     // =====================================================
 
     const refreshButton =
@@ -1436,9 +1442,7 @@ if (document.readyState === 'loading') {
 
         refreshButton.addEventListener(
             'click',
-            function () {
-                loadManagementUsers();
-            }
+            loadManagementUsers
         );
 
     }
@@ -1477,13 +1481,13 @@ if (document.readyState === 'loading') {
 
 
     // =====================================================
-    // INITIAL LOAD
+    // INITIALIZE
     // =====================================================
 
     function initializeManagementUsers() {
 
         console.log(
-            '[USER MANAGEMENT] Initializing...'
+            '[USER MANAGEMENT] Initializing using /api/users'
         );
 
 
