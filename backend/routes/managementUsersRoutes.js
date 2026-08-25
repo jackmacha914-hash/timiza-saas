@@ -1,33 +1,69 @@
 const express = require('express');
+
 const router = express.Router();
 
 const {
-  getManagementUsers,
-  createManagementUser,
-  activateManagementUser,
-  suspendManagementUser,
-  deleteManagementUser
+    getSchoolAccounts,
+    createSchoolAccount,
+    activateSchoolAccount,
+    suspendSchoolAccount,
+    deleteSchoolAccount
 } = require('../controllers/schoolAccountController');
 
 
-// Get students + teachers
-router.get('/', getManagementUsers);
+// =====================================================
+// GET SCHOOL ACCOUNTS
+// GET /api/management-users
+// =====================================================
+
+router.get(
+    '/',
+    getSchoolAccounts
+);
 
 
-// Create student / teacher
-router.post('/', createManagementUser);
+// =====================================================
+// CREATE SCHOOL ACCOUNT
+// POST /api/management-users
+// =====================================================
+
+router.post(
+    '/',
+    createSchoolAccount
+);
 
 
-// Activate
-router.patch('/:id/activate', activateManagementUser);
+// =====================================================
+// ACTIVATE ACCOUNT
+// PATCH /api/management-users/:id/activate
+// =====================================================
+
+router.patch(
+    '/:id/activate',
+    activateSchoolAccount
+);
 
 
-// Suspend
-router.patch('/:id/suspend', suspendManagementUser);
+// =====================================================
+// SUSPEND ACCOUNT
+// PATCH /api/management-users/:id/suspend
+// =====================================================
+
+router.patch(
+    '/:id/suspend',
+    suspendSchoolAccount
+);
 
 
-// Delete
-router.delete('/:id', deleteManagementUser);
+// =====================================================
+// DELETE ACCOUNT
+// DELETE /api/management-users/:id
+// =====================================================
+
+router.delete(
+    '/:id',
+    deleteSchoolAccount
+);
 
 
 module.exports = router;
