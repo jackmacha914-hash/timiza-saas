@@ -31,6 +31,82 @@ exports.getSchoolAccounts = async (req, res) => {
             }
         };
 
+        // ROLE
+        if (role) {
+
+            const normalizedRole =
+                String(role).toLowerCase().trim();
+
+            if (
+                ['student', 'teacher'].includes(normalizedRole)
+            ) {
+                filter.role = normalizedRole;
+            }
+        }
+
+        // STATUS
+        if (status) {
+            filter.status = String(status).trim();
+        }
+
+        // SEARCH
+        if (search?.trim()) {
+
+            const searchValue = search.trim();
+
+            filter.$or = [
+                {
+                    name: {
+                        $regex: searchValue,
+                        $options: 'i'
+                    }
+                },
+                {
+                    email: {
+                        $regex: searchValue,
+                        $options: 'i'
+                    }
+                }
+            ];
+        }
+
+        console.log('=================================');
+        console.log('[MANAGEMENT USERS]');
+        console.log('School:', schoolId);
+        console.log('Filter:', filter);
+        console.log('=================================');
+
+        const accounts = await SchoolUser
+            .find(filter)
+            .select('-password')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        console.log(
+            `[MANAGEMENT USERS] Found ${accounts.length} users`
+        );
+
+        return res.json({
+            success: true,
+            count: accounts.length,
+            data: accounts
+        });
+
+    } catch (err) {
+
+        console.error(
+            '[MANAGEMENT USERS] GET ERROR:',
+            err
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to load school accounts',
+            error: err.message
+        });
+    }
+};
+
         // ---------------------------------------------
         // ROLE FILTER
         // ---------------------------------------------
