@@ -24,9 +24,9 @@ exports.getSchoolAccounts = async (req, res) => {
             status
         } = req.query;
 
-        // ---------------------------------------------
+        // -------------------------------------------------
         // BASE FILTER
-        // ---------------------------------------------
+        // -------------------------------------------------
         const filter = {
             school: schoolId,
             role: {
@@ -34,38 +34,39 @@ exports.getSchoolAccounts = async (req, res) => {
             }
         };
 
-        // ---------------------------------------------
+        // -------------------------------------------------
         // ROLE FILTER
-        // ---------------------------------------------
+        // -------------------------------------------------
         if (role) {
 
             const normalizedRole =
                 String(role).toLowerCase().trim();
 
-            if (
-                ['student', 'teacher'].includes(normalizedRole)
-            ) {
+            if (['student', 'teacher'].includes(normalizedRole)) {
                 filter.role = normalizedRole;
             }
         }
 
-        // ---------------------------------------------
+        // -------------------------------------------------
         // STATUS FILTER
-        // ---------------------------------------------
+        // -------------------------------------------------
         if (status) {
 
-            filter.status =
+            const normalizedStatus =
                 String(status).trim();
+
+            if (['Active', 'Suspended'].includes(normalizedStatus)) {
+                filter.status = normalizedStatus;
+            }
         }
 
-        // ---------------------------------------------
-        // SEARCH FILTER
-        // No username
-        // ---------------------------------------------
+        // -------------------------------------------------
+        // SEARCH
+        // Name + Email only
+        // -------------------------------------------------
         if (search?.trim()) {
 
-            const searchValue =
-                search.trim();
+            const searchValue = search.trim();
 
             filter.$or = [
                 {
@@ -90,32 +91,17 @@ exports.getSchoolAccounts = async (req, res) => {
         console.log('[SCHOOL ACCOUNTS] Filter:', filter);
         console.log('=================================');
 
-        // ---------------------------------------------
+        // -------------------------------------------------
         // GET ACCOUNTS
-        // ---------------------------------------------
-        const accounts =
-            await SchoolAccount
-                .find(filter)
-                .select('-password')
-                .sort({ createdAt: -1 })
-                .lean();
+        // -------------------------------------------------
+        const accounts = await SchoolAccount
+            .find(filter)
+            .select('-password')
+            .sort({ createdAt: -1 })
+            .lean();
 
         console.log(
             `[SCHOOL ACCOUNTS] Found ${accounts.length} accounts`
-        );
-
-        console.log(
-            '[SCHOOL ACCOUNTS] Users:',
-            accounts.map(account => ({
-                id: account._id,
-                name: account.name,
-                email: account.email,
-                role: account.role,
-                studentClass: account.studentClass,
-                subject: account.subject,
-                status: account.status,
-                school: account.school
-            }))
         );
 
         return res.json({
@@ -166,15 +152,10 @@ exports.createSchoolAccount = async (req, res) => {
             studentClass
         } = req.body;
 
-        // ---------------------------------------------
+        // -------------------------------------------------
         // VALIDATION
-        // ---------------------------------------------
-        if (
-            !name ||
-            !email ||
-            !password ||
-            !role
-        ) {
+        // -------------------------------------------------
+        if (!name || !email || !password || !role) {
             return res.status(400).json({
                 success: false,
                 message:
@@ -185,13 +166,10 @@ exports.createSchoolAccount = async (req, res) => {
         const normalizedRole =
             String(role).toLowerCase().trim();
 
-        // ---------------------------------------------
-        // ONLY STUDENT / TEACHER
-        // ---------------------------------------------
-        if (
-            !['student', 'teacher']
-                .includes(normalizedRole)
-        ) {
+        // -------------------------------------------------
+        // ONLY STUDENTS AND TEACHERS
+        // -------------------------------------------------
+        if (!['student', 'teacher'].includes(normalizedRole)) {
             return res.status(400).json({
                 success: false,
                 message:
@@ -202,9 +180,10 @@ exports.createSchoolAccount = async (req, res) => {
         const normalizedEmail =
             email.toLowerCase().trim();
 
-        // ---------------------------------------------
+        // -------------------------------------------------
         // CHECK EXISTING ACCOUNT
-        // ---------------------------------------------
+        // CURRENT SCHOOL ONLY
+        // -------------------------------------------------
         const existing =
             await SchoolAccount.findOne({
                 school: schoolId,
@@ -219,15 +198,15 @@ exports.createSchoolAccount = async (req, res) => {
             });
         }
 
-        // ---------------------------------------------
+        // -------------------------------------------------
         // HASH PASSWORD
-        // ---------------------------------------------
+        // -------------------------------------------------
         const hashedPassword =
             await bcrypt.hash(password, 10);
 
-        // ---------------------------------------------
+        // -------------------------------------------------
         // CREATE ACCOUNT
-        // ---------------------------------------------
+        // -------------------------------------------------
         const account =
             new SchoolAccount({
 
@@ -243,12 +222,12 @@ exports.createSchoolAccount = async (req, res) => {
 
                 subject:
                     normalizedRole === 'teacher'
-                        ? subject || ''
+                        ? (subject || '').trim()
                         : '',
 
                 studentClass:
                     normalizedRole === 'student'
-                        ? studentClass || ''
+                        ? (studentClass || '').trim()
                         : '',
 
                 status: 'Active'
