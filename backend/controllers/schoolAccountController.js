@@ -3,23 +3,71 @@ const User = require('../models/User');
 
 
 // =====================================================
-// COMMON SCHOOL / ROLE FILTER
+// HELPERS
 // =====================================================
 
 function getSchoolId(req) {
-    return req.user?.school;
+    return req.user?.school || req.user?.schoolId || null;
 }
 
-function allowedRoles() {
-    return ['student', 'teacher'];
+function normalizeRole(role) {
+    return String(role || '').toLowerCase().trim();
+}
+
+function normalizeStatus(user) {
+    // Existing User model does not appear to have
+    // a status field, so treat users as Active unless
+    // explicitly marked suspended/inactive.
+    const value = String(user.status || '').toLowerCase().trim();
+
+    if (
+        value === 'suspended' ||
+        value === 'inactive' ||
+        value === 'disabled'
+    ) {
+        return 'Suspended';
+    }
+
+    return 'Active';
+}
+
+function serializeUser(user) {
+    const role = normalizeRole(user.role);
+
+    return {
+        _id: user._id,
+        name: user.name || '',
+        email: user.email || '',
+        role,
+
+        // Student
+        studentClass:
+            user.studentClass ||
+            user.classAssigned ||
+            user.class ||
+            '',
+
+        // Teacher
+        subject:
+            user.subject ||
+            user.profile?.specialization ||
+            user.specialization ||
+            '',
+
+        status: normalizeStatus(user),
+
+        school: user.school,
+
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+    };
 }
 
 
 // =====================================================
 // GET SCHOOL ACCOUNTS
-// Uses existing User model
+// Existing User model
 // Students + Teachers only
-// NO USERNAME
 // =====================================================
 
 exports.getSchoolAccounts = async (req, res) => {
@@ -49,13 +97,11 @@ exports.getSchoolAccounts = async (req, res) => {
         // ---------------------------------------------
 
         const filter = {
-
             school: schoolId,
 
             role: {
-                $in: allowedRoles()
+                $in: ['student', 'teacher']
             }
-
         };
 
 
@@ -66,35 +112,30 @@ exports.getSchoolAccounts = async (req, res) => {
         if (role) {
 
             const normalizedRole =
-                String(role)
-                    .toLowerCase()
-                    .trim();
+                normalizeRole(role);
 
             if (
-                allowedRoles().includes(normalizedRole)
+                ['student', 'teacher']
+                    .includes(normalizedRole)
             ) {
 
                 filter.role =
                     normalizedRole;
 
             }
-
         }
 
 
         // ---------------------------------------------
         // STATUS FILTER
-        //
-        // Existing User records may not have status.
-        // Only apply status when explicitly requested.
         // ---------------------------------------------
 
         if (status) {
 
             const normalizedStatus =
                 String(status)
-                    .trim()
-                    .toLowerCase();
+                    .toLowerCase()
+                    .trim();
 
             if (
                 normalizedStatus === 'active'
@@ -105,12 +146,12 @@ exports.getSchoolAccounts = async (req, res) => {
                         status: 'Active'
                     },
                     {
-                        status: 'active'
-                    },
-                    {
                         status: {
                             $exists: false
                         }
+                    },
+                    {
+                        status: null
                     }
                 ];
 
@@ -118,24 +159,20 @@ exports.getSchoolAccounts = async (req, res) => {
                 normalizedStatus === 'suspended'
             ) {
 
-                filter.$or = [
-                    {
-                        status: 'Suspended'
-                    },
-                    {
-                        status: 'suspended'
-                    }
-                ];
-
+                filter.status = {
+                    $in: [
+                        'Suspended',
+                        'suspended',
+                        'Inactive',
+                        'inactive'
+                    ]
+                };
             }
-
         }
 
 
         // ---------------------------------------------
         // SEARCH
-        // Name + Email ONLY
-        // NO USERNAME
         // ---------------------------------------------
 
         if (search?.trim()) {
@@ -144,43 +181,36 @@ exports.getSchoolAccounts = async (req, res) => {
                 search.trim();
 
             const searchFilter = [
-
                 {
                     name: {
                         $regex: searchValue,
                         $options: 'i'
                     }
                 },
-
                 {
                     email: {
                         $regex: searchValue,
                         $options: 'i'
                     }
                 }
-
             ];
 
-
             // If status already created $or,
-            // combine filters safely.
+            // combine everything safely.
             if (filter.$or) {
 
-                const statusFilter =
+                const existingStatusFilter =
                     filter.$or;
 
                 delete filter.$or;
 
                 filter.$and = [
-
                     {
-                        $or: statusFilter
+                        $or: existingStatusFilter
                     },
-
                     {
                         $or: searchFilter
                     }
-
                 ];
 
             } else {
@@ -189,48 +219,35 @@ exports.getSchoolAccounts = async (req, res) => {
                     searchFilter;
 
             }
-
         }
 
-
-        // ---------------------------------------------
-        // DEBUG
-        // ---------------------------------------------
 
         console.log(
             '================================='
         );
 
         console.log(
-            '[USER MANAGEMENT] GET USERS'
+            '[MANAGEMENT USERS] GET'
         );
 
         console.log(
-            '[USER MANAGEMENT] School:',
+            '[MANAGEMENT USERS] School:',
             schoolId
         );
 
         console.log(
-            '[USER MANAGEMENT] Query:',
+            '[MANAGEMENT USERS] Query:',
             req.query
         );
 
         console.log(
-            '[USER MANAGEMENT] Filter:',
-            JSON.stringify(
-                filter,
-                null,
-                2
-            )
-        );
-
-        console.log(
-            '================================='
+            '[MANAGEMENT USERS] Filter:',
+            JSON.stringify(filter)
         );
 
 
         // ---------------------------------------------
-        // GET EXISTING USERS
+        // QUERY EXISTING USER COLLECTION
         // ---------------------------------------------
 
         const users =
@@ -243,115 +260,16 @@ exports.getSchoolAccounts = async (req, res) => {
                 .lean();
 
 
-        // ---------------------------------------------
-        // NORMALIZE RESPONSE
-        //
-        // Your existing User model uses:
-        //
-        // student:
-        //   class
-        //   classAssigned
-        //
-        // teacher:
-        //   profile.specialization
-        //
-        // User Management expects:
-        //   studentClass
-        //   subject
-        //   status
-        // ---------------------------------------------
-
         const accounts =
-            users.map(user => {
-
-                const role =
-                    String(
-                        user.role || ''
-                    ).toLowerCase();
-
-
-                const isSuspended =
-                    String(
-                        user.status || ''
-                    ).toLowerCase()
-                    === 'suspended';
-
-
-                return {
-
-                    _id: user._id,
-
-                    name: user.name || '',
-
-                    email: user.email || '',
-
-                    role: role,
-
-                    studentClass:
-                        role === 'student'
-                            ? (
-                                user.studentClass ||
-                                user.class ||
-                                user.classAssigned ||
-                                ''
-                            )
-                            : '',
-
-                    subject:
-                        role === 'teacher'
-                            ? (
-                                user.subject ||
-                                user.specialization ||
-                                user.profile?.specialization ||
-                                ''
-                            )
-                            : '',
-
-                    status:
-                        isSuspended
-                            ? 'Suspended'
-                            : 'Active',
-
-                    school: user.school,
-
-                    createdAt:
-                        user.createdAt,
-
-                    updatedAt:
-                        user.updatedAt
-
-                };
-
-            });
+            users.map(
+                serializeUser
+            );
 
 
         console.log(
-            `[USER MANAGEMENT] Found ${accounts.length} users`
+            `[MANAGEMENT USERS] Found ${accounts.length}`
         );
 
-
-        console.log(
-            '[USER MANAGEMENT] Users:',
-            accounts.map(user => ({
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                studentClass:
-                    user.studentClass,
-                subject:
-                    user.subject,
-                status:
-                    user.status,
-                school:
-                    user.school
-            }))
-        );
-
-
-        // ---------------------------------------------
-        // RESPONSE
-        // ---------------------------------------------
 
         return res.json({
 
@@ -365,11 +283,10 @@ exports.getSchoolAccounts = async (req, res) => {
 
         });
 
-
     } catch (err) {
 
         console.error(
-            '[USER MANAGEMENT] GET ERROR:',
+            '[MANAGEMENT USERS] GET ERROR:',
             err
         );
 
@@ -378,28 +295,22 @@ exports.getSchoolAccounts = async (req, res) => {
             success: false,
 
             message:
-                'Failed to load school accounts',
+                'Failed to load school users',
 
             error:
                 err.message
 
         });
-
     }
-
 };
 
 
-
 // =====================================================
-// CREATE SCHOOL ACCOUNT
-// Uses existing User model
+// CREATE SCHOOL USER
+// Existing User model
 // =====================================================
 
-exports.createSchoolAccount = async (
-    req,
-    res
-) => {
+exports.createSchoolAccount = async (req, res) => {
 
     try {
 
@@ -410,12 +321,8 @@ exports.createSchoolAccount = async (
         if (!schoolId) {
 
             return res.status(403).json({
-
                 success: false,
-
-                message:
-                    'School not found'
-
+                message: 'School not found'
             });
 
         }
@@ -455,13 +362,11 @@ exports.createSchoolAccount = async (
 
 
         const normalizedRole =
-            String(role)
-                .toLowerCase()
-                .trim();
+            normalizeRole(role);
 
 
         if (
-            !allowedRoles()
+            !['student', 'teacher']
                 .includes(normalizedRole)
         ) {
 
@@ -478,21 +383,19 @@ exports.createSchoolAccount = async (
 
 
         const normalizedEmail =
-            email
+            String(email)
                 .toLowerCase()
                 .trim();
 
 
         // ---------------------------------------------
         // CHECK EXISTING USER
-        // CURRENT SCHOOL ONLY
         // ---------------------------------------------
 
         const existing =
             await User.findOne({
 
-                school:
-                    schoolId,
+                school: schoolId,
 
                 email:
                     normalizedEmail
@@ -526,7 +429,7 @@ exports.createSchoolAccount = async (
 
 
         // ---------------------------------------------
-        // BUILD USER
+        // CREATE USER
         // ---------------------------------------------
 
         const userData = {
@@ -547,134 +450,81 @@ exports.createSchoolAccount = async (
                 normalizedRole,
 
             status:
-                'Active'
+                'Active',
+
+            class:
+                normalizedRole === 'student'
+                    ? (studentClass || '')
+                    : '',
+
+            classAssigned:
+                normalizedRole === 'student'
+                    ? (studentClass || '')
+                    : '',
+
+            profile: {
+
+                health: {
+                    allergies: [],
+                    medicalConditions: [],
+                    medications: []
+                },
+
+                class:
+                    normalizedRole === 'student'
+                        ? (studentClass || '')
+                        : '',
+
+                subjects:
+                    normalizedRole === 'teacher'
+                        ? (
+                            subject
+                                ? [subject]
+                                : []
+                        )
+                        : []
+            }
 
         };
 
 
-        // ---------------------------------------------
-        // STUDENT
-        // ---------------------------------------------
-
-        if (
-            normalizedRole === 'student'
-        ) {
-
-            userData.class =
-                studentClass || '';
-
-            userData.classAssigned =
-                studentClass || '';
-
-        }
-
-
-        // ---------------------------------------------
-        // TEACHER
-        // ---------------------------------------------
-
-        if (
-            normalizedRole === 'teacher'
-        ) {
-
-            userData.profile = {
-
-                specialization:
-                    subject || '',
-
-                class:
-                    '',
-
-                subjects:
-                    []
-
-            };
-
-        }
-
-
-        // ---------------------------------------------
-        // CREATE
-        // ---------------------------------------------
-
-        const account =
+        const user =
             new User(userData);
 
 
-        await account.save();
+        await user.save();
 
 
         console.log(
-            '[USER MANAGEMENT] Created:',
+            '[MANAGEMENT USERS] CREATED:',
             {
-                id:
-                    account._id,
-
-                name:
-                    account.name,
-
-                email:
-                    account.email,
-
-                role:
-                    account.role,
-
-                school:
-                    account.school
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                school: user.school
             }
         );
 
-
-        // ---------------------------------------------
-        // RESPONSE
-        // ---------------------------------------------
 
         return res.status(201).json({
 
             success: true,
 
             message:
-                'School account created successfully',
+                'User created successfully',
 
-            data: {
-
-                _id:
-                    account._id,
-
-                name:
-                    account.name,
-
-                email:
-                    account.email,
-
-                role:
-                    account.role,
-
-                studentClass:
-                    account.class ||
-                    account.classAssigned ||
-                    '',
-
-                subject:
-                    account.profile?.specialization ||
-                    '',
-
-                status:
-                    account.status ||
-                    'Active',
-
-                school:
-                    account.school
-
-            }
+            data:
+                serializeUser(
+                    user.toObject()
+                )
 
         });
-
 
     } catch (err) {
 
         console.error(
-            '[USER MANAGEMENT] CREATE ERROR:',
+            '[MANAGEMENT USERS] CREATE ERROR:',
             err
         );
 
@@ -683,7 +533,7 @@ exports.createSchoolAccount = async (
             success: false,
 
             message:
-                'Failed to create account',
+                'Failed to create user',
 
             error:
                 err.message
@@ -691,20 +541,15 @@ exports.createSchoolAccount = async (
         });
 
     }
-
 };
 
 
-
 // =====================================================
-// ACTIVATE
+// ACTIVATE USER
 // =====================================================
 
 exports.activateSchoolAccount =
-async (
-    req,
-    res
-) => {
+async (req, res) => {
 
     try {
 
@@ -715,22 +560,17 @@ async (
         if (!schoolId) {
 
             return res.status(403).json({
-
                 success: false,
-
-                message:
-                    'School not found'
-
+                message: 'School not found'
             });
 
         }
 
 
-        const account =
+        const user =
             await User.findOneAndUpdate(
 
                 {
-
                     _id:
                         req.params.id,
 
@@ -738,26 +578,22 @@ async (
                         schoolId,
 
                     role: {
-                        $in:
-                            allowedRoles()
+                        $in: [
+                            'student',
+                            'teacher'
+                        ]
                     }
-
                 },
 
                 {
-
                     $set: {
                         status:
                             'Active'
                     }
-
                 },
 
                 {
-
-                    new:
-                        true
-
+                    new: true
                 }
 
             )
@@ -765,14 +601,14 @@ async (
             .lean();
 
 
-        if (!account) {
+        if (!user) {
 
             return res.status(404).json({
 
                 success: false,
 
                 message:
-                    'School account not found'
+                    'User not found'
 
             });
 
@@ -781,29 +617,26 @@ async (
 
         return res.json({
 
-            success:
-                true,
+            success: true,
 
             message:
                 'Account activated',
 
             data:
-                account
+                serializeUser(user)
 
         });
-
 
     } catch (err) {
 
         console.error(
-            '[USER MANAGEMENT] ACTIVATE ERROR:',
+            '[MANAGEMENT USERS] ACTIVATE ERROR:',
             err
         );
 
         return res.status(500).json({
 
-            success:
-                false,
+            success: false,
 
             message:
                 'Failed to activate account',
@@ -814,20 +647,15 @@ async (
         });
 
     }
-
 };
 
 
-
 // =====================================================
-// SUSPEND
+// SUSPEND USER
 // =====================================================
 
 exports.suspendSchoolAccount =
-async (
-    req,
-    res
-) => {
+async (req, res) => {
 
     try {
 
@@ -838,23 +666,17 @@ async (
         if (!schoolId) {
 
             return res.status(403).json({
-
-                success:
-                    false,
-
-                message:
-                    'School not found'
-
+                success: false,
+                message: 'School not found'
             });
 
         }
 
 
-        const account =
+        const user =
             await User.findOneAndUpdate(
 
                 {
-
                     _id:
                         req.params.id,
 
@@ -862,26 +684,22 @@ async (
                         schoolId,
 
                     role: {
-                        $in:
-                            allowedRoles()
+                        $in: [
+                            'student',
+                            'teacher'
+                        ]
                     }
-
                 },
 
                 {
-
                     $set: {
                         status:
                             'Suspended'
                     }
-
                 },
 
                 {
-
-                    new:
-                        true
-
+                    new: true
                 }
 
             )
@@ -889,15 +707,14 @@ async (
             .lean();
 
 
-        if (!account) {
+        if (!user) {
 
             return res.status(404).json({
 
-                success:
-                    false,
+                success: false,
 
                 message:
-                    'School account not found'
+                    'User not found'
 
             });
 
@@ -906,29 +723,26 @@ async (
 
         return res.json({
 
-            success:
-                true,
+            success: true,
 
             message:
                 'Account suspended',
 
             data:
-                account
+                serializeUser(user)
 
         });
-
 
     } catch (err) {
 
         console.error(
-            '[USER MANAGEMENT] SUSPEND ERROR:',
+            '[MANAGEMENT USERS] SUSPEND ERROR:',
             err
         );
 
         return res.status(500).json({
 
-            success:
-                false,
+            success: false,
 
             message:
                 'Failed to suspend account',
@@ -939,20 +753,15 @@ async (
         });
 
     }
-
 };
 
 
-
 // =====================================================
-// DELETE
+// DELETE USER
 // =====================================================
 
 exports.deleteSchoolAccount =
-async (
-    req,
-    res
-) => {
+async (req, res) => {
 
     try {
 
@@ -963,19 +772,14 @@ async (
         if (!schoolId) {
 
             return res.status(403).json({
-
-                success:
-                    false,
-
-                message:
-                    'School not found'
-
+                success: false,
+                message: 'School not found'
             });
 
         }
 
 
-        const account =
+        const user =
             await User.findOneAndDelete({
 
                 _id:
@@ -985,53 +789,57 @@ async (
                     schoolId,
 
                 role: {
-                    $in:
-                        allowedRoles()
+                    $in: [
+                        'student',
+                        'teacher'
+                    ]
                 }
 
             });
 
 
-        if (!account) {
+        if (!user) {
 
             return res.status(404).json({
 
-                success:
-                    false,
+                success: false,
 
                 message:
-                    'School account not found'
+                    'User not found'
 
             });
 
         }
 
 
+        console.log(
+            '[MANAGEMENT USERS] DELETED:',
+            user._id
+        );
+
+
         return res.json({
 
-            success:
-                true,
+            success: true,
 
             message:
-                'Account deleted successfully'
+                'User deleted successfully'
 
         });
-
 
     } catch (err) {
 
         console.error(
-            '[USER MANAGEMENT] DELETE ERROR:',
+            '[MANAGEMENT USERS] DELETE ERROR:',
             err
         );
 
         return res.status(500).json({
 
-            success:
-                false,
+            success: false,
 
             message:
-                'Failed to delete account',
+                'Failed to delete user',
 
             error:
                 err.message
@@ -1039,5 +847,4 @@ async (
         });
 
     }
-
 };
