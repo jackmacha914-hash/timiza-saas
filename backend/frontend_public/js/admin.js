@@ -1,14 +1,192 @@
+(function() {
+// Admin User Management - Initialize DOM elements safely
+function getElementSafely(id, context = document) {
+    const element = context.getElementById ? context.getElementById(id) : null;
+    if (!element) {
+        console.warn(`Element with ID '${id}' not found`);
+    }
+    return element;
+}
+
+// Main UI Elements
+const elements = {
+    // Export button
+    userExportBtn: getElementSafely('export-users-btn'),
+    // Forms and Tables
+    addUserForm: getElementSafely('add-user-form'),
+    userAddMsg: getElementSafely('user-add-msg'),
+    userTableBody: document.querySelector('#user-table tbody'),
+    userSearch: getElementSafely('user-search'),
+    usersBulkToolbar: getElementSafely('users-bulk-toolbar'),
+    usersBulkDelete: getElementSafely('users-bulk-delete'),
+    usersBulkExport: getElementSafely('users-bulk-export'),
+    selectAllUsers: getElementSafely('select-all-users'),
+    userRoleFilter: getElementSafely('user-role-filter'),
+    userStatusFilter: getElementSafely('user-status-filter'),
+    
+    // Edit Form Elements
+    editUserId: getElementSafely('edit-user-id'),
+    editName: getElementSafely('edit-user-name'),
+    editEmail: getElementSafely('edit-user-email'),
+    editUsername: getElementSafely('edit-user-username'),
+    editRole: getElementSafely('edit-user-role'),
+    
+    // Modals
+    modals: {
+        edit: {
+            modal: getElementSafely('user-edit-modal'),
+            closeBtn: getElementSafely('close-user-edit-modal'),
+            form: getElementSafely('user-edit-form'),
+            msg: getElementSafely('user-edit-msg')
+        },
+        confirm: {
+            modal: getElementSafely('universal-confirm-modal'),
+            closeBtn: getElementSafely('close-universal-confirm-modal'),
+            title: getElementSafely('universal-confirm-title'),
+            message: getElementSafely('universal-confirm-message'),
+            yesBtn: getElementSafely('universal-confirm-yes'),
+            noBtn: getElementSafely('universal-confirm-no')
+        }
+    }
+};
+
+// Initialize modals
+function initializeModals() {
+    // Close modal buttons
+    if (elements.modals.edit.closeBtn && elements.modals.edit.modal) {
+        elements.modals.edit.closeBtn.onclick = () => closeModal('edit');
+    }
+    
+    if (elements.modals.confirm.closeBtn && elements.modals.confirm.modal) {
+        elements.modals.confirm.closeBtn.onclick = () => closeModal('confirm');
+    }
+    
+    // Close modals when clicking outside
+    document.addEventListener('click', (event) => {
+        if (event.target.classList.contains('modal')) {
+            const modal = event.target;
+            const modalType = Object.keys(elements.modals).find(
+                key => elements.modals[key].modal === modal
+            );
+            if (modalType) {
+                closeModal(modalType);
+            }
+        }
+    });
+}
+
+// Open modal function
+function openModal(modalType) {
+    const modal = elements.modals[modalType]?.modal;
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Close modal function
+function closeModal(modalType) {
+    const modal = elements.modals[modalType]?.modal;
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+// Initialize the page
+function initializeAdminPage() {
+    // Initialize modals
+    initializeModals();
+    
+    // Initialize event listeners
+    if (elements.userSearch) {
+        elements.userSearch.addEventListener('input', debounce(loadUsersWithFilters, 300));
+    }
+    
+    if (elements.userRoleFilter) {
+        elements.userRoleFilter.addEventListener('change', loadUsersWithFilters);
+    }
+    
+    if (elements.userStatusFilter) {
+        elements.userStatusFilter.addEventListener('change', loadUsersWithFilters);
+    }
+    
+    // Initialize bulk actions
+    if (elements.usersBulkDelete) {
+        elements.usersBulkDelete.addEventListener('click', handleBulkDelete);
+    }
+    
+    if (elements.usersBulkExport) {
+        elements.usersBulkExport.addEventListener('click', handleBulkExport);
+    }
+    
+    // Load initial data
+    loadUsersWithFilters();
+}
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function() {
+        const context = this, args = arguments;
+        const later = function() {
+            timeout = null;
+            func.apply(context, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Load users with filters
+async function loadUsersWithFilters() {
+    try {
+        // TODO: Implement user filtering logic
+        console.log('Loading users with filters...');
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+// Handle bulk delete action
+async function handleBulkDelete() {
+    try {
+        // TODO: Implement bulk delete logic
+        console.log('Bulk delete clicked');
+    } catch (error) {
+        console.error('Error in bulk delete:', error);
+    }
+}
+
+// Handle bulk export action
+async function handleBulkExport() {
+    try {
+        // TODO: Implement bulk export logic
+        console.log('Bulk export clicked');
+    } catch (error) {
+        console.error('Error in bulk export:', error);
+    }
+}
+
+// Initialize the page when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAdminPage);
+} else {
+    initializeAdminPage();
+}
+})(); // Close the IIFE
+
 // =====================================================
-// SCHOOL USER MANAGEMENT - SAAS USER SOURCE
+// SCHOOL USER MANAGEMENT
 // Students + Teachers
-// SOURCE OF TRUTH: /api/users
+// Uses existing User model via /api/management-users
 // =====================================================
 
 (function () {
 
     'use strict';
 
-    const API_URL = '/api/users';
+    const API_URL = '/api/management-users';
 
     let managementUsers = [];
 
@@ -19,11 +197,6 @@
 
     function getToken() {
         return localStorage.getItem('token') || '';
-    }
-
-
-    function getElement(id) {
-        return document.getElementById(id);
     }
 
 
@@ -39,38 +212,21 @@
     }
 
 
-    function getUserRole(user) {
-
-        return String(
-            user?.role ||
-            user?.userRole ||
-            ''
-        )
-            .trim()
-            .toLowerCase();
-
+    function getElement(id) {
+        return document.getElementById(id);
     }
 
 
     function getUserStatus(user) {
 
-        const status = String(
-            user?.status ??
-            (user?.active === false ? 'suspended' : 'active')
-        )
-            .trim()
-            .toLowerCase();
+        const status =
+            String(user?.status || 'Active')
+                .trim()
+                .toLowerCase();
 
-        if (
-            status === 'suspended' ||
-            status === 'inactive' ||
-            status === 'disabled'
-        ) {
-            return 'Suspended';
-        }
-
-        return 'Active';
-
+        return status === 'suspended'
+            ? 'Suspended'
+            : 'Active';
     }
 
 
@@ -79,10 +235,7 @@
         return (
             user?.studentClass ||
             user?.classAssigned ||
-            user?.className ||
             user?.class ||
-            user?.profile?.studentClass ||
-            user?.profile?.classAssigned ||
             user?.profile?.class ||
             ''
         );
@@ -96,14 +249,12 @@
             return user.subject;
         }
 
-
         if (
             Array.isArray(user?.subjects) &&
             user.subjects.length
         ) {
             return user.subjects.join(', ');
         }
-
 
         if (
             Array.isArray(user?.profile?.subjects) &&
@@ -112,30 +263,15 @@
             return user.profile.subjects.join(', ');
         }
 
-
         if (user?.profile?.specialization) {
             return user.profile.specialization;
         }
-
 
         if (user?.specialization) {
             return user.specialization;
         }
 
-
         return '';
-
-    }
-
-
-    function getUserId(user) {
-
-        return String(
-            user?._id ||
-            user?.id ||
-            user?.userId ||
-            ''
-        );
 
     }
 
@@ -170,11 +306,10 @@
             return;
         }
 
-
         const role =
             String(roleSelect.value || '')
-                .trim()
-                .toLowerCase();
+                .toLowerCase()
+                .trim();
 
 
         if (role === 'teacher') {
@@ -209,11 +344,13 @@
             updateRoleFields
         );
 
+        updateRoleFields();
+
     }
 
 
     // =====================================================
-    // LOAD SAAS USERS
+    // LOAD USERS
     // =====================================================
 
     async function loadManagementUsers() {
@@ -229,12 +366,9 @@
             loading.style.display = 'block';
         }
 
-
         if (errorBox) {
-
             errorBox.style.display = 'none';
             errorBox.textContent = '';
-
         }
 
 
@@ -252,20 +386,50 @@
 
             const search =
                 searchInput
-                    ? searchInput.value.trim().toLowerCase()
+                    ? searchInput.value.trim()
                     : '';
 
 
-            const selectedRole =
+            const role =
                 roleFilter
-                    ? roleFilter.value.trim().toLowerCase()
+                    ? roleFilter.value.trim()
                     : '';
 
 
-            const selectedStatus =
+            const status =
                 statusFilter
-                    ? statusFilter.value.trim().toLowerCase()
+                    ? statusFilter.value.trim()
                     : '';
+
+
+            const params =
+                new URLSearchParams();
+
+
+            if (search) {
+                params.set(
+                    'search',
+                    search
+                );
+            }
+
+
+            if (role) {
+                params.set(
+                    'role',
+                    role
+                );
+            }
+
+
+            // IMPORTANT:
+            // Backend expects status, not active.
+            if (status) {
+                params.set(
+                    'status',
+                    status
+                );
+            }
 
 
             const token =
@@ -273,13 +437,24 @@
 
 
             console.log(
-                '[USER MANAGEMENT] Loading SaaS users from /api/users'
+                '[USER MANAGEMENT] Loading users',
+                {
+                    search,
+                    role,
+                    status
+                }
             );
+
+
+            const url =
+                params.toString()
+                    ? `${API_URL}?${params.toString()}`
+                    : API_URL;
 
 
             const response =
                 await fetch(
-                    API_URL,
+                    url,
                     {
                         method: 'GET',
 
@@ -307,7 +482,7 @@
 
 
             console.log(
-                '[USER MANAGEMENT] /api/users response:',
+                '[USER MANAGEMENT] API response:',
                 result
             );
 
@@ -315,160 +490,23 @@
             if (!response.ok) {
 
                 throw new Error(
-                    result?.message ||
+                    result.message ||
                     'Failed to load users'
                 );
 
             }
 
 
-            // -------------------------------------------------
-            // SUPPORT THE COMMON /api/users RESPONSE SHAPES
-            // -------------------------------------------------
-
-            let rawUsers = [];
-
-
-            if (Array.isArray(result)) {
-
-                rawUsers = result;
-
-            } else if (
-                Array.isArray(result?.data)
-            ) {
-
-                rawUsers = result.data;
-
-            } else if (
-                Array.isArray(result?.users)
-            ) {
-
-                rawUsers = result.users;
-
-            } else if (
-                Array.isArray(result?.data?.users)
-            ) {
-
-                rawUsers = result.data.users;
-
-            }
-
-
-            console.log(
-                '[USER MANAGEMENT] Raw SaaS users:',
-                rawUsers.length
-            );
-
-
-            // -------------------------------------------------
-            // IMPORTANT:
-            // SaaS /api/users contains ALL users.
-            //
-            // Only Students + Teachers belong in this table.
-            // -------------------------------------------------
-
-            let filteredUsers =
-                rawUsers.filter(function (user) {
-
-                    const role =
-                        getUserRole(user);
-
-                    return (
-                        role === 'student' ||
-                        role === 'teacher'
-                    );
-
-                });
-
-
-            console.log(
-                '[USER MANAGEMENT] Students + Teachers loaded:',
-                filteredUsers.length
-            );
-
-
-            // -------------------------------------------------
-            // CLIENT-SIDE SEARCH
-            // -------------------------------------------------
-
-            if (search) {
-
-                filteredUsers =
-                    filteredUsers.filter(function (user) {
-
-                        const name =
-                            String(
-                                user?.name || ''
-                            ).toLowerCase();
-
-                        const email =
-                            String(
-                                user?.email || ''
-                            ).toLowerCase();
-
-                        const username =
-                            String(
-                                user?.username || ''
-                            ).toLowerCase();
-
-                        return (
-                            name.includes(search) ||
-                            email.includes(search) ||
-                            username.includes(search)
-                        );
-
-                    });
-
-            }
-
-
-            // -------------------------------------------------
-            // ROLE FILTER
-            // -------------------------------------------------
-
-            if (
-                selectedRole &&
-                selectedRole !== 'all'
-            ) {
-
-                filteredUsers =
-                    filteredUsers.filter(function (user) {
-
-                        return (
-                            getUserRole(user) ===
-                            selectedRole
-                        );
-
-                    });
-
-            }
-
-
-            // -------------------------------------------------
-            // STATUS FILTER
-            // -------------------------------------------------
-
-            if (
-                selectedStatus &&
-                selectedStatus !== 'all'
-            ) {
-
-                filteredUsers =
-                    filteredUsers.filter(function (user) {
-
-                        return (
-                            getUserStatus(user)
-                                .toLowerCase() ===
-                            selectedStatus
-                        );
-
-                    });
-
-            }
-
-
             managementUsers =
-                filteredUsers;
+                Array.isArray(result.data)
+                    ? result.data
+                    : [];
+
+
+            console.log(
+                '[USER MANAGEMENT] Users loaded:',
+                managementUsers.length
+            );
 
 
             renderManagementUsers();
@@ -523,7 +561,6 @@
             );
 
             return;
-
         }
 
 
@@ -545,23 +582,17 @@
 
 
         const active =
-            managementUsers.filter(function (user) {
-
-                return (
+            managementUsers.filter(
+                user =>
                     getUserStatus(user) === 'Active'
-                );
-
-            }).length;
+            ).length;
 
 
         const suspended =
-            managementUsers.filter(function (user) {
-
-                return (
+            managementUsers.filter(
+                user =>
                     getUserStatus(user) === 'Suspended'
-                );
-
-            }).length;
+            ).length;
 
 
         const totalElement =
@@ -598,7 +629,7 @@
 
 
         // =================================================
-        // EMPTY
+        // EMPTY STATE
         // =================================================
 
         if (!managementUsers.length) {
@@ -608,7 +639,6 @@
             }
 
             return;
-
         }
 
 
@@ -618,17 +648,19 @@
 
 
         // =================================================
-        // ROWS
+        // TABLE ROWS
         // =================================================
 
-        managementUsers.forEach(function (user) {
+        managementUsers.forEach(user => {
 
             const row =
                 document.createElement('tr');
 
 
             const role =
-                getUserRole(user);
+                String(user.role || '')
+                    .toLowerCase()
+                    .trim();
 
 
             const roleLabel =
@@ -658,7 +690,7 @@
 
 
             const userId =
-                getUserId(user);
+                String(user._id || '');
 
 
             row.innerHTML = `
@@ -666,29 +698,25 @@
                 <td>
                     <strong>
                         ${escapeHtml(
-                            user?.name || '—'
+                            user.name || '—'
                         )}
                     </strong>
                 </td>
 
                 <td>
                     ${escapeHtml(
-                        user?.email || '—'
+                        user.email || '—'
                     )}
                 </td>
 
                 <td>
-
                     <span class="badge ${
                         role === 'teacher'
                             ? 'bg-info'
                             : 'bg-primary'
                     }">
-
                         ${roleLabel}
-
                     </span>
-
                 </td>
 
                 <td>
@@ -696,17 +724,13 @@
                 </td>
 
                 <td>
-
                     <span class="badge ${
                         isActive
                             ? 'bg-success'
                             : 'bg-danger'
                     }">
-
                         ${status}
-
                     </span>
-
                 </td>
 
                 <td class="text-end">
@@ -721,11 +745,8 @@
                                 class="btn btn-sm btn-warning"
                                 onclick="suspendManagementUser('${userId}')"
                             >
-
                                 <i class="fas fa-pause"></i>
-
                                 Suspend
-
                             </button>
 
                         `
@@ -737,16 +758,12 @@
                                 class="btn btn-sm btn-success"
                                 onclick="activateManagementUser('${userId}')"
                             >
-
                                 <i class="fas fa-check"></i>
-
                                 Activate
-
                             </button>
 
                         `
                     }
-
 
                     <button
                         type="button"
@@ -754,9 +771,7 @@
                         onclick="deleteManagementUser('${userId}')"
                         title="Delete user"
                     >
-
                         <i class="fas fa-trash"></i>
-
                     </button>
 
                 </td>
@@ -790,6 +805,14 @@
                     );
 
 
+                const role =
+                    roleSelect
+                        ? String(
+                            roleSelect.value || ''
+                        ).toLowerCase().trim()
+                        : 'student';
+
+
                 const nameElement =
                     getElement(
                         'management-user-name'
@@ -818,16 +841,6 @@
                     getElement(
                         'management-user-class'
                     );
-
-
-                const role =
-                    roleSelect
-                        ? String(
-                            roleSelect.value || ''
-                        )
-                            .trim()
-                            .toLowerCase()
-                        : 'student';
 
 
                 const name =
@@ -860,9 +873,9 @@
                         : '';
 
 
-                // =================================================
-                // VALIDATION
-                // =================================================
+                // -----------------------------------------
+                // CLIENT VALIDATION
+                // -----------------------------------------
 
                 if (!name) {
 
@@ -873,7 +886,6 @@
                     );
 
                     return;
-
                 }
 
 
@@ -886,7 +898,6 @@
                     );
 
                     return;
-
                 }
 
 
@@ -899,15 +910,12 @@
                     );
 
                     return;
-
                 }
 
 
                 if (
-                    ![
-                        'student',
-                        'teacher'
-                    ].includes(role)
+                    !['student', 'teacher']
+                        .includes(role)
                 ) {
 
                     showMessage(
@@ -917,29 +925,35 @@
                     );
 
                     return;
-
                 }
 
-
-                // =================================================
-                // SAAS CREATE PAYLOAD
-                // =================================================
 
                 const body = {
 
                     name,
+
                     email,
+
                     password,
+
                     role,
+
                     subject,
+
                     studentClass
 
                 };
 
 
                 console.log(
-                    '[USER MANAGEMENT] Creating SaaS user:',
-                    body
+                    '[USER MANAGEMENT] Creating user:',
+                    {
+                        name,
+                        email,
+                        role,
+                        subject,
+                        studentClass
+                    }
                 );
 
 
@@ -992,7 +1006,7 @@
                     if (!response.ok) {
 
                         throw new Error(
-                            result?.message ||
+                            result.message ||
                             'Failed to create user'
                         );
 
@@ -1001,7 +1015,7 @@
 
                     showMessage(
                         message,
-                        result?.message ||
+                        result.message ||
                         'User created successfully.',
                         'success'
                     );
@@ -1013,11 +1027,7 @@
                     updateRoleFields();
 
 
-                    // =================================================
-                    // IMPORTANT:
-                    // RELOAD FROM /api/users
-                    // =================================================
-
+                    // Reload table immediately
                     await loadManagementUsers();
 
 
@@ -1109,7 +1119,7 @@
                                     ? {
                                         'Authorization':
                                             `Bearer ${token}`
-                                        }
+                                    }
                                     : {})
 
                             }
@@ -1130,7 +1140,7 @@
                 if (!response.ok) {
 
                     throw new Error(
-                        result?.message ||
+                        result.message ||
                         'Failed to activate account'
                     );
 
@@ -1203,7 +1213,7 @@
                                     ? {
                                         'Authorization':
                                             `Bearer ${token}`
-                                        }
+                                    }
                                     : {})
 
                             }
@@ -1224,7 +1234,7 @@
                 if (!response.ok) {
 
                     throw new Error(
-                        result?.message ||
+                        result.message ||
                         'Failed to suspend account'
                     );
 
@@ -1297,7 +1307,7 @@
                                     ? {
                                         'Authorization':
                                             `Bearer ${token}`
-                                        }
+                                    }
                                     : {})
 
                             }
@@ -1318,7 +1328,7 @@
                 if (!response.ok) {
 
                     throw new Error(
-                        result?.message ||
+                        result.message ||
                         'Failed to delete user'
                     );
 
@@ -1347,7 +1357,7 @@
 
 
     // =====================================================
-    // SEARCH
+    // SEARCH BUTTON
     // =====================================================
 
     const searchButton =
@@ -1360,32 +1370,8 @@
 
         searchButton.addEventListener(
             'click',
-            loadManagementUsers
-        );
-
-    }
-
-
-    const searchInput =
-        getElement(
-            'management-user-search'
-        );
-
-
-    if (searchInput) {
-
-        searchInput.addEventListener(
-            'keydown',
-            function (event) {
-
-                if (event.key === 'Enter') {
-
-                    event.preventDefault();
-
-                    loadManagementUsers();
-
-                }
-
+            function () {
+                loadManagementUsers();
             }
         );
 
@@ -1406,7 +1392,9 @@
 
         roleFilter.addEventListener(
             'change',
-            loadManagementUsers
+            function () {
+                loadManagementUsers();
+            }
         );
 
     }
@@ -1426,14 +1414,16 @@
 
         statusFilter.addEventListener(
             'change',
-            loadManagementUsers
+            function () {
+                loadManagementUsers();
+            }
         );
 
     }
 
 
     // =====================================================
-    // REFRESH
+    // REFRESH BUTTON
     // =====================================================
 
     const refreshButton =
@@ -1446,20 +1436,54 @@
 
         refreshButton.addEventListener(
             'click',
-            loadManagementUsers
+            function () {
+                loadManagementUsers();
+            }
         );
 
     }
 
 
     // =====================================================
-    // INITIALIZE
+    // SEARCH ENTER
+    // =====================================================
+
+    const searchInput =
+        getElement(
+            'management-user-search'
+        );
+
+
+    if (searchInput) {
+
+        searchInput.addEventListener(
+            'keydown',
+            function (event) {
+
+                if (
+                    event.key === 'Enter'
+                ) {
+
+                    event.preventDefault();
+
+                    loadManagementUsers();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    // =====================================================
+    // INITIAL LOAD
     // =====================================================
 
     function initializeManagementUsers() {
 
         console.log(
-            '[USER MANAGEMENT] Initializing SaaS user management...'
+            '[USER MANAGEMENT] Initializing...'
         );
 
 
