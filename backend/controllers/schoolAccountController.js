@@ -9,6 +9,80 @@ const SchoolAccount = require('../models/SchoolAccount');
 exports.getSchoolAccounts = async (req, res) => {
     try {
 
+        console.log('\n==============================================');
+console.log('🔎 SAAS USER STORAGE DIAGNOSTIC');
+console.log('==============================================');
+
+console.log('JWT USER:', {
+    id: req.user?._id || req.user?.id,
+    role: req.user?.role,
+    school: req.user?.school
+});
+
+console.log('JWT SCHOOL STRING:',
+    String(req.user?.school || '')
+);
+
+console.log('==============================================');
+console.log('📦 MONGOOSE COLLECTIONS');
+console.log('==============================================');
+
+const collections =
+    await SchoolAccount.db.db.listCollections().toArray();
+
+console.log(
+    collections.map(c => c.name)
+);
+
+console.log('==============================================');
+console.log('🏫 SchoolAccount COLLECTION');
+console.log('==============================================');
+
+const schoolAccountCount =
+    await SchoolAccount.countDocuments({});
+
+console.log(
+    'Total SchoolAccount documents:',
+    schoolAccountCount
+);
+
+const schoolAccounts =
+    await SchoolAccount
+        .find({})
+        .select('-password')
+        .limit(20)
+        .lean();
+
+console.log(
+    'SchoolAccount sample:',
+    schoolAccounts.map(u => ({
+        id: u._id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        school: u.school,
+        status: u.status,
+        studentClass: u.studentClass,
+        subject: u.subject
+    }))
+);
+
+console.log('==============================================');
+console.log('🔎 CURRENT SCHOOL ACCOUNTS');
+console.log('==============================================');
+
+const currentSchoolAccounts =
+    await SchoolAccount.countDocuments({
+        school: req.user?.school
+    });
+
+console.log(
+    'Accounts for JWT school:',
+    currentSchoolAccounts
+);
+
+console.log('==============================================\n');
+
         const schoolId = req.user?.school;
 
         if (!schoolId) {
