@@ -24,6 +24,9 @@ exports.getSchoolAccounts = async (req, res) => {
             status
         } = req.query;
 
+        // ---------------------------------------------
+        // BASE FILTER
+        // ---------------------------------------------
         const filter = {
             school: schoolId,
             role: {
@@ -31,7 +34,9 @@ exports.getSchoolAccounts = async (req, res) => {
             }
         };
 
-        // ROLE
+        // ---------------------------------------------
+        // ROLE FILTER
+        // ---------------------------------------------
         if (role) {
 
             const normalizedRole =
@@ -44,96 +49,23 @@ exports.getSchoolAccounts = async (req, res) => {
             }
         }
 
-        // STATUS
-        if (status) {
-            filter.status = String(status).trim();
-        }
-
-        // SEARCH
-        if (search?.trim()) {
-
-            const searchValue = search.trim();
-
-            filter.$or = [
-                {
-                    name: {
-                        $regex: searchValue,
-                        $options: 'i'
-                    }
-                },
-                {
-                    email: {
-                        $regex: searchValue,
-                        $options: 'i'
-                    }
-                }
-            ];
-        }
-
-        console.log('=================================');
-        console.log('[MANAGEMENT USERS]');
-        console.log('School:', schoolId);
-        console.log('Filter:', filter);
-        console.log('=================================');
-
-        const accounts = await SchoolUser
-            .find(filter)
-            .select('-password')
-            .sort({ createdAt: -1 })
-            .lean();
-
-        console.log(
-            `[MANAGEMENT USERS] Found ${accounts.length} users`
-        );
-
-        return res.json({
-            success: true,
-            count: accounts.length,
-            data: accounts
-        });
-
-    } catch (err) {
-
-        console.error(
-            '[MANAGEMENT USERS] GET ERROR:',
-            err
-        );
-
-        return res.status(500).json({
-            success: false,
-            message: 'Failed to load school accounts',
-            error: err.message
-        });
-    }
-};
-
-        // ---------------------------------------------
-        // ROLE FILTER
-        // ---------------------------------------------
-        if (role) {
-            const normalizedRole =
-                String(role).toLowerCase().trim();
-
-            if (['student', 'teacher'].includes(normalizedRole)) {
-                filter.role = normalizedRole;
-            }
-        }
-
         // ---------------------------------------------
         // STATUS FILTER
         // ---------------------------------------------
         if (status) {
+
             filter.status =
                 String(status).trim();
         }
 
         // ---------------------------------------------
-        // SEARCH
+        // SEARCH FILTER
         // No username
         // ---------------------------------------------
         if (search?.trim()) {
 
-            const searchValue = search.trim();
+            const searchValue =
+                search.trim();
 
             filter.$or = [
                 {
@@ -151,12 +83,40 @@ exports.getSchoolAccounts = async (req, res) => {
             ];
         }
 
+        console.log('=================================');
+        console.log('[SCHOOL ACCOUNTS] GET');
+        console.log('[SCHOOL ACCOUNTS] School:', schoolId);
+        console.log('[SCHOOL ACCOUNTS] Query:', req.query);
+        console.log('[SCHOOL ACCOUNTS] Filter:', filter);
+        console.log('=================================');
+
+        // ---------------------------------------------
+        // GET ACCOUNTS
+        // ---------------------------------------------
         const accounts =
             await SchoolAccount
                 .find(filter)
                 .select('-password')
                 .sort({ createdAt: -1 })
                 .lean();
+
+        console.log(
+            `[SCHOOL ACCOUNTS] Found ${accounts.length} accounts`
+        );
+
+        console.log(
+            '[SCHOOL ACCOUNTS] Users:',
+            accounts.map(account => ({
+                id: account._id,
+                name: account.name,
+                email: account.email,
+                role: account.role,
+                studentClass: account.studentClass,
+                subject: account.subject,
+                status: account.status,
+                school: account.school
+            }))
+        );
 
         return res.json({
             success: true,
@@ -185,6 +145,7 @@ exports.getSchoolAccounts = async (req, res) => {
 // Students + Teachers only
 // =====================================================
 exports.createSchoolAccount = async (req, res) => {
+
     try {
 
         const schoolId = req.user?.school;
@@ -225,7 +186,7 @@ exports.createSchoolAccount = async (req, res) => {
             String(role).toLowerCase().trim();
 
         // ---------------------------------------------
-        // ONLY STUDENTS AND TEACHERS
+        // ONLY STUDENT / TEACHER
         // ---------------------------------------------
         if (
             !['student', 'teacher']
@@ -243,7 +204,6 @@ exports.createSchoolAccount = async (req, res) => {
 
         // ---------------------------------------------
         // CHECK EXISTING ACCOUNT
-        // ONLY INSIDE CURRENT SCHOOL
         // ---------------------------------------------
         const existing =
             await SchoolAccount.findOne({
@@ -291,7 +251,6 @@ exports.createSchoolAccount = async (req, res) => {
                         ? studentClass || ''
                         : '',
 
-                // New accounts are active by default
                 status: 'Active'
             });
 
@@ -366,9 +325,7 @@ exports.activateSchoolAccount = async (req, res) => {
 
                 {
                     _id: req.params.id,
-
                     school: schoolId,
-
                     role: {
                         $in: ['student', 'teacher']
                     }
@@ -383,6 +340,7 @@ exports.activateSchoolAccount = async (req, res) => {
                 {
                     new: true
                 }
+
             )
             .select('-password')
             .lean();
@@ -393,11 +351,6 @@ exports.activateSchoolAccount = async (req, res) => {
                 message: 'School account not found'
             });
         }
-
-        console.log(
-            '[SCHOOL ACCOUNTS] Activated:',
-            account._id
-        );
 
         return res.json({
             success: true,
@@ -442,9 +395,7 @@ exports.suspendSchoolAccount = async (req, res) => {
 
                 {
                     _id: req.params.id,
-
                     school: schoolId,
-
                     role: {
                         $in: ['student', 'teacher']
                     }
@@ -459,6 +410,7 @@ exports.suspendSchoolAccount = async (req, res) => {
                 {
                     new: true
                 }
+
             )
             .select('-password')
             .lean();
@@ -469,11 +421,6 @@ exports.suspendSchoolAccount = async (req, res) => {
                 message: 'School account not found'
             });
         }
-
-        console.log(
-            '[SCHOOL ACCOUNTS] Suspended:',
-            account._id
-        );
 
         return res.json({
             success: true,
@@ -533,11 +480,6 @@ exports.deleteSchoolAccount = async (req, res) => {
                 message: 'School account not found'
             });
         }
-
-        console.log(
-            '[SCHOOL ACCOUNTS] Deleted:',
-            account._id
-        );
 
         return res.json({
             success: true,
