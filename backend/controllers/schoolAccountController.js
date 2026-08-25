@@ -1,95 +1,40 @@
 const bcrypt = require('bcryptjs');
-const SchoolAccount = require('../models/SchoolAccount');
+const User = require('../models/User');
+
+
+// =====================================================
+// COMMON SCHOOL / ROLE FILTER
+// =====================================================
+
+function getSchoolId(req) {
+    return req.user?.school;
+}
+
+function allowedRoles() {
+    return ['student', 'teacher'];
+}
 
 
 // =====================================================
 // GET SCHOOL ACCOUNTS
+// Uses existing User model
 // Students + Teachers only
+// NO USERNAME
 // =====================================================
+
 exports.getSchoolAccounts = async (req, res) => {
+
     try {
 
-        console.log('\n==============================================');
-console.log('🔎 SAAS USER STORAGE DIAGNOSTIC');
-console.log('==============================================');
-
-console.log('JWT USER:', {
-    id: req.user?._id || req.user?.id,
-    role: req.user?.role,
-    school: req.user?.school
-});
-
-console.log('JWT SCHOOL STRING:',
-    String(req.user?.school || '')
-);
-
-console.log('==============================================');
-console.log('📦 MONGOOSE COLLECTIONS');
-console.log('==============================================');
-
-const collections =
-    await SchoolAccount.db.db.listCollections().toArray();
-
-console.log(
-    collections.map(c => c.name)
-);
-
-console.log('==============================================');
-console.log('🏫 SchoolAccount COLLECTION');
-console.log('==============================================');
-
-const schoolAccountCount =
-    await SchoolAccount.countDocuments({});
-
-console.log(
-    'Total SchoolAccount documents:',
-    schoolAccountCount
-);
-
-const schoolAccounts =
-    await SchoolAccount
-        .find({})
-        .select('-password')
-        .limit(20)
-        .lean();
-
-console.log(
-    'SchoolAccount sample:',
-    schoolAccounts.map(u => ({
-        id: u._id,
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        school: u.school,
-        status: u.status,
-        studentClass: u.studentClass,
-        subject: u.subject
-    }))
-);
-
-console.log('==============================================');
-console.log('🔎 CURRENT SCHOOL ACCOUNTS');
-console.log('==============================================');
-
-const currentSchoolAccounts =
-    await SchoolAccount.countDocuments({
-        school: req.user?.school
-    });
-
-console.log(
-    'Accounts for JWT school:',
-    currentSchoolAccounts
-);
-
-console.log('==============================================\n');
-
-        const schoolId = req.user?.school;
+        const schoolId = getSchoolId(req);
 
         if (!schoolId) {
+
             return res.status(403).json({
                 success: false,
                 message: 'School not found'
             });
+
         }
 
         const {
@@ -98,124 +43,383 @@ console.log('==============================================\n');
             status
         } = req.query;
 
-        // -------------------------------------------------
+
+        // ---------------------------------------------
         // BASE FILTER
-        // -------------------------------------------------
+        // ---------------------------------------------
+
         const filter = {
+
             school: schoolId,
+
             role: {
-                $in: ['student', 'teacher']
+                $in: allowedRoles()
             }
+
         };
 
-        // -------------------------------------------------
+
+        // ---------------------------------------------
         // ROLE FILTER
-        // -------------------------------------------------
+        // ---------------------------------------------
+
         if (role) {
 
             const normalizedRole =
-                String(role).toLowerCase().trim();
+                String(role)
+                    .toLowerCase()
+                    .trim();
 
-            if (['student', 'teacher'].includes(normalizedRole)) {
-                filter.role = normalizedRole;
+            if (
+                allowedRoles().includes(normalizedRole)
+            ) {
+
+                filter.role =
+                    normalizedRole;
+
             }
+
         }
 
-        // -------------------------------------------------
+
+        // ---------------------------------------------
         // STATUS FILTER
-        // -------------------------------------------------
+        //
+        // Existing User records may not have status.
+        // Only apply status when explicitly requested.
+        // ---------------------------------------------
+
         if (status) {
 
             const normalizedStatus =
-                String(status).trim();
+                String(status)
+                    .trim()
+                    .toLowerCase();
 
-            if (['Active', 'Suspended'].includes(normalizedStatus)) {
-                filter.status = normalizedStatus;
+            if (
+                normalizedStatus === 'active'
+            ) {
+
+                filter.$or = [
+                    {
+                        status: 'Active'
+                    },
+                    {
+                        status: 'active'
+                    },
+                    {
+                        status: {
+                            $exists: false
+                        }
+                    }
+                ];
+
+            } else if (
+                normalizedStatus === 'suspended'
+            ) {
+
+                filter.$or = [
+                    {
+                        status: 'Suspended'
+                    },
+                    {
+                        status: 'suspended'
+                    }
+                ];
+
             }
+
         }
 
-        // -------------------------------------------------
+
+        // ---------------------------------------------
         // SEARCH
-        // Name + Email only
-        // -------------------------------------------------
+        // Name + Email ONLY
+        // NO USERNAME
+        // ---------------------------------------------
+
         if (search?.trim()) {
 
-            const searchValue = search.trim();
+            const searchValue =
+                search.trim();
 
-            filter.$or = [
+            const searchFilter = [
+
                 {
                     name: {
                         $regex: searchValue,
                         $options: 'i'
                     }
                 },
+
                 {
                     email: {
                         $regex: searchValue,
                         $options: 'i'
                     }
                 }
+
             ];
+
+
+            // If status already created $or,
+            // combine filters safely.
+            if (filter.$or) {
+
+                const statusFilter =
+                    filter.$or;
+
+                delete filter.$or;
+
+                filter.$and = [
+
+                    {
+                        $or: statusFilter
+                    },
+
+                    {
+                        $or: searchFilter
+                    }
+
+                ];
+
+            } else {
+
+                filter.$or =
+                    searchFilter;
+
+            }
+
         }
 
-        console.log('=================================');
-        console.log('[SCHOOL ACCOUNTS] GET');
-        console.log('[SCHOOL ACCOUNTS] School:', schoolId);
-        console.log('[SCHOOL ACCOUNTS] Query:', req.query);
-        console.log('[SCHOOL ACCOUNTS] Filter:', filter);
-        console.log('=================================');
 
-        // -------------------------------------------------
-        // GET ACCOUNTS
-        // -------------------------------------------------
-        const accounts = await SchoolAccount
-            .find(filter)
-            .select('-password')
-            .sort({ createdAt: -1 })
-            .lean();
+        // ---------------------------------------------
+        // DEBUG
+        // ---------------------------------------------
 
         console.log(
-            `[SCHOOL ACCOUNTS] Found ${accounts.length} accounts`
+            '================================='
         );
 
+        console.log(
+            '[USER MANAGEMENT] GET USERS'
+        );
+
+        console.log(
+            '[USER MANAGEMENT] School:',
+            schoolId
+        );
+
+        console.log(
+            '[USER MANAGEMENT] Query:',
+            req.query
+        );
+
+        console.log(
+            '[USER MANAGEMENT] Filter:',
+            JSON.stringify(
+                filter,
+                null,
+                2
+            )
+        );
+
+        console.log(
+            '================================='
+        );
+
+
+        // ---------------------------------------------
+        // GET EXISTING USERS
+        // ---------------------------------------------
+
+        const users =
+            await User
+                .find(filter)
+                .select('-password')
+                .sort({
+                    createdAt: -1
+                })
+                .lean();
+
+
+        // ---------------------------------------------
+        // NORMALIZE RESPONSE
+        //
+        // Your existing User model uses:
+        //
+        // student:
+        //   class
+        //   classAssigned
+        //
+        // teacher:
+        //   profile.specialization
+        //
+        // User Management expects:
+        //   studentClass
+        //   subject
+        //   status
+        // ---------------------------------------------
+
+        const accounts =
+            users.map(user => {
+
+                const role =
+                    String(
+                        user.role || ''
+                    ).toLowerCase();
+
+
+                const isSuspended =
+                    String(
+                        user.status || ''
+                    ).toLowerCase()
+                    === 'suspended';
+
+
+                return {
+
+                    _id: user._id,
+
+                    name: user.name || '',
+
+                    email: user.email || '',
+
+                    role: role,
+
+                    studentClass:
+                        role === 'student'
+                            ? (
+                                user.studentClass ||
+                                user.class ||
+                                user.classAssigned ||
+                                ''
+                            )
+                            : '',
+
+                    subject:
+                        role === 'teacher'
+                            ? (
+                                user.subject ||
+                                user.specialization ||
+                                user.profile?.specialization ||
+                                ''
+                            )
+                            : '',
+
+                    status:
+                        isSuspended
+                            ? 'Suspended'
+                            : 'Active',
+
+                    school: user.school,
+
+                    createdAt:
+                        user.createdAt,
+
+                    updatedAt:
+                        user.updatedAt
+
+                };
+
+            });
+
+
+        console.log(
+            `[USER MANAGEMENT] Found ${accounts.length} users`
+        );
+
+
+        console.log(
+            '[USER MANAGEMENT] Users:',
+            accounts.map(user => ({
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                studentClass:
+                    user.studentClass,
+                subject:
+                    user.subject,
+                status:
+                    user.status,
+                school:
+                    user.school
+            }))
+        );
+
+
+        // ---------------------------------------------
+        // RESPONSE
+        // ---------------------------------------------
+
         return res.json({
+
             success: true,
-            count: accounts.length,
-            data: accounts
+
+            count:
+                accounts.length,
+
+            data:
+                accounts
+
         });
+
 
     } catch (err) {
 
         console.error(
-            '[SCHOOL ACCOUNTS] GET ERROR:',
+            '[USER MANAGEMENT] GET ERROR:',
             err
         );
 
         return res.status(500).json({
+
             success: false,
-            message: 'Failed to load school accounts',
-            error: err.message
+
+            message:
+                'Failed to load school accounts',
+
+            error:
+                err.message
+
         });
+
     }
+
 };
+
 
 
 // =====================================================
 // CREATE SCHOOL ACCOUNT
-// Students + Teachers only
+// Uses existing User model
 // =====================================================
-exports.createSchoolAccount = async (req, res) => {
+
+exports.createSchoolAccount = async (
+    req,
+    res
+) => {
 
     try {
 
-        const schoolId = req.user?.school;
+        const schoolId =
+            getSchoolId(req);
+
 
         if (!schoolId) {
+
             return res.status(403).json({
+
                 success: false,
-                message: 'School not found'
+
+                message:
+                    'School not found'
+
             });
+
         }
+
 
         const {
             name,
@@ -226,100 +430,204 @@ exports.createSchoolAccount = async (req, res) => {
             studentClass
         } = req.body;
 
-        // -------------------------------------------------
+
+        // ---------------------------------------------
         // VALIDATION
-        // -------------------------------------------------
-        if (!name || !email || !password || !role) {
+        // ---------------------------------------------
+
+        if (
+            !name ||
+            !email ||
+            !password ||
+            !role
+        ) {
+
             return res.status(400).json({
+
                 success: false,
+
                 message:
                     'Name, email, password and role are required'
+
             });
+
         }
+
 
         const normalizedRole =
-            String(role).toLowerCase().trim();
+            String(role)
+                .toLowerCase()
+                .trim();
 
-        // -------------------------------------------------
-        // ONLY STUDENTS AND TEACHERS
-        // -------------------------------------------------
-        if (!['student', 'teacher'].includes(normalizedRole)) {
+
+        if (
+            !allowedRoles()
+                .includes(normalizedRole)
+        ) {
+
             return res.status(400).json({
+
                 success: false,
+
                 message:
                     'Only students and teachers can be created'
+
             });
+
         }
+
 
         const normalizedEmail =
-            email.toLowerCase().trim();
+            email
+                .toLowerCase()
+                .trim();
 
-        // -------------------------------------------------
-        // CHECK EXISTING ACCOUNT
+
+        // ---------------------------------------------
+        // CHECK EXISTING USER
         // CURRENT SCHOOL ONLY
-        // -------------------------------------------------
+        // ---------------------------------------------
+
         const existing =
-            await SchoolAccount.findOne({
-                school: schoolId,
-                email: normalizedEmail
+            await User.findOne({
+
+                school:
+                    schoolId,
+
+                email:
+                    normalizedEmail
+
             });
+
 
         if (existing) {
+
             return res.status(400).json({
+
                 success: false,
+
                 message:
                     'This email already exists in your school'
+
             });
+
         }
 
-        // -------------------------------------------------
+
+        // ---------------------------------------------
         // HASH PASSWORD
-        // -------------------------------------------------
+        // ---------------------------------------------
+
         const hashedPassword =
-            await bcrypt.hash(password, 10);
+            await bcrypt.hash(
+                password,
+                10
+            );
 
-        // -------------------------------------------------
-        // CREATE ACCOUNT
-        // -------------------------------------------------
+
+        // ---------------------------------------------
+        // BUILD USER
+        // ---------------------------------------------
+
+        const userData = {
+
+            school:
+                schoolId,
+
+            name:
+                name.trim(),
+
+            email:
+                normalizedEmail,
+
+            password:
+                hashedPassword,
+
+            role:
+                normalizedRole,
+
+            status:
+                'Active'
+
+        };
+
+
+        // ---------------------------------------------
+        // STUDENT
+        // ---------------------------------------------
+
+        if (
+            normalizedRole === 'student'
+        ) {
+
+            userData.class =
+                studentClass || '';
+
+            userData.classAssigned =
+                studentClass || '';
+
+        }
+
+
+        // ---------------------------------------------
+        // TEACHER
+        // ---------------------------------------------
+
+        if (
+            normalizedRole === 'teacher'
+        ) {
+
+            userData.profile = {
+
+                specialization:
+                    subject || '',
+
+                class:
+                    '',
+
+                subjects:
+                    []
+
+            };
+
+        }
+
+
+        // ---------------------------------------------
+        // CREATE
+        // ---------------------------------------------
+
         const account =
-            new SchoolAccount({
+            new User(userData);
 
-                school: schoolId,
-
-                name: name.trim(),
-
-                email: normalizedEmail,
-
-                password: hashedPassword,
-
-                role: normalizedRole,
-
-                subject:
-                    normalizedRole === 'teacher'
-                        ? (subject || '').trim()
-                        : '',
-
-                studentClass:
-                    normalizedRole === 'student'
-                        ? (studentClass || '').trim()
-                        : '',
-
-                status: 'Active'
-            });
 
         await account.save();
 
+
         console.log(
-            '[SCHOOL ACCOUNTS] Created:',
+            '[USER MANAGEMENT] Created:',
             {
-                id: account._id,
-                name: account.name,
-                email: account.email,
-                role: account.role,
-                school: account.school,
-                status: account.status
+                id:
+                    account._id,
+
+                name:
+                    account.name,
+
+                email:
+                    account.email,
+
+                role:
+                    account.role,
+
+                school:
+                    account.school
             }
         );
+
+
+        // ---------------------------------------------
+        // RESPONSE
+        // ---------------------------------------------
 
         return res.status(201).json({
 
@@ -329,227 +637,407 @@ exports.createSchoolAccount = async (req, res) => {
                 'School account created successfully',
 
             data: {
-                _id: account._id,
-                name: account.name,
-                email: account.email,
-                role: account.role,
-                subject: account.subject,
-                studentClass: account.studentClass,
-                status: account.status,
-                school: account.school
+
+                _id:
+                    account._id,
+
+                name:
+                    account.name,
+
+                email:
+                    account.email,
+
+                role:
+                    account.role,
+
+                studentClass:
+                    account.class ||
+                    account.classAssigned ||
+                    '',
+
+                subject:
+                    account.profile?.specialization ||
+                    '',
+
+                status:
+                    account.status ||
+                    'Active',
+
+                school:
+                    account.school
+
             }
 
         });
 
+
     } catch (err) {
 
         console.error(
-            '[SCHOOL ACCOUNTS] CREATE ERROR:',
+            '[USER MANAGEMENT] CREATE ERROR:',
             err
         );
 
         return res.status(500).json({
+
             success: false,
-            message: 'Failed to create account',
-            error: err.message
+
+            message:
+                'Failed to create account',
+
+            error:
+                err.message
+
         });
+
     }
+
 };
 
 
+
 // =====================================================
-// ACTIVATE SCHOOL ACCOUNT
+// ACTIVATE
 // =====================================================
-exports.activateSchoolAccount = async (req, res) => {
+
+exports.activateSchoolAccount =
+async (
+    req,
+    res
+) => {
 
     try {
 
-        const schoolId = req.user?.school;
+        const schoolId =
+            getSchoolId(req);
+
 
         if (!schoolId) {
+
             return res.status(403).json({
+
                 success: false,
-                message: 'School not found'
+
+                message:
+                    'School not found'
+
             });
+
         }
 
+
         const account =
-            await SchoolAccount.findOneAndUpdate(
+            await User.findOneAndUpdate(
 
                 {
-                    _id: req.params.id,
-                    school: schoolId,
+
+                    _id:
+                        req.params.id,
+
+                    school:
+                        schoolId,
+
                     role: {
-                        $in: ['student', 'teacher']
+                        $in:
+                            allowedRoles()
                     }
+
                 },
 
                 {
+
                     $set: {
-                        status: 'Active'
+                        status:
+                            'Active'
                     }
+
                 },
 
                 {
-                    new: true
+
+                    new:
+                        true
+
                 }
 
             )
             .select('-password')
             .lean();
 
+
         if (!account) {
+
             return res.status(404).json({
+
                 success: false,
-                message: 'School account not found'
+
+                message:
+                    'School account not found'
+
             });
+
         }
 
+
         return res.json({
-            success: true,
-            message: 'Account activated',
-            data: account
+
+            success:
+                true,
+
+            message:
+                'Account activated',
+
+            data:
+                account
+
         });
+
 
     } catch (err) {
 
         console.error(
-            '[SCHOOL ACCOUNTS] ACTIVATE ERROR:',
+            '[USER MANAGEMENT] ACTIVATE ERROR:',
             err
         );
 
         return res.status(500).json({
-            success: false,
-            message: 'Failed to activate account',
-            error: err.message
+
+            success:
+                false,
+
+            message:
+                'Failed to activate account',
+
+            error:
+                err.message
+
         });
+
     }
+
 };
 
 
+
 // =====================================================
-// SUSPEND SCHOOL ACCOUNT
+// SUSPEND
 // =====================================================
-exports.suspendSchoolAccount = async (req, res) => {
+
+exports.suspendSchoolAccount =
+async (
+    req,
+    res
+) => {
 
     try {
 
-        const schoolId = req.user?.school;
+        const schoolId =
+            getSchoolId(req);
+
 
         if (!schoolId) {
+
             return res.status(403).json({
-                success: false,
-                message: 'School not found'
+
+                success:
+                    false,
+
+                message:
+                    'School not found'
+
             });
+
         }
 
+
         const account =
-            await SchoolAccount.findOneAndUpdate(
+            await User.findOneAndUpdate(
 
                 {
-                    _id: req.params.id,
-                    school: schoolId,
+
+                    _id:
+                        req.params.id,
+
+                    school:
+                        schoolId,
+
                     role: {
-                        $in: ['student', 'teacher']
+                        $in:
+                            allowedRoles()
                     }
+
                 },
 
                 {
+
                     $set: {
-                        status: 'Suspended'
+                        status:
+                            'Suspended'
                     }
+
                 },
 
                 {
-                    new: true
+
+                    new:
+                        true
+
                 }
 
             )
             .select('-password')
             .lean();
 
+
         if (!account) {
+
             return res.status(404).json({
-                success: false,
-                message: 'School account not found'
+
+                success:
+                    false,
+
+                message:
+                    'School account not found'
+
             });
+
         }
 
+
         return res.json({
-            success: true,
-            message: 'Account suspended',
-            data: account
+
+            success:
+                true,
+
+            message:
+                'Account suspended',
+
+            data:
+                account
+
         });
+
 
     } catch (err) {
 
         console.error(
-            '[SCHOOL ACCOUNTS] SUSPEND ERROR:',
+            '[USER MANAGEMENT] SUSPEND ERROR:',
             err
         );
 
         return res.status(500).json({
-            success: false,
-            message: 'Failed to suspend account',
-            error: err.message
+
+            success:
+                false,
+
+            message:
+                'Failed to suspend account',
+
+            error:
+                err.message
+
         });
+
     }
+
 };
 
 
+
 // =====================================================
-// DELETE SCHOOL ACCOUNT
-// Students + Teachers only
+// DELETE
 // =====================================================
-exports.deleteSchoolAccount = async (req, res) => {
+
+exports.deleteSchoolAccount =
+async (
+    req,
+    res
+) => {
 
     try {
 
-        const schoolId = req.user?.school;
+        const schoolId =
+            getSchoolId(req);
+
 
         if (!schoolId) {
+
             return res.status(403).json({
-                success: false,
-                message: 'School not found'
+
+                success:
+                    false,
+
+                message:
+                    'School not found'
+
             });
+
         }
 
+
         const account =
-            await SchoolAccount.findOneAndDelete({
+            await User.findOneAndDelete({
 
-                _id: req.params.id,
+                _id:
+                    req.params.id,
 
-                school: schoolId,
+                school:
+                    schoolId,
 
                 role: {
-                    $in: ['student', 'teacher']
+                    $in:
+                        allowedRoles()
                 }
 
             });
 
+
         if (!account) {
+
             return res.status(404).json({
-                success: false,
-                message: 'School account not found'
+
+                success:
+                    false,
+
+                message:
+                    'School account not found'
+
             });
+
         }
 
+
         return res.json({
-            success: true,
-            message: 'Account deleted successfully'
+
+            success:
+                true,
+
+            message:
+                'Account deleted successfully'
+
         });
+
 
     } catch (err) {
 
         console.error(
-            '[SCHOOL ACCOUNTS] DELETE ERROR:',
+            '[USER MANAGEMENT] DELETE ERROR:',
             err
         );
 
         return res.status(500).json({
-            success: false,
-            message: 'Failed to delete account',
-            error: err.message
+
+            success:
+                false,
+
+            message:
+                'Failed to delete account',
+
+            error:
+                err.message
+
         });
+
     }
+
 };
