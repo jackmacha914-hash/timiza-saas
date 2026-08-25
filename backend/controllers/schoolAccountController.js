@@ -25,40 +25,50 @@ exports.getSchoolAccounts = async (req, res) => {
         } = req.query;
 
         const filter = {
-            school: schoolId
+            school: schoolId,
+            role: {
+                $in: ['student', 'teacher']
+            }
         };
 
+        // ---------------------------------------------
+        // ROLE FILTER
+        // ---------------------------------------------
         if (role) {
-            filter.role =
+            const normalizedRole =
                 String(role).toLowerCase().trim();
-        } else {
-            filter.role = {
-                $in: ['student', 'teacher']
-            };
+
+            if (['student', 'teacher'].includes(normalizedRole)) {
+                filter.role = normalizedRole;
+            }
         }
 
+        // ---------------------------------------------
+        // STATUS FILTER
+        // ---------------------------------------------
         if (status) {
-            filter.status = status;
+            filter.status =
+                String(status).trim();
         }
 
+        // ---------------------------------------------
+        // SEARCH
+        // No username
+        // ---------------------------------------------
         if (search?.trim()) {
+
+            const searchValue = search.trim();
 
             filter.$or = [
                 {
                     name: {
-                        $regex: search.trim(),
+                        $regex: searchValue,
                         $options: 'i'
                     }
                 },
                 {
                     email: {
-                        $regex: search.trim(),
-                        $options: 'i'
-                    }
-                },
-                {
-                    username: {
-                        $regex: search.trim(),
+                        $regex: searchValue,
                         $options: 'i'
                     }
                 }
@@ -72,7 +82,7 @@ exports.getSchoolAccounts = async (req, res) => {
                 .sort({ createdAt: -1 })
                 .lean();
 
-        res.json({
+        return res.json({
             success: true,
             count: accounts.length,
             data: accounts
@@ -85,7 +95,7 @@ exports.getSchoolAccounts = async (req, res) => {
             err
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Failed to load school accounts',
             error: err.message
@@ -96,6 +106,7 @@ exports.getSchoolAccounts = async (req, res) => {
 
 // =====================================================
 // CREATE SCHOOL ACCOUNT
+// Students + Teachers only
 // =====================================================
 exports.createSchoolAccount = async (req, res) => {
     try {
@@ -112,13 +123,15 @@ exports.createSchoolAccount = async (req, res) => {
         const {
             name,
             email,
-            username,
             password,
             role,
             subject,
             studentClass
         } = req.body;
 
+        // ---------------------------------------------
+        // VALIDATION
+        // ---------------------------------------------
         if (
             !name ||
             !email ||
@@ -135,6 +148,9 @@ exports.createSchoolAccount = async (req, res) => {
         const normalizedRole =
             String(role).toLowerCase().trim();
 
+        // ---------------------------------------------
+        // ONLY STUDENTS AND TEACHERS
+        // ---------------------------------------------
         if (
             !['student', 'teacher']
                 .includes(normalizedRole)
@@ -146,11 +162,17 @@ exports.createSchoolAccount = async (req, res) => {
             });
         }
 
+        const normalizedEmail =
+            email.toLowerCase().trim();
+
+        // ---------------------------------------------
+        // CHECK EXISTING ACCOUNT
+        // ONLY INSIDE CURRENT SCHOOL
+        // ---------------------------------------------
         const existing =
             await SchoolAccount.findOne({
                 school: schoolId,
-                email:
-                    email.toLowerCase().trim()
+                email: normalizedEmail
             });
 
         if (existing) {
@@ -161,9 +183,15 @@ exports.createSchoolAccount = async (req, res) => {
             });
         }
 
+        // ---------------------------------------------
+        // HASH PASSWORD
+        // ---------------------------------------------
         const hashedPassword =
             await bcrypt.hash(password, 10);
 
+        // ---------------------------------------------
+        // CREATE ACCOUNT
+        // ---------------------------------------------
         const account =
             new SchoolAccount({
 
@@ -171,11 +199,7 @@ exports.createSchoolAccount = async (req, res) => {
 
                 name: name.trim(),
 
-                email:
-                    email.toLowerCase().trim(),
-
-                username:
-                    username?.trim(),
+                email: normalizedEmail,
 
                 password: hashedPassword,
 
@@ -191,12 +215,25 @@ exports.createSchoolAccount = async (req, res) => {
                         ? studentClass || ''
                         : '',
 
+                // New accounts are active by default
                 status: 'Active'
             });
 
         await account.save();
 
-        res.status(201).json({
+        console.log(
+            '[SCHOOL ACCOUNTS] Created:',
+            {
+                id: account._id,
+                name: account.name,
+                email: account.email,
+                role: account.role,
+                school: account.school,
+                status: account.status
+            }
+        );
+
+        return res.status(201).json({
 
             success: true,
 
@@ -207,7 +244,6 @@ exports.createSchoolAccount = async (req, res) => {
                 _id: account._id,
                 name: account.name,
                 email: account.email,
-                username: account.username,
                 role: account.role,
                 subject: account.subject,
                 studentClass: account.studentClass,
@@ -224,7 +260,7 @@ exports.createSchoolAccount = async (req, res) => {
             err
         );
 
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'Failed to create account',
             error: err.message
@@ -234,18 +270,29 @@ exports.createSchoolAccount = async (req, res) => {
 
 
 // =====================================================
-// ACTIVATE
+// ACTIVATE SCHOOL ACCOUNT
 // =====================================================
 exports.activateSchoolAccount = async (req, res) => {
 
     try {
+
+        const schoolId = req.user?.school;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: 'School not found'
+            });
+        }
 
         const account =
             await SchoolAccount.findOneAndUpdate(
 
                 {
                     _id: req.params.id,
-                    school: req.user.school,
+
+                    school: schoolId,
+
                     role: {
                         $in: ['student', 'teacher']
                     }
@@ -260,7 +307,9 @@ exports.activateSchoolAccount = async (req, res) => {
                 {
                     new: true
                 }
-            ).select('-password');
+            )
+            .select('-password')
+            .lean();
 
         if (!account) {
             return res.status(404).json({
@@ -269,7 +318,12 @@ exports.activateSchoolAccount = async (req, res) => {
             });
         }
 
-        res.json({
+        console.log(
+            '[SCHOOL ACCOUNTS] Activated:',
+            account._id
+        );
+
+        return res.json({
             success: true,
             message: 'Account activated',
             data: account
@@ -277,7 +331,12 @@ exports.activateSchoolAccount = async (req, res) => {
 
     } catch (err) {
 
-        res.status(500).json({
+        console.error(
+            '[SCHOOL ACCOUNTS] ACTIVATE ERROR:',
+            err
+        );
+
+        return res.status(500).json({
             success: false,
             message: 'Failed to activate account',
             error: err.message
@@ -287,18 +346,29 @@ exports.activateSchoolAccount = async (req, res) => {
 
 
 // =====================================================
-// SUSPEND
+// SUSPEND SCHOOL ACCOUNT
 // =====================================================
 exports.suspendSchoolAccount = async (req, res) => {
 
     try {
+
+        const schoolId = req.user?.school;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: 'School not found'
+            });
+        }
 
         const account =
             await SchoolAccount.findOneAndUpdate(
 
                 {
                     _id: req.params.id,
-                    school: req.user.school,
+
+                    school: schoolId,
+
                     role: {
                         $in: ['student', 'teacher']
                     }
@@ -313,7 +383,9 @@ exports.suspendSchoolAccount = async (req, res) => {
                 {
                     new: true
                 }
-            ).select('-password');
+            )
+            .select('-password')
+            .lean();
 
         if (!account) {
             return res.status(404).json({
@@ -322,7 +394,12 @@ exports.suspendSchoolAccount = async (req, res) => {
             });
         }
 
-        res.json({
+        console.log(
+            '[SCHOOL ACCOUNTS] Suspended:',
+            account._id
+        );
+
+        return res.json({
             success: true,
             message: 'Account suspended',
             data: account
@@ -330,7 +407,12 @@ exports.suspendSchoolAccount = async (req, res) => {
 
     } catch (err) {
 
-        res.status(500).json({
+        console.error(
+            '[SCHOOL ACCOUNTS] SUSPEND ERROR:',
+            err
+        );
+
+        return res.status(500).json({
             success: false,
             message: 'Failed to suspend account',
             error: err.message
@@ -340,18 +422,28 @@ exports.suspendSchoolAccount = async (req, res) => {
 
 
 // =====================================================
-// DELETE
+// DELETE SCHOOL ACCOUNT
+// Students + Teachers only
 // =====================================================
 exports.deleteSchoolAccount = async (req, res) => {
 
     try {
+
+        const schoolId = req.user?.school;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: 'School not found'
+            });
+        }
 
         const account =
             await SchoolAccount.findOneAndDelete({
 
                 _id: req.params.id,
 
-                school: req.user.school,
+                school: schoolId,
 
                 role: {
                     $in: ['student', 'teacher']
@@ -366,14 +458,24 @@ exports.deleteSchoolAccount = async (req, res) => {
             });
         }
 
-        res.json({
+        console.log(
+            '[SCHOOL ACCOUNTS] Deleted:',
+            account._id
+        );
+
+        return res.json({
             success: true,
             message: 'Account deleted successfully'
         });
 
     } catch (err) {
 
-        res.status(500).json({
+        console.error(
+            '[SCHOOL ACCOUNTS] DELETE ERROR:',
+            err
+        );
+
+        return res.status(500).json({
             success: false,
             message: 'Failed to delete account',
             error: err.message
