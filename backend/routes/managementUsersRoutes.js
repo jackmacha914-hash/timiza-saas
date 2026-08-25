@@ -7,7 +7,7 @@ const {
   activateManagementUser,
   suspendManagementUser,
   deleteManagementUser
-} = require('../controllers/managementUsersController');
+} = require('../controllers/schoolAccountController');
 
 
 // Get students + teachers
