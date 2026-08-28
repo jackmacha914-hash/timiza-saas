@@ -10,7 +10,8 @@ const {
     createSchoolAccount,
     activateSchoolAccount,
     suspendSchoolAccount,
-    deleteSchoolAccount
+    deleteSchoolAccount,
+    changeOwnPassword
 } = require('../controllers/schoolAccountController');
 
 
@@ -51,6 +52,13 @@ router.delete(
     '/:id',
     protect,
     deleteSchoolAccount
+);
+
+// CHANGE PASSWORD
+router.patch(
+    '/change-password',
+    protect,
+    changeOwnPassword
 );
 
 
