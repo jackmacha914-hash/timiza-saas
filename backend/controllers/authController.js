@@ -326,6 +326,270 @@ console.log("Matched user:", user);
     }
 };
 
+
+// =====================================================
+// CHANGE PASSWORD
+// POST /api/auth/change-password
+//
+// Used when:
+// 1. A user has logged in with a temporary password
+// 2. mustChangePassword === true
+// 3. The user wants to create their permanent password
+// =====================================================
+
+exports.changePassword = async (req, res) => {
+
+    try {
+
+        // =================================================
+        // GET LOGGED-IN USER
+        // =================================================
+
+        const userId =
+            req.user?.id;
+
+
+        if (!userId) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    'Authentication required'
+
+            });
+
+        }
+
+
+        // =================================================
+        // GET PASSWORDS FROM REQUEST
+        // =================================================
+
+        const {
+            currentPassword,
+            newPassword
+        } = req.body;
+
+
+        // =================================================
+        // VALIDATION
+        // =================================================
+
+        if (
+            !currentPassword ||
+            !newPassword
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    'Current password and new password are required'
+
+            });
+
+        }
+
+
+        if (
+            typeof newPassword !== 'string' ||
+            newPassword.length < 6
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    'New password must be at least 6 characters'
+
+            });
+
+        }
+
+
+        // =================================================
+        // FIND USER
+        // =================================================
+
+        const user =
+            await User.findById(userId);
+
+
+        if (!user) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    'User not found'
+
+            });
+
+        }
+
+
+        // =================================================
+        // CHECK CURRENT PASSWORD
+        // =================================================
+
+        const passwordMatches =
+            await bcrypt.compare(
+                currentPassword,
+                user.password
+            );
+
+
+        if (!passwordMatches) {
+
+            return res.status(401).json({
+
+                success: false,
+
+                message:
+                    'Current password is incorrect'
+
+            });
+
+        }
+
+
+        // =================================================
+        // MAKE SURE NEW PASSWORD IS DIFFERENT
+        // =================================================
+
+        const samePassword =
+            await bcrypt.compare(
+                newPassword,
+                user.password
+            );
+
+
+        if (samePassword) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    'New password must be different from the current password'
+
+            });
+
+        }
+
+
+        // =================================================
+        // HASH NEW PASSWORD
+        // =================================================
+
+        const hashedPassword =
+            await bcrypt.hash(
+                newPassword,
+                10
+            );
+
+
+        // =================================================
+        // SAVE NEW PASSWORD
+        // =================================================
+
+        user.password =
+            hashedPassword;
+
+
+        // IMPORTANT:
+        // The temporary password has now been replaced.
+        // The user no longer needs to change it.
+
+        user.mustChangePassword =
+            false;
+
+
+        // Password reset is complete.
+
+        user.passwordResetAt =
+            null;
+
+
+        await user.save();
+
+
+        // =================================================
+        // LOG PASSWORD CHANGE
+        // =================================================
+
+        console.log(
+            '[AUTH] PASSWORD CHANGED:',
+            {
+                id:
+                    user._id,
+
+                name:
+                    user.name,
+
+                email:
+                    user.email,
+
+                role:
+                    user.role,
+
+                school:
+                    user.school,
+
+                mustChangePassword:
+                    user.mustChangePassword
+            }
+        );
+
+
+        // =================================================
+        // RESPONSE
+        // =================================================
+
+        return res.json({
+
+            success:
+                true,
+
+            message:
+                'Password changed successfully',
+
+            mustChangePassword:
+                false
+
+        });
+
+
+    } catch (err) {
+
+        console.error(
+            '[AUTH] CHANGE PASSWORD ERROR:',
+            err
+        );
+
+
+        return res.status(500).json({
+
+            success:
+                false,
+
+            message:
+                'Failed to change password',
+
+            error:
+                err.message
+
+        });
+
+    }
+
+};
+
 // Get User Profile
 exports.getUserProfile = async (req, res) => {
     try {
