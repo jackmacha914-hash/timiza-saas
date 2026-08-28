@@ -1,11 +1,21 @@
 const express = require("express");
 const router = express.Router();
 
-const superAdminController = require("../controllers/superAdminController");
+const superAdminController =
+    require("../controllers/superAdminController");
 
-router.get("/create-school", (req, res) => {
-    res.send("Super Admin route is working!");
-});
+
+// ========================================
+// TEST SUPER ADMIN ROUTE
+// ========================================
+
+router.get(
+    "/create-school",
+    (req, res) => {
+        res.send("Super Admin route is working!");
+    }
+);
+
 
 // ========================================
 // CREATE SCHOOL
@@ -16,6 +26,7 @@ router.post(
     superAdminController.createSchool
 );
 
+
 // ========================================
 // SUSPEND / ACTIVATE SCHOOL
 // ========================================
@@ -24,6 +35,7 @@ router.patch(
     "/schools/:id/status",
     superAdminController.toggleSchoolStatus
 );
+
 
 // ========================================
 // LOAD ALL SCHOOLS
@@ -34,19 +46,23 @@ router.get(
     superAdminController.getSchools
 );
 
+
 // ========================================
 // RESET SCHOOL ADMIN PASSWORD
 // ========================================
 //
 // POST
-// /api/superadmin/schools/:schoolId/reset-admin-password
+// /api/superadmin/schools/:id/reset-admin-password
 //
-// The Super Admin will use this to reset
-// the school's admin password.
+// :id = School ID
+//
+// The controller generates/sets the temporary
+// password and forces the school admin to
+// change it on their next login.
 //
 
 router.post(
-    "/schools/:schoolId/reset-admin-password",
+    "/schools/:id/reset-admin-password",
     superAdminController.resetSchoolAdminPassword
 );
 
