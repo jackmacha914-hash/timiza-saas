@@ -861,6 +861,11 @@ exports.resetSchoolAccountPassword = async (req, res) => {
         const schoolId =
             getSchoolId(req);
 
+
+        // =================================================
+        // CHECK SCHOOL
+        // =================================================
+
         if (!schoolId) {
 
             return res.status(403).json({
@@ -870,11 +875,12 @@ exports.resetSchoolAccountPassword = async (req, res) => {
 
         }
 
-        // ---------------------------------------------
+
+        // =================================================
         // FIND USER
-        // Only allow students and teachers
-        // belonging to the logged-in admin's school
-        // ---------------------------------------------
+        // Only students + teachers belonging
+        // to the logged-in admin's school
+        // =================================================
 
         const user =
             await User.findOne({
@@ -894,6 +900,7 @@ exports.resetSchoolAccountPassword = async (req, res) => {
 
             });
 
+
         if (!user) {
 
             return res.status(404).json({
@@ -908,9 +915,9 @@ exports.resetSchoolAccountPassword = async (req, res) => {
         }
 
 
-        // ---------------------------------------------
+        // =================================================
         // GENERATE TEMPORARY PASSWORD
-        // ---------------------------------------------
+        // =================================================
 
         const temporaryPassword =
             Math.random()
@@ -921,9 +928,9 @@ exports.resetSchoolAccountPassword = async (req, res) => {
             );
 
 
-        // ---------------------------------------------
-        // HASH PASSWORD
-        // ---------------------------------------------
+        // =================================================
+        // HASH TEMPORARY PASSWORD
+        // =================================================
 
         const hashedPassword =
             await bcrypt.hash(
@@ -932,40 +939,80 @@ exports.resetSchoolAccountPassword = async (req, res) => {
             );
 
 
-        // ---------------------------------------------
-        // SAVE NEW PASSWORD
-        // ---------------------------------------------
+        // =================================================
+        // SAVE PASSWORD
+        //
+        // IMPORTANT:
+        // mustChangePassword = true means the user MUST
+        // change this temporary password after login.
+        // =================================================
 
         user.password =
             hashedPassword;
 
+        user.mustChangePassword =
+            true;
+
+        user.passwordResetAt =
+            new Date();
+
+
         await user.save();
 
+
+        // =================================================
+        // LOG RESET
+        // =================================================
 
         console.log(
             '[MANAGEMENT USERS] PASSWORD RESET:',
             {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                school: user.school
+                id:
+                    user._id,
+
+                name:
+                    user.name,
+
+                email:
+                    user.email,
+
+                role:
+                    user.role,
+
+                school:
+                    user.school,
+
+                mustChangePassword:
+                    user.mustChangePassword,
+
+                passwordResetAt:
+                    user.passwordResetAt
             }
         );
 
 
-        // ---------------------------------------------
-        // RETURN TEMPORARY PASSWORD TO ADMIN
-        // ---------------------------------------------
+        // =================================================
+        // RETURN TEMPORARY PASSWORD
+        // =================================================
+        //
+        // The password is returned ONLY to the admin
+        // performing the reset.
+        //
+        // The database contains only the bcrypt hash.
+        // =================================================
 
         return res.json({
 
-            success: true,
+            success:
+                true,
 
             message:
-                'Password reset successfully',
+                'Password reset successfully. User must change the temporary password after signing in.',
 
-            temporaryPassword
+            temporaryPassword,
+
+            mustChangePassword:
+                true
 
         });
 
@@ -977,9 +1024,11 @@ exports.resetSchoolAccountPassword = async (req, res) => {
             err
         );
 
+
         return res.status(500).json({
 
-            success: false,
+            success:
+                false,
 
             message:
                 'Failed to reset password',
