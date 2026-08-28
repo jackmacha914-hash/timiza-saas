@@ -12,7 +12,19 @@ const {
 
 
 // =====================================================
-// SUPER ADMIN ROUTE TEST
+// SUPER ADMIN ROUTES
+// =====================================================
+//
+// All routes below require:
+// 1. Valid JWT
+// 2. superadmin role
+//
+// =====================================================
+
+
+// =====================================================
+// TEST ROUTE
+// GET /api/superadmin/create-school
 // =====================================================
 
 router.get(
@@ -32,13 +44,8 @@ router.get(
 
 // =====================================================
 // CREATE SCHOOL
+// POST /api/superadmin/create-school
 // =====================================================
-// Only the Super Admin can create schools.
-// This creates:
-// 1. School
-// 2. School Admin account
-//
-// The existing authentication/login system is unchanged.
 
 router.post(
     "/create-school",
@@ -49,7 +56,21 @@ router.post(
 
 
 // =====================================================
+// LIST ALL SCHOOLS
+// GET /api/superadmin/schools
+// =====================================================
+
+router.get(
+    "/schools",
+    protect,
+    authorize("superadmin"),
+    superAdminController.getSchools
+);
+
+
+// =====================================================
 // SUSPEND / ACTIVATE SCHOOL
+// PATCH /api/superadmin/schools/:id/status
 // =====================================================
 
 router.patch(
@@ -61,14 +82,15 @@ router.patch(
 
 
 // =====================================================
-// LIST ALL SCHOOLS
+// RESET SCHOOL ADMIN PASSWORD
+// POST /api/superadmin/schools/:schoolId/reset-admin-password
 // =====================================================
 
-router.get(
-    "/schools",
+router.post(
+    "/schools/:schoolId/reset-admin-password",
     protect,
     authorize("superadmin"),
-    superAdminController.getSchools
+    superAdminController.resetSchoolAdminPassword
 );
 
 
