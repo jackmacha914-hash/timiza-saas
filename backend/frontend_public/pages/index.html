@@ -2008,7 +2008,7 @@ window.fetch = async (input, init = {}) => {
                                         Active
                                     </option>
 
-                                    <option value="false">
+                                    <option value="suspended">
                                         Suspended
                                     </option>
 
@@ -7515,6 +7515,172 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+
+<!-- =====================================================
+     PASSWORD RESET MODAL
+===================================================== -->
+
+<div
+    id="password-reset-modal"
+    class="modal"
+    style="display:none;"
+    aria-hidden="true"
+>
+
+<div
+    class="modal-dialog modal-dialog-centered"
+>
+
+    <div class="modal-content shadow">
+
+        <!-- =================================================
+             HEADER
+        ================================================== -->
+
+        <div class="modal-header">
+
+            <h5 class="modal-title">
+                <i class="fas fa-key me-2"></i>
+                Password Reset
+            </h5>
+
+            <button
+                type="button"
+                id="close-password-reset-modal"
+                class="btn-close"
+                aria-label="Close"
+            ></button>
+
+        </div>
+
+
+        <!-- =================================================
+             BODY
+        ================================================== -->
+
+        <div class="modal-body">
+
+            <div class="text-center mb-4">
+
+                <div
+                    class="mb-3"
+                    style="font-size:48px;"
+                >
+                    🔑
+                </div>
+
+                <h5 class="mb-2">
+                    Password Reset Successfully
+                </h5>
+
+                <p class="text-muted mb-0">
+                    A new temporary password has been
+                    generated for:
+                </p>
+
+            </div>
+
+
+            <!-- USER NAME -->
+
+            <div class="mb-3">
+
+                <label class="form-label fw-bold">
+                    User
+                </label>
+
+                <div
+                    id="password-reset-user-name"
+                    class="form-control bg-light"
+                >
+                    User
+                </div>
+
+            </div>
+
+
+            <!-- TEMPORARY PASSWORD -->
+
+            <div class="mb-2">
+
+                <label
+                    for="temporary-password"
+                    class="form-label fw-bold"
+                >
+                    Temporary Password
+                </label>
+
+                <div class="input-group">
+
+                    <input
+                        type="text"
+                        id="temporary-password"
+                        class="form-control"
+                        readonly
+                        autocomplete="off"
+                    >
+
+                    <button
+                        type="button"
+                        id="copy-temporary-password"
+                        class="btn btn-outline-primary"
+                    >
+                        <i class="fas fa-copy"></i>
+                        Copy
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- COPY MESSAGE -->
+
+            <div
+                id="copy-password-message"
+                class="small text-success"
+                style="min-height:20px;"
+            ></div>
+
+
+            <!-- WARNING -->
+
+            <div class="alert alert-warning mt-3 mb-0">
+
+                <i class="fas fa-exclamation-triangle me-2"></i>
+
+                Give this temporary password to the user
+                securely. The user should change their
+                password after signing in.
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             FOOTER
+        ================================================== -->
+
+        <div class="modal-footer">
+
+            <button
+                type="button"
+                id="password-reset-done"
+                class="btn btn-primary"
+            >
+                <i class="fas fa-check me-1"></i>
+                Done
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+</div>
 
 
 
