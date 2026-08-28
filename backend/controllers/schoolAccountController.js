@@ -940,11 +940,10 @@ exports.resetSchoolAccountPassword = async (req, res) => {
 
 
         // =================================================
-        // SAVE PASSWORD
+        // SAVE TEMPORARY PASSWORD
         //
-        // IMPORTANT:
-        // mustChangePassword = true means the user MUST
-        // change this temporary password after login.
+        // mustChangePassword = true tells the login system
+        // that this user MUST choose a new password.
         // =================================================
 
         user.password =
@@ -992,13 +991,7 @@ exports.resetSchoolAccountPassword = async (req, res) => {
 
 
         // =================================================
-        // RETURN TEMPORARY PASSWORD
-        // =================================================
-        //
-        // The password is returned ONLY to the admin
-        // performing the reset.
-        //
-        // The database contains only the bcrypt hash.
+        // RETURN TEMPORARY PASSWORD TO ADMIN
         // =================================================
 
         return res.json({
