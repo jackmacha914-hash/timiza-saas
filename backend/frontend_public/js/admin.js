@@ -794,103 +794,342 @@ if (document.readyState === 'loading') {
         });
 
     }
-
-    // =====================================================
+// =====================================================
 // RESET USER PASSWORD
 // =====================================================
 
 window.resetManagementUserPassword =
-    async function (id, userName) {
+async function (id, userName) {
 
-        if (!id) {
-            return;
-        }
+    if (!id) {
+        return;
+    }
 
-        const confirmed =
-            confirm(
-                `Reset the password for ${userName || 'this user'}?\n\n` +
-                `A new temporary password will be generated.`
-            );
+    const confirmed =
+        confirm(
+            `Reset the password for ${userName || 'this user'}?\n\n` +
+            `A new temporary password will be generated.`
+        );
 
-        if (!confirmed) {
-            return;
-        }
+    if (!confirmed) {
+        return;
+    }
 
-        try {
+    try {
 
-            const token =
-                getToken();
+        const token =
+            getToken();
 
-            const response =
-                await fetch(
-                    `${API_URL}/${encodeURIComponent(id)}/reset-password`,
-                    {
-                        method: 'POST',
+        const response =
+            await fetch(
+                `${API_URL}/${encodeURIComponent(id)}/reset-password`,
+                {
+                    method: 'POST',
 
-                        credentials: 'include',
+                    credentials: 'include',
 
-                        headers: {
+                    headers: {
 
-                            'Content-Type':
-                                'application/json',
+                        'Content-Type':
+                            'application/json',
 
-                            ...(token
-                                ? {
-                                    'Authorization':
-                                        `Bearer ${token}`
+                        ...(token
+                            ? {
+                                'Authorization':
+                                    `Bearer ${token}`
                                 }
-                                : {})
+                            : {})
 
-                        }
                     }
-                );
-
-
-            const result =
-                await response.json();
-
-
-            console.log(
-                '[USER MANAGEMENT] PASSWORD RESET:',
-                result
+                }
             );
 
-
-            if (!response.ok) {
-
-                throw new Error(
-                    result.message ||
-                    'Failed to reset password'
-                );
-
-            }
+        const result =
+            await response.json();
 
 
-            // Show temporary password
-            alert(
-                `Password reset successfully!\n\n` +
-                `User: ${userName || 'User'}\n\n` +
-                `Temporary Password:\n${result.temporaryPassword}\n\n` +
-                `Give this temporary password to the user.`
-            );
+        console.log(
+            '[USER MANAGEMENT] PASSWORD RESET:',
+            result
+        );
 
 
-        } catch (error) {
+        if (!response.ok) {
 
-            console.error(
-                '[USER MANAGEMENT] PASSWORD RESET ERROR:',
-                error
-            );
-
-
-            alert(
-                error.message ||
+            throw new Error(
+                result.message ||
                 'Failed to reset password'
             );
 
         }
 
-    };
+
+        // =================================================
+        // SHOW PASSWORD RESET MODAL
+        // =================================================
+
+        const modal =
+            document.getElementById(
+                'password-reset-modal'
+            );
+
+        const userNameElement =
+            document.getElementById(
+                'password-reset-user-name'
+            );
+
+        const passwordElement =
+            document.getElementById(
+                'temporary-password'
+            );
+
+        const copyMessage =
+            document.getElementById(
+                'copy-password-message'
+            );
+
+
+        if (userNameElement) {
+
+            userNameElement.textContent =
+                userName || 'User';
+
+        }
+
+
+        if (passwordElement) {
+
+            passwordElement.value =
+                result.temporaryPassword || '';
+
+        }
+
+
+        if (copyMessage) {
+
+            copyMessage.textContent = '';
+
+        }
+
+
+        if (modal) {
+
+            modal.style.display =
+                'block';
+
+            document.body.style.overflow =
+                'hidden';
+
+        } else {
+
+            // Fallback if modal HTML is missing
+            alert(
+                `Password reset successfully!\n\n` +
+                `User: ${userName || 'User'}\n\n` +
+                `Temporary Password:\n` +
+                `${result.temporaryPassword}`
+            );
+
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            '[USER MANAGEMENT] PASSWORD RESET ERROR:',
+            error
+        );
+
+
+        alert(
+            error.message ||
+            'Failed to reset password'
+        );
+
+    }
+
+};
+```
+
+// =====================================================
+// PASSWORD RESET MODAL CONTROLS
+// =====================================================
+
+(function initializePasswordResetModal() {
+
+```
+const modal =
+    document.getElementById(
+        'password-reset-modal'
+    );
+
+const closeButton =
+    document.getElementById(
+        'close-password-reset-modal'
+    );
+
+const doneButton =
+    document.getElementById(
+        'password-reset-done'
+    );
+
+const copyButton =
+    document.getElementById(
+        'copy-temporary-password'
+    );
+
+const passwordInput =
+    document.getElementById(
+        'temporary-password'
+    );
+
+const copyMessage =
+    document.getElementById(
+        'copy-password-message'
+    );
+
+
+function closePasswordResetModal() {
+
+    if (modal) {
+
+        modal.style.display =
+            'none';
+
+    }
+
+    document.body.style.overflow =
+        '';
+
+}
+
+
+if (closeButton) {
+
+    closeButton.addEventListener(
+        'click',
+        closePasswordResetModal
+    );
+
+}
+
+
+if (doneButton) {
+
+    doneButton.addEventListener(
+        'click',
+        closePasswordResetModal
+    );
+
+}
+
+
+// Close when clicking outside modal
+if (modal) {
+
+    modal.addEventListener(
+        'click',
+        function (event) {
+
+            if (event.target === modal) {
+
+                closePasswordResetModal();
+
+            }
+
+        }
+    );
+
+}
+
+
+// =================================================
+// COPY TEMPORARY PASSWORD
+// =================================================
+
+if (copyButton) {
+
+    copyButton.addEventListener(
+        'click',
+        async function () {
+
+            const password =
+                passwordInput
+                    ? passwordInput.value
+                    : '';
+
+            if (!password) {
+                return;
+            }
+
+
+            try {
+
+                await navigator.clipboard.writeText(
+                    password
+                );
+
+
+                if (copyMessage) {
+
+                    copyMessage.textContent =
+                        'Password copied to clipboard.';
+
+                }
+
+
+                copyButton.innerHTML =
+                    '<i class="fas fa-check"></i> Copied';
+
+
+                setTimeout(
+                    function () {
+
+                        copyButton.innerHTML =
+                            '<i class="fas fa-copy"></i> Copy';
+
+                    },
+                    2000
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    'Failed to copy password:',
+                    error
+                );
+
+
+                // Fallback
+                if (passwordInput) {
+
+                    passwordInput.select();
+
+                    passwordInput.setSelectionRange(
+                        0,
+                        passwordInput.value.length
+                    );
+
+                }
+
+
+                if (copyMessage) {
+
+                    copyMessage.textContent =
+                        'Select the password and copy it manually.';
+
+                }
+
+            }
+
+        }
+    );
+
+}
+
+})();
+
 
 
     // =====================================================
