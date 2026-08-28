@@ -1,25 +1,30 @@
 const express = require("express");
+
 const router = express.Router();
 
 const superAdminController =
     require("../controllers/superAdminController");
 
 
-// ========================================
-// TEST SUPER ADMIN ROUTE
-// ========================================
+// =====================================================
+// TEST ROUTE
+// =====================================================
 
 router.get(
     "/create-school",
     (req, res) => {
-        res.send("Super Admin route is working!");
+
+        res.send(
+            "Super Admin route is working!"
+        );
+
     }
 );
 
 
-// ========================================
+// =====================================================
 // CREATE SCHOOL
-// ========================================
+// =====================================================
 
 router.post(
     "/create-school",
@@ -27,9 +32,9 @@ router.post(
 );
 
 
-// ========================================
+// =====================================================
 // SUSPEND / ACTIVATE SCHOOL
-// ========================================
+// =====================================================
 
 router.patch(
     "/schools/:id/status",
@@ -37,9 +42,9 @@ router.patch(
 );
 
 
-// ========================================
+// =====================================================
 // LOAD ALL SCHOOLS
-// ========================================
+// =====================================================
 
 router.get(
     "/schools",
@@ -47,24 +52,26 @@ router.get(
 );
 
 
-// ========================================
+// =====================================================
 // RESET SCHOOL ADMIN PASSWORD
-// ========================================
+// =====================================================
 //
-// POST
-// /api/superadmin/schools/:id/reset-admin-password
+// Frontend calls:
 //
-// :id = School ID
+// PATCH
+// /api/superadmin/schools/:id/admin/:adminId/reset-password
 //
-// The controller generates/sets the temporary
-// password and forces the school admin to
-// change it on their next login.
+// Example:
 //
+// /api/superadmin/schools/123/admin/456/reset-password
+//
+// =====================================================
 
-router.post(
-    "/schools/:id/reset-admin-password",
+router.patch(
+    "/schools/:id/admin/:adminId/reset-password",
     superAdminController.resetSchoolAdminPassword
 );
 
 
 module.exports = router;
+
