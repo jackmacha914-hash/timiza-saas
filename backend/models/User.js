@@ -33,6 +33,16 @@ const userSchema = new mongoose.Schema({
     required: true
   },
 
+  mustChangePassword: {
+  type: Boolean,
+  default: false
+},
+
+passwordResetAt: {
+  type: Date,
+  default: null
+},
+
   role: {
     type: String,
     required: true,
