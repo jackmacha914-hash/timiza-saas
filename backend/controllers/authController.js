@@ -305,6 +305,7 @@ console.log("Matched user:", user);
             role: user.role,
             school: user.school,
             class: user.class
+            mustChangePassword: user.mustChangePassword === true
         };
 
         res.json({
@@ -313,6 +314,7 @@ console.log("Matched user:", user);
             token,
             role: user.role,
             user: userData
+            mustChangePassword: user.mustChangePassword === true
         });
 
     } catch (err) {
