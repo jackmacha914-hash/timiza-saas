@@ -1900,3 +1900,477 @@ async function (id, userName) {
 
 
 })();
+
+// =====================================================
+// PASSWORD RESET MODAL CONTROLS
+// =====================================================
+
+(function () {
+
+    'use strict';
+
+
+    // =================================================
+    // GET MODAL ELEMENTS
+    // =================================================
+
+    function getPasswordResetModalElements() {
+
+        return {
+
+            modal:
+                document.getElementById(
+                    'password-reset-modal'
+                ),
+
+            closeButton:
+                document.getElementById(
+                    'close-password-reset-modal'
+                ),
+
+            doneButton:
+                document.getElementById(
+                    'password-reset-done'
+                ),
+
+            copyButton:
+                document.getElementById(
+                    'copy-temporary-password'
+                ),
+
+            passwordInput:
+                document.getElementById(
+                    'temporary-password'
+                ),
+
+            copyMessage:
+                document.getElementById(
+                    'copy-password-message'
+                )
+
+        };
+
+    }
+
+
+    // =================================================
+    // CLOSE MODAL
+    // =================================================
+
+    function closePasswordResetModal() {
+
+        const elements =
+            getPasswordResetModalElements();
+
+
+        if (!elements.modal) {
+
+            console.error(
+                '[USER MANAGEMENT] Password reset modal not found.'
+            );
+
+            return;
+
+        }
+
+
+        elements.modal.style.display =
+            'none';
+
+
+        elements.modal.setAttribute(
+            'aria-hidden',
+            'true'
+        );
+
+
+        document.body.style.overflow =
+            '';
+
+
+        console.log(
+            '[USER MANAGEMENT] Password reset modal closed'
+        );
+
+    }
+
+
+    // =================================================
+    // COPY TEMPORARY PASSWORD
+    // =================================================
+
+    async function copyTemporaryPassword() {
+
+        const elements =
+            getPasswordResetModalElements();
+
+
+        const passwordInput =
+            elements.passwordInput;
+
+
+        const copyButton =
+            elements.copyButton;
+
+
+        const copyMessage =
+            elements.copyMessage;
+
+
+        if (!passwordInput) {
+
+            console.error(
+                '[USER MANAGEMENT] Temporary password input not found.'
+            );
+
+            return;
+
+        }
+
+
+        const password =
+            passwordInput.value.trim();
+
+
+        if (!password) {
+
+            console.warn(
+                '[USER MANAGEMENT] No temporary password available.'
+            );
+
+            return;
+
+        }
+
+
+        // =================================================
+        // MODERN CLIPBOARD
+        // =================================================
+
+        try {
+
+            if (
+                navigator.clipboard &&
+                window.isSecureContext
+            ) {
+
+                await navigator.clipboard.writeText(
+                    password
+                );
+
+            } else {
+
+                throw new Error(
+                    'Clipboard API unavailable'
+                );
+
+            }
+
+
+            // Success message
+
+            if (copyMessage) {
+
+                copyMessage.textContent =
+                    'Password copied to clipboard.';
+
+                copyMessage.className =
+                    'text-success small mt-2';
+
+            }
+
+
+            if (copyButton) {
+
+                copyButton.innerHTML =
+                    '<i class="fas fa-check me-1"></i> Copied';
+
+                copyButton.classList.remove(
+                    'btn-outline-primary'
+                );
+
+                copyButton.classList.add(
+                    'btn-success'
+                );
+
+
+                setTimeout(function () {
+
+                    if (!copyButton) {
+                        return;
+                    }
+
+
+                    copyButton.innerHTML =
+                        '<i class="fas fa-copy me-1"></i> Copy';
+
+
+                    copyButton.classList.remove(
+                        'btn-success'
+                    );
+
+
+                    copyButton.classList.add(
+                        'btn-outline-primary'
+                    );
+
+                }, 2000);
+
+            }
+
+
+            return;
+
+        } catch (error) {
+
+            console.warn(
+                '[USER MANAGEMENT] Clipboard API unavailable. Using fallback.'
+            );
+
+        }
+
+
+        // =================================================
+        // FALLBACK COPY
+        // =================================================
+
+        try {
+
+            passwordInput.removeAttribute(
+                'readonly'
+            );
+
+
+            passwordInput.focus();
+
+
+            passwordInput.select();
+
+
+            passwordInput.setSelectionRange(
+                0,
+                passwordInput.value.length
+            );
+
+
+            const copied =
+                document.execCommand('copy');
+
+
+            passwordInput.setAttribute(
+                'readonly',
+                'readonly'
+            );
+
+
+            if (copied) {
+
+                if (copyMessage) {
+
+                    copyMessage.textContent =
+                        'Password copied to clipboard.';
+
+                    copyMessage.className =
+                        'text-success small mt-2';
+
+                }
+
+
+                if (copyButton) {
+
+                    copyButton.innerHTML =
+                        '<i class="fas fa-check me-1"></i> Copied';
+
+                    copyButton.classList.remove(
+                        'btn-outline-primary'
+                    );
+
+                    copyButton.classList.add(
+                        'btn-success'
+                    );
+
+                }
+
+            } else {
+
+                if (copyMessage) {
+
+                    copyMessage.textContent =
+                        'Copy failed. Please select and copy the password manually.';
+
+                    copyMessage.className =
+                        'text-danger small mt-2';
+
+                }
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                '[USER MANAGEMENT] Copy failed:',
+                error
+            );
+
+
+            if (copyMessage) {
+
+                copyMessage.textContent =
+                    'Copy failed. Please copy the password manually.';
+
+                copyMessage.className =
+                    'text-danger small mt-2';
+
+            }
+
+        }
+
+    }
+
+
+    // =================================================
+    // EVENT DELEGATION
+    // =================================================
+    // This is intentionally attached to document so
+    // it works even when the modal is initially hidden.
+    // =================================================
+
+    document.addEventListener(
+        'click',
+        function (event) {
+
+            // -----------------------------------------
+            // COPY BUTTON
+            // -----------------------------------------
+
+            const copyButton =
+                event.target.closest(
+                    '#copy-temporary-password'
+                );
+
+
+            if (copyButton) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+                copyTemporaryPassword();
+
+                return;
+
+            }
+
+
+            // -----------------------------------------
+            // DONE BUTTON
+            // -----------------------------------------
+
+            const doneButton =
+                event.target.closest(
+                    '#password-reset-done'
+                );
+
+
+            if (doneButton) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+                closePasswordResetModal();
+
+                return;
+
+            }
+
+
+            // -----------------------------------------
+            // CLOSE BUTTON
+            // -----------------------------------------
+
+            const closeButton =
+                event.target.closest(
+                    '#close-password-reset-modal'
+                );
+
+
+            if (closeButton) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+                closePasswordResetModal();
+
+                return;
+
+            }
+
+
+            // -----------------------------------------
+            // CLICK OUTSIDE MODAL
+            // -----------------------------------------
+
+            const modal =
+                document.getElementById(
+                    'password-reset-modal'
+                );
+
+
+            if (
+                modal &&
+                event.target === modal
+            ) {
+
+                closePasswordResetModal();
+
+            }
+
+        },
+        true
+    );
+
+
+    // =================================================
+    // ESCAPE KEY
+    // =================================================
+
+    document.addEventListener(
+        'keydown',
+        function (event) {
+
+            if (
+                event.key !== 'Escape'
+            ) {
+
+                return;
+
+            }
+
+
+            const modal =
+                document.getElementById(
+                    'password-reset-modal'
+                );
+
+
+            if (
+                modal &&
+                modal.style.display !== 'none'
+            ) {
+
+                closePasswordResetModal();
+
+            }
+
+        }
+    );
+
+
+    console.log(
+        '[USER MANAGEMENT] Password reset modal controls ready'
+    );
+
+})();
+
