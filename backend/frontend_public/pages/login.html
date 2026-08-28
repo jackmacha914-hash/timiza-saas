@@ -97,6 +97,105 @@
         </form>
     </div>
 
+    <!-- =====================================================
+     CHANGE PASSWORD CONTAINER
+===================================================== -->
+
+<div
+    id="change-password-container"
+    class="form-container"
+    style="display: none;"
+>
+
+```
+<h2>Change Password</h2>
+
+<p id="change-password-info">
+    You are using a temporary password.
+    Please create a new password before continuing.
+</p>
+
+<form id="change-password-form">
+
+    <!-- Current Temporary Password -->
+    <div class="input-group">
+
+        <label for="current-password">
+            Temporary Password
+        </label>
+
+        <input
+            type="password"
+            id="current-password"
+            placeholder="Enter your temporary password"
+            required
+            autocomplete="current-password"
+        >
+
+    </div>
+
+
+    <!-- New Password -->
+    <div class="input-group">
+
+        <label for="new-password">
+            New Password
+        </label>
+
+        <input
+            type="password"
+            id="new-password"
+            placeholder="Enter your new password"
+            minlength="6"
+            required
+            autocomplete="new-password"
+        >
+
+    </div>
+
+
+    <!-- Confirm Password -->
+    <div class="input-group">
+
+        <label for="confirm-new-password">
+            Confirm New Password
+        </label>
+
+        <input
+            type="password"
+            id="confirm-new-password"
+            placeholder="Confirm your new password"
+            minlength="6"
+            required
+            autocomplete="new-password"
+        >
+
+    </div>
+
+
+    <button
+        type="submit"
+        id="change-password-btn"
+    >
+        Change Password
+    </button>
+
+
+    <div
+        id="change-password-message"
+        class="error-message"
+        style="display: none;"
+    ></div>
+
+</form>
+```
+
+</div>
+<!-- =====================================================
+     END CHANGE PASSWORD CONTAINER
+===================================================== -->
+
+
     <script src="/js/config.js"></script>
     <script src="/js/login.js"></script>
 
