@@ -17,6 +17,8 @@ const {
 
 router.get(
     "/create-school",
+    protect,
+    authorize("superadmin"),
     (req, res) => {
 
         res.json({
@@ -30,8 +32,13 @@ router.get(
 
 // =====================================================
 // CREATE SCHOOL
-// ONLY SUPERADMIN
 // =====================================================
+// Only the Super Admin can create schools.
+// This creates:
+// 1. School
+// 2. School Admin account
+//
+// The existing authentication/login system is unchanged.
 
 router.post(
     "/create-school",
@@ -42,21 +49,7 @@ router.post(
 
 
 // =====================================================
-// LIST ALL SCHOOLS
-// ONLY SUPERADMIN
-// =====================================================
-
-router.get(
-    "/schools",
-    protect,
-    authorize("superadmin"),
-    superAdminController.getSchools
-);
-
-
-// =====================================================
 // SUSPEND / ACTIVATE SCHOOL
-// ONLY SUPERADMIN
 // =====================================================
 
 router.patch(
@@ -68,17 +61,15 @@ router.patch(
 
 
 // =====================================================
-// RESET SCHOOL ADMIN PASSWORD
-// ONLY SUPERADMIN
+// LIST ALL SCHOOLS
 // =====================================================
 
-router.post(
-    "/schools/:id/reset-admin-password",
+router.get(
+    "/schools",
     protect,
     authorize("superadmin"),
-    superAdminController.resetSchoolAdminPassword
+    superAdminController.getSchools
 );
 
 
 module.exports = router;
-
