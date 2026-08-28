@@ -6,31 +6,54 @@ const superAdminController =
     require("../controllers/superAdminController");
 
 const {
-    protect,
-    authorize
+    protect
 } = require("../middleware/authMiddleware");
 
 
 // =====================================================
-// SUPER ADMIN ROUTES
+// SUPER ADMIN ROLE CHECK
 // =====================================================
-//
-// All routes below require:
-// 1. Valid JWT
-// 2. superadmin role
-//
-// =====================================================
+
+function requireSuperAdmin(req, res, next) {
+
+    if (!req.user) {
+
+        return res.status(401).json({
+            success: false,
+            message: "Authentication required"
+        });
+
+    }
+
+    const role =
+        String(req.user.role || "")
+            .toLowerCase()
+            .trim();
+
+    if (role !== "superadmin") {
+
+        return res.status(403).json({
+            success: false,
+            message: "Super Admin access required"
+        });
+
+    }
+
+    next();
+}
 
 
 // =====================================================
 // TEST ROUTE
-// GET /api/superadmin/create-school
 // =====================================================
 
 router.get(
     "/create-school",
+
     protect,
-    authorize("superadmin"),
+
+    requireSuperAdmin,
+
     (req, res) => {
 
         res.json({
@@ -44,52 +67,60 @@ router.get(
 
 // =====================================================
 // CREATE SCHOOL
-// POST /api/superadmin/create-school
 // =====================================================
 
 router.post(
     "/create-school",
+
     protect,
-    authorize("superadmin"),
+
+    requireSuperAdmin,
+
     superAdminController.createSchool
 );
 
 
 // =====================================================
 // LIST ALL SCHOOLS
-// GET /api/superadmin/schools
 // =====================================================
 
 router.get(
     "/schools",
+
     protect,
-    authorize("superadmin"),
+
+    requireSuperAdmin,
+
     superAdminController.getSchools
 );
 
 
 // =====================================================
 // SUSPEND / ACTIVATE SCHOOL
-// PATCH /api/superadmin/schools/:id/status
 // =====================================================
 
 router.patch(
     "/schools/:id/status",
+
     protect,
-    authorize("superadmin"),
+
+    requireSuperAdmin,
+
     superAdminController.toggleSchoolStatus
 );
 
 
 // =====================================================
 // RESET SCHOOL ADMIN PASSWORD
-// POST /api/superadmin/schools/:schoolId/reset-admin-password
 // =====================================================
 
 router.post(
     "/schools/:schoolId/reset-admin-password",
+
     protect,
-    authorize("superadmin"),
+
+    requireSuperAdmin,
+
     superAdminController.resetSchoolAdminPassword
 );
 
