@@ -642,18 +642,6 @@ async function loadSchools() {
 // 6. Returns the temporary password
 // =====================================================
 
-exports.resetSchoolAdminPassword = async (req, res) => {
-
-    try {
-
-        const schoolId =
-            req.params.id;
-
-        const adminId =
-            req.params.adminId;
-
-        const newPassword =
-            req.body.newPassword;
 
 
         // =================================================
