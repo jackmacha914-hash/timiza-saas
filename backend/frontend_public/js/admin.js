@@ -833,7 +833,7 @@ async function (id, userName) {
                         'Content-Type':
                             'application/json',
 
-                        ...(token
+                        (token
                             ? {
                                 'Authorization':
                                     `Bearer ${token}`
