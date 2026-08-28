@@ -619,876 +619,289 @@ async function loadSchools() {
 
 
 // =====================================================
-// RESET SCHOOL ADMIN PASSWORD MODAL
+// SUPER ADMIN RESET SCHOOL ADMIN PASSWORD
 // =====================================================
 //
-// FRONTEND ONLY
+// PATCH
+// /api/superadmin/schools/:id/admin/:adminId/reset-password
 //
-// Opens a proper modal instead of confirm()/alert().
+// Super Admin only.
 //
-// The modal:
-// - Shows admin details
-// - Generates temporary password
-// - Allows password editing
-// - Sends newPassword to backend
-// - Shows the temporary password after success
+// The frontend sends:
+// {
+//     newPassword: "temporary-password"
+// }
+//
+// The backend hashes the password and forces the
+// school admin to change it after login.
 // =====================================================
 
-async function resetSchoolAdminPassword(
-    schoolId,
-    adminId,
-    adminName,
-    adminEmail
-) {
+exports.resetSchoolAdminPassword = async (req, res) => {
 
-    if (!checkAuthentication()) {
-        return;
-    }
+    try {
 
+        const schoolId =
+            req.params.id;
 
-    // -------------------------------------------------
-    // REMOVE OLD MODAL IF IT EXISTS
-    // -------------------------------------------------
+        const adminId =
+            req.params.adminId;
 
-    const oldModal =
-        document.getElementById(
-            "resetPasswordModal"
-        );
-
-    if (oldModal) {
-        oldModal.remove();
-    }
+        const newPassword =
+            req.body.newPassword;
 
 
-    // -------------------------------------------------
-    // GENERATE TEMPORARY PASSWORD
-    // -------------------------------------------------
+        // -------------------------------------------------
+        // VALIDATE PASSWORD
+        // -------------------------------------------------
 
-    function generateTemporaryPassword() {
-
-        const chars =
-            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-
-        let password = "";
-
-        for (
-            let i = 0;
-            i < 10;
-            i++
+        if (
+            !newPassword ||
+            typeof newPassword !== "string"
         ) {
 
-            password +=
-                chars.charAt(
-                    Math.floor(
-                        Math.random() *
-                        chars.length
-                    )
-                );
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Temporary password is required."
+
+            });
 
         }
 
-        return password;
 
-    }
+        if (
+            newPassword.trim().length < 6
+        ) {
 
+            return res.status(400).json({
 
-    const temporaryPassword =
-        generateTemporaryPassword();
+                success: false,
 
+                message:
+                    "Temporary password must be at least 6 characters."
 
-    // -------------------------------------------------
-    // CREATE MODAL
-    // -------------------------------------------------
+            });
 
-    const modal =
-        document.createElement("div");
+        }
 
-    modal.id =
-        "resetPasswordModal";
 
+        // -------------------------------------------------
+        // FIND SCHOOL
+        // -------------------------------------------------
 
-    modal.innerHTML = `
-
-        <div
-            id="resetPasswordOverlay"
-            style="
-                position:fixed;
-                inset:0;
-                background:rgba(0,0,0,0.65);
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                z-index:99999;
-                padding:20px;
-            "
-        >
-
-            <div
-                style="
-                    width:100%;
-                    max-width:480px;
-                    background:#ffffff;
-                    border-radius:16px;
-                    padding:28px;
-                    box-shadow:0 20px 60px rgba(0,0,0,0.30);
-                    font-family:Arial,sans-serif;
-                "
-            >
-
-                <!-- HEADER -->
-
-                <div
-                    style="
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                        margin-bottom:20px;
-                    "
-                >
-
-                    <div>
-
-                        <h2
-                            style="
-                                margin:0;
-                                font-size:22px;
-                                color:#111827;
-                            "
-                        >
-                            🔐 Reset Admin Password
-                        </h2>
-
-                        <p
-                            style="
-                                margin:6px 0 0;
-                                color:#6b7280;
-                                font-size:14px;
-                            "
-                        >
-                            Create a temporary password
-                        </p>
-
-                    </div>
-
-
-                    <button
-                        type="button"
-                        id="closeResetPasswordModal"
-                        style="
-                            border:none;
-                            background:transparent;
-                            font-size:24px;
-                            cursor:pointer;
-                            color:#6b7280;
-                        "
-                    >
-                        ×
-                    </button>
-
-                </div>
-
-
-                <!-- ADMIN INFORMATION -->
-
-                <div
-                    style="
-                        background:#f3f4f6;
-                        border-radius:10px;
-                        padding:15px;
-                        margin-bottom:20px;
-                    "
-                >
-
-                    <div
-                        style="
-                            font-size:13px;
-                            color:#6b7280;
-                            margin-bottom:5px;
-                        "
-                    >
-                        School Admin
-                    </div>
-
-                    <strong
-                        id="resetAdminName"
-                        style="
-                            display:block;
-                            color:#111827;
-                            font-size:16px;
-                        "
-                    >
-                        ${escapeHtml(adminName)}
-                    </strong>
-
-
-                    <div
-                        id="resetAdminEmail"
-                        style="
-                            margin-top:5px;
-                            color:#6b7280;
-                            font-size:14px;
-                        "
-                    >
-                        ${escapeHtml(adminEmail)}
-                    </div>
-
-                </div>
-
-
-                <!-- PASSWORD -->
-
-                <label
-                    for="resetTemporaryPassword"
-                    style="
-                        display:block;
-                        font-weight:600;
-                        color:#111827;
-                        margin-bottom:8px;
-                    "
-                >
-                    Temporary Password
-                </label>
-
-
-                <div
-                    style="
-                        display:flex;
-                        gap:8px;
-                        margin-bottom:10px;
-                    "
-                >
-
-                    <input
-                        type="text"
-                        id="resetTemporaryPassword"
-                        value="${escapeHtml(temporaryPassword)}"
-                        minlength="6"
-                        autocomplete="off"
-                        style="
-                            flex:1;
-                            box-sizing:border-box;
-                            padding:13px;
-                            border:1px solid #d1d5db;
-                            border-radius:9px;
-                            font-size:16px;
-                            font-weight:600;
-                            letter-spacing:1px;
-                        "
-                    />
-
-
-                    <button
-                        type="button"
-                        id="generateResetPassword"
-                        style="
-                            padding:0 14px;
-                            border:none;
-                            border-radius:9px;
-                            background:#e5e7eb;
-                            color:#111827;
-                            cursor:pointer;
-                            font-weight:600;
-                        "
-                    >
-                        Generate
-                    </button>
-
-                </div>
-
-
-                <p
-                    style="
-                        margin:0 0 20px;
-                        font-size:13px;
-                        color:#6b7280;
-                    "
-                >
-                    The admin will be required to change this
-                    password after logging in.
-                </p>
-
-
-                <!-- ERROR -->
-
-                <div
-                    id="resetPasswordError"
-                    style="
-                        display:none;
-                        background:#fee2e2;
-                        color:#991b1b;
-                        padding:12px;
-                        border-radius:8px;
-                        margin-bottom:15px;
-                        font-size:14px;
-                    "
-                ></div>
-
-
-                <!-- BUTTONS -->
-
-                <div
-                    style="
-                        display:flex;
-                        gap:10px;
-                        justify-content:flex-end;
-                    "
-                >
-
-                    <button
-                        type="button"
-                        id="cancelResetPassword"
-                        style="
-                            padding:12px 18px;
-                            border:1px solid #d1d5db;
-                            background:#ffffff;
-                            border-radius:9px;
-                            cursor:pointer;
-                            font-weight:600;
-                            color:#374151;
-                        "
-                    >
-                        Cancel
-                    </button>
-
-
-                    <button
-                        type="button"
-                        id="confirmResetPassword"
-                        style="
-                            padding:12px 18px;
-                            border:none;
-                            background:#2563eb;
-                            color:#ffffff;
-                            border-radius:9px;
-                            cursor:pointer;
-                            font-weight:600;
-                        "
-                    >
-                        🔐 Reset Password
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    document.body.appendChild(
-        modal
-    );
-
-
-    // -------------------------------------------------
-    // GET MODAL ELEMENTS
-    // -------------------------------------------------
-
-    const passwordInput =
-        document.getElementById(
-            "resetTemporaryPassword"
-        );
-
-
-    const generateButton =
-        document.getElementById(
-            "generateResetPassword"
-        );
-
-
-    const confirmButton =
-        document.getElementById(
-            "confirmResetPassword"
-        );
-
-
-    const cancelButton =
-        document.getElementById(
-            "cancelResetPassword"
-        );
-
-
-    const closeButton =
-        document.getElementById(
-            "closeResetPasswordModal"
-        );
-
-
-    const overlay =
-        document.getElementById(
-            "resetPasswordOverlay"
-        );
-
-
-    const errorBox =
-        document.getElementById(
-            "resetPasswordError"
-        );
-
-
-    // -------------------------------------------------
-    // CLOSE MODAL
-    // -------------------------------------------------
-
-    function closeModal() {
-
-        const currentModal =
-            document.getElementById(
-                "resetPasswordModal"
+        const school =
+            await School.findById(
+                schoolId
             );
 
-        if (currentModal) {
-            currentModal.remove();
+
+        if (!school) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "School not found."
+
+            });
+
         }
+
+
+        // -------------------------------------------------
+        // FIND THE EXACT SCHOOL ADMIN
+        // -------------------------------------------------
+
+        const admin =
+            await User.findOne({
+
+                _id:
+                    adminId,
+
+                school:
+                    school._id,
+
+                role:
+                    "admin"
+
+            });
+
+
+        if (!admin) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    "School admin not found."
+
+            });
+
+        }
+
+
+        // -------------------------------------------------
+        // HASH PASSWORD
+        // -------------------------------------------------
+
+        const hashedPassword =
+            await bcrypt.hash(
+                newPassword.trim(),
+                10
+            );
+
+
+        // -------------------------------------------------
+        // UPDATE ADMIN
+        // -------------------------------------------------
+
+        admin.password =
+            hashedPassword;
+
+
+        admin.mustChangePassword =
+            true;
+
+
+        admin.passwordResetAt =
+            new Date();
+
+
+        await admin.save();
+
+
+        // -------------------------------------------------
+        // VERIFY PASSWORD WAS SAVED CORRECTLY
+        // -------------------------------------------------
+
+        const passwordWorks =
+            await bcrypt.compare(
+                newPassword.trim(),
+                admin.password
+            );
+
+
+        if (!passwordWorks) {
+
+            console.error(
+                "[SUPERADMIN] PASSWORD VERIFICATION FAILED"
+            );
+
+            return res.status(500).json({
+
+                success: false,
+
+                message:
+                    "Password was not saved correctly."
+
+            });
+
+        }
+
+
+        // -------------------------------------------------
+        // LOG
+        // -------------------------------------------------
+
+        console.log(
+            "[SUPERADMIN] SCHOOL ADMIN PASSWORD RESET:",
+            {
+                school:
+                    school.name,
+
+                schoolId:
+                    school._id.toString(),
+
+                admin:
+                    admin.email,
+
+                adminId:
+                    admin._id.toString(),
+
+                mustChangePassword:
+                    admin.mustChangePassword
+            }
+        );
+
+
+        // -------------------------------------------------
+        // RESPONSE
+        // -------------------------------------------------
+
+        return res.json({
+
+            success:
+                true,
+
+            message:
+                "School admin password reset successfully.",
+
+            temporaryPassword:
+                newPassword.trim(),
+
+            school: {
+
+                id:
+                    school._id,
+
+                name:
+                    school.name,
+
+                code:
+                    school.code
+
+            },
+
+            user: {
+
+                id:
+                    admin._id,
+
+                name:
+                    admin.name,
+
+                email:
+                    admin.email,
+
+                role:
+                    admin.role,
+
+                mustChangePassword:
+                    true
+
+            }
+
+        });
+
+
+    } catch (err) {
+
+        console.error(
+            "[SUPERADMIN] RESET PASSWORD ERROR:",
+            err
+        );
+
+
+        return res.status(500).json({
+
+            success:
+                false,
+
+            message:
+                "Failed to reset school admin password.",
+
+            error:
+                err.message
+
+        });
 
     }
 
-
-    closeButton.addEventListener(
-        "click",
-        closeModal
-    );
-
-
-    cancelButton.addEventListener(
-        "click",
-        closeModal
-    );
-
-
-    overlay.addEventListener(
-        "click",
-        function(event) {
-
-            if (
-                event.target === overlay
-            ) {
-
-                closeModal();
-
-            }
-
-        }
-    );
-
-
-    // -------------------------------------------------
-    // GENERATE NEW PASSWORD
-    // -------------------------------------------------
-
-    generateButton.addEventListener(
-        "click",
-        function() {
-
-            passwordInput.value =
-                generateTemporaryPassword();
-
-            errorBox.style.display =
-                "none";
-
-        }
-    );
-
-
-    // -------------------------------------------------
-    // SUBMIT RESET
-    // -------------------------------------------------
-
-    confirmButton.addEventListener(
-        "click",
-        async function() {
-
-            const newPassword =
-                passwordInput.value.trim();
-
-
-            // -----------------------------------------
-            // VALIDATE
-            // -----------------------------------------
-
-            if (
-                !newPassword
-            ) {
-
-                errorBox.textContent =
-                    "Please enter a temporary password.";
-
-                errorBox.style.display =
-                    "block";
-
-                return;
-
-            }
-
-
-            if (
-                newPassword.length < 6
-            ) {
-
-                errorBox.textContent =
-                    "Temporary password must be at least 6 characters.";
-
-                errorBox.style.display =
-                    "block";
-
-                return;
-
-            }
-
-
-            errorBox.style.display =
-                "none";
-
-
-            // -----------------------------------------
-            // DISABLE BUTTON
-            // -----------------------------------------
-
-            confirmButton.disabled =
-                true;
-
-            confirmButton.textContent =
-                "Resetting...";
-
-
-            try {
-
-                const response =
-                    await fetch(
-
-                        API +
-                        "/superadmin/schools/" +
-                        encodeURIComponent(
-                            schoolId
-                        ) +
-                        "/admin/" +
-                        encodeURIComponent(
-                            adminId
-                        ) +
-                        "/reset-password",
-
-                        {
-
-                            method:
-                                "PATCH",
-
-                            headers:
-                                getAuthHeaders(),
-
-                            body:
-                                JSON.stringify({
-
-                                    newPassword:
-                                        newPassword
-
-                                })
-
-                        }
-
-                    );
-
-
-                // -------------------------------------
-                // SESSION EXPIRED
-                // -------------------------------------
-
-                if (
-                    response.status === 401
-                ) {
-
-                    closeModal();
-
-                    alert(
-                        "Your Superadmin session has expired. Please login again."
-                    );
-
-                    window.location.href =
-                        "/login.html";
-
-                    return;
-
-                }
-
-
-                // -------------------------------------
-                // FORBIDDEN
-                // -------------------------------------
-
-                if (
-                    response.status === 403
-                ) {
-
-                    throw new Error(
-                        "Only the Superadmin can reset school admin passwords."
-                    );
-
-                }
-
-
-                // -------------------------------------
-                // READ RESPONSE
-                // -------------------------------------
-
-                const data =
-                    await response.json();
-
-
-                if (
-                    !response.ok
-                ) {
-
-                    throw new Error(
-                        data.message ||
-                        data.msg ||
-                        "Failed to reset password."
-                    );
-
-                }
-
-
-                if (
-                    !data.success
-                ) {
-
-                    throw new Error(
-                        data.message ||
-                        "Password reset failed."
-                    );
-
-                }
-
-
-                // -------------------------------------
-                // SHOW SUCCESS MODAL
-                // -------------------------------------
-
-                modal.innerHTML = `
-
-                    <div
-                        style="
-                            position:fixed;
-                            inset:0;
-                            background:rgba(0,0,0,0.65);
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                            z-index:99999;
-                            padding:20px;
-                        "
-                    >
-
-                        <div
-                            style="
-                                width:100%;
-                                max-width:480px;
-                                background:#ffffff;
-                                border-radius:16px;
-                                padding:30px;
-                                box-shadow:0 20px 60px rgba(0,0,0,0.30);
-                                font-family:Arial,sans-serif;
-                            "
-                        >
-
-                            <div
-                                style="
-                                    text-align:center;
-                                    font-size:46px;
-                                    margin-bottom:10px;
-                                "
-                            >
-                                ✅
-                            </div>
-
-
-                            <h2
-                                style="
-                                    text-align:center;
-                                    margin:0 0 8px;
-                                    color:#111827;
-                                "
-                            >
-                                Password Reset Successful
-                            </h2>
-
-
-                            <p
-                                style="
-                                    text-align:center;
-                                    color:#6b7280;
-                                    margin-bottom:24px;
-                                "
-                            >
-                                The school admin must change this
-                                password after login.
-                            </p>
-
-
-                            <div
-                                style="
-                                    background:#f3f4f6;
-                                    border-radius:10px;
-                                    padding:15px;
-                                    margin-bottom:15px;
-                                "
-                            >
-
-                                <div
-                                    style="
-                                        font-size:13px;
-                                        color:#6b7280;
-                                    "
-                                >
-                                    School Admin
-                                </div>
-
-                                <strong
-                                    style="
-                                        display:block;
-                                        margin-top:4px;
-                                        color:#111827;
-                                    "
-                                >
-                                    ${escapeHtml(adminName)}
-                                </strong>
-
-
-                                <div
-                                    style="
-                                        margin-top:4px;
-                                        color:#6b7280;
-                                        font-size:14px;
-                                    "
-                                >
-                                    ${escapeHtml(adminEmail)}
-                                </div>
-
-                            </div>
-
-
-                            <div
-                                style="
-                                    background:#eff6ff;
-                                    border:2px solid #2563eb;
-                                    border-radius:10px;
-                                    padding:18px;
-                                    text-align:center;
-                                    margin-bottom:20px;
-                                "
-                            >
-
-                                <div
-                                    style="
-                                        font-size:13px;
-                                        color:#1d4ed8;
-                                        font-weight:600;
-                                        margin-bottom:8px;
-                                    "
-                                >
-                                    NEW TEMPORARY PASSWORD
-                                </div>
-
-
-                                <div
-                                    style="
-                                        font-size:24px;
-                                        font-weight:700;
-                                        letter-spacing:2px;
-                                        color:#111827;
-                                        word-break:break-all;
-                                    "
-                                >
-                                    ${escapeHtml(newPassword)}
-                                </div>
-
-                            </div>
-
-
-                            <button
-                                type="button"
-                                id="closeSuccessResetModal"
-                                style="
-                                    width:100%;
-                                    padding:13px;
-                                    border:none;
-                                    background:#2563eb;
-                                    color:#ffffff;
-                                    border-radius:9px;
-                                    cursor:pointer;
-                                    font-weight:600;
-                                    font-size:15px;
-                                "
-                            >
-                                Done
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                `;
-
-
-                // -------------------------------------
-                // SUCCESS CLOSE BUTTON
-                // -------------------------------------
-
-                const successClose =
-                    document.getElementById(
-                        "closeSuccessResetModal"
-                    );
-
-
-                successClose.addEventListener(
-                    "click",
-                    function() {
-
-                        closeModal();
-
-                        loadSchools();
-
-                    }
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    "[SUPERADMIN] RESET PASSWORD ERROR:",
-                    error
-                );
-
-
-                errorBox.textContent =
-                    error.message ||
-                    "Failed to reset password.";
-
-
-                errorBox.style.display =
-                    "block";
-
-
-                confirmButton.disabled =
-                    false;
-
-
-                confirmButton.textContent =
-                    "🔐 Reset Password";
-
-            }
-
-        }
-    );
-
-}
-
-
-// =====================================================
-// MAKE RESET FUNCTION AVAILABLE TO HTML
-// =====================================================
-
-window.resetSchoolAdminPassword =
-    resetSchoolAdminPassword;
+};
 
 // =====================================================
 // TOGGLE SCHOOL
