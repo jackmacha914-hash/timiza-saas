@@ -28,7 +28,7 @@ function getAuthHeaders() {
             "application/json",
 
         "Authorization":
-            `Bearer ${token}`
+            "Bearer " + token
 
     };
 
@@ -174,13 +174,17 @@ async function createSchool() {
                     body:
                         JSON.stringify({
 
-                            schoolName,
+                            schoolName:
+                                schoolName,
 
-                            adminName,
+                            adminName:
+                                adminName,
 
-                            adminEmail,
+                            adminEmail:
+                                adminEmail,
 
-                            adminPassword
+                            adminPassword:
+                                adminPassword
 
                         })
 
@@ -234,14 +238,9 @@ async function createSchool() {
 
         if (data.success) {
 
-            /**
-             * -----------------------------------------
-             * Show school credentials
-             * -----------------------------------------
-             */
             alert(
 
-                "✅ SCHOOL CREATED SUCCESSFULLY\n\n" +
+                "SCHOOL CREATED SUCCESSFULLY\n\n" +
 
                 "School: " +
                 data.school.name +
@@ -260,19 +259,14 @@ async function createSchool() {
                 "\n\n" +
 
                 "Temporary Password:\n" +
-                data.temporaryPassword +
+                adminPassword +
                 "\n\n" +
 
-                "⚠️ The school admin must change this password after login."
+                "The school admin must change this password after login."
 
             );
 
 
-            /**
-             * -----------------------------------------
-             * Clear form
-             * -----------------------------------------
-             */
             document
                 .getElementById("schoolName")
                 .value = "";
@@ -426,7 +420,6 @@ async function loadSchools() {
                         style="text-align:center;"
                     >
                         No schools found.
-
                     </td>
 
                 </tr>
@@ -557,8 +550,8 @@ async function loadSchools() {
                                     <button
                                         type="button"
                                         onclick="resetSchoolAdminPassword(
-                                            '${school._id}',
-                                            '${admin._id}',
+                                            '${escapeJs(school._id)}',
+                                            '${escapeJs(admin._id)}',
                                             '${escapeJs(admin.name)}',
                                             '${escapeJs(admin.email)}'
                                         )"
@@ -572,7 +565,9 @@ async function loadSchools() {
 
                         <button
                             type="button"
-                            onclick="viewSchool('${school._id}')"
+                            onclick="viewSchool(
+                                '${escapeJs(school._id)}'
+                            )"
                         >
                             View
                         </button>
@@ -580,7 +575,9 @@ async function loadSchools() {
 
                         <button
                             type="button"
-                            onclick="toggleSchool('${school._id}')"
+                            onclick="toggleSchool(
+                                '${escapeJs(school._id)}'
+                            )"
                         >
 
                             ${
@@ -622,213 +619,174 @@ async function loadSchools() {
 
 
 // =====================================================
-// SUPER ADMIN RESET SCHOOL ADMIN PASSWORD
+// RESET SCHOOL ADMIN PASSWORD
 // =====================================================
 //
-// Super Admin resets a school admin password.
+// THIS IS FRONTEND CODE ONLY.
 //
-// The system generates a temporary password.
-// The school admin must change it after login.
+// Do NOT use:
+// exports
+// require()
+// School
+// User
+// bcrypt
 //
-// POST/PATCH endpoint can be used.
+// Those belong in the backend controller.
 // =====================================================
 
-exports.resetSchoolAdminPassword = async (req, res) => {
+async function resetSchoolAdminPassword(
+    schoolId,
+    adminId,
+    adminName,
+    adminEmail
+) {
+
+    if (!checkAuthentication()) {
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+
+            "RESET SCHOOL ADMIN PASSWORD?\n\n" +
+
+            "School Admin: " +
+            adminName +
+            "\n" +
+
+            "Email: " +
+            adminEmail +
+            "\n\n" +
+
+            "A new temporary password will be generated.\n\n" +
+
+            "The admin will be forced to change it after login."
+
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
 
     try {
 
-        const schoolId = req.params.id;
-        const adminId = req.params.adminId;
+        const response =
+            await fetch(
 
+                API +
+                "/superadmin/schools/" +
+                encodeURIComponent(
+                    schoolId
+                ) +
+                "/admin/" +
+                encodeURIComponent(
+                    adminId
+                ) +
+                "/reset-password",
 
-        // ---------------------------------------------
-        // FIND SCHOOL
-        // ---------------------------------------------
+                {
 
-        const school =
-            await School.findById(schoolId);
+                    method:
+                        "PATCH",
 
+                    headers:
+                        getAuthHeaders()
 
-        if (!school) {
+                }
 
-            return res.status(404).json({
-
-                success: false,
-
-                message: "School not found."
-
-            });
-
-        }
-
-
-        // ---------------------------------------------
-        // FIND SCHOOL ADMIN
-        // ---------------------------------------------
-
-        const admin =
-            await User.findOne({
-
-                _id: adminId,
-
-                school: school._id,
-
-                role: "admin"
-
-            });
-
-
-        if (!admin) {
-
-            return res.status(404).json({
-
-                success: false,
-
-                message:
-                    "School admin not found."
-
-            });
-
-        }
-
-
-        // ---------------------------------------------
-        // GENERATE TEMPORARY PASSWORD
-        // ---------------------------------------------
-
-        function generateTemporaryPassword() {
-
-            const chars =
-                "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-
-            let password = "";
-
-            for (
-                let i = 0;
-                i < 10;
-                i++
-            ) {
-
-                password +=
-                    chars.charAt(
-                        Math.floor(
-                            Math.random() *
-                            chars.length
-                        )
-                    );
-
-            }
-
-            return password;
-
-        }
-
-
-        const temporaryPassword =
-            generateTemporaryPassword();
-
-
-        // ---------------------------------------------
-        // HASH PASSWORD
-        // ---------------------------------------------
-
-        admin.password =
-            await bcrypt.hash(
-                temporaryPassword,
-                10
             );
 
 
-        // ---------------------------------------------
-        // FORCE PASSWORD CHANGE
-        // ---------------------------------------------
+        if (
+            response.status === 401
+        ) {
 
-        admin.mustChangePassword = true;
+            alert(
+                "Your Superadmin session has expired. Please login again."
+            );
 
-        admin.passwordResetAt =
-            new Date();
+            window.location.href =
+                "/login.html";
 
+            return;
 
-        await admin.save();
-
-
-        // ---------------------------------------------
-        // LOG RESET
-        // ---------------------------------------------
-
-        console.log(
-            "[SUPERADMIN] SCHOOL ADMIN PASSWORD RESET:",
-            {
-                school:
-                    school.name,
-
-                schoolId:
-                    school._id,
-
-                admin:
-                    admin.email,
-
-                adminId:
-                    admin._id
-            }
-        );
+        }
 
 
-        // ---------------------------------------------
-        // RESPONSE
-        // ---------------------------------------------
+        if (
+            response.status === 403
+        ) {
 
-        return res.json({
+            alert(
+                "Only the Superadmin can reset school admin passwords."
+            );
 
-            success: true,
+            return;
 
-            message:
-                "School admin password reset successfully.",
-
-            temporaryPassword,
-
-            user: {
-
-                id:
-                    admin._id,
-
-                name:
-                    admin.name,
-
-                email:
-                    admin.email,
-
-                role:
-                    admin.role,
-
-                mustChangePassword:
-                    true
-
-            }
-
-        });
+        }
 
 
-    } catch (err) {
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                data.msg ||
+                "Failed to reset password."
+            );
+
+        }
+
+
+        if (data.success) {
+
+            alert(
+
+                "PASSWORD RESET SUCCESSFUL\n\n" +
+
+                "School Admin:\n" +
+                data.user.name +
+                "\n\n" +
+
+                "Email:\n" +
+                data.user.email +
+                "\n\n" +
+
+                "NEW TEMPORARY PASSWORD:\n\n" +
+
+                data.temporaryPassword +
+                "\n\n" +
+
+                "Give this temporary password to the school admin.\n\n" +
+
+                "They MUST change it after logging in."
+
+            );
+
+        }
+
+
+    } catch (error) {
 
         console.error(
             "[SUPERADMIN] RESET PASSWORD ERROR:",
-            err
+            error
         );
 
-
-        return res.status(500).json({
-
-            success: false,
-
-            message:
-                "Failed to reset school admin password."
-
-        });
+        alert(
+            error.message ||
+            "Failed to reset password."
+        );
 
     }
 
-};
+}
 
 
 // =====================================================
@@ -879,6 +837,19 @@ async function toggleSchool(
 
             window.location.href =
                 "/login.html";
+
+            return;
+
+        }
+
+
+        if (
+            response.status === 403
+        ) {
+
+            alert(
+                "Only the Superadmin can change school status."
+            );
 
             return;
 
