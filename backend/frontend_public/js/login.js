@@ -506,7 +506,6 @@ mustChangePassword
 
 if (mustChangePassword) {
 
-```
 console.log(
     '[LOGIN] Temporary password detected'
 );
