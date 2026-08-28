@@ -7,7 +7,8 @@ const {
     createSchoolAccount,
     activateSchoolAccount,
     suspendSchoolAccount,
-    deleteSchoolAccount
+    deleteSchoolAccount,
+    resetSchoolAccountPassword
 } = require('../controllers/schoolAccountController');
 
 
@@ -54,6 +55,15 @@ router.patch(
     suspendSchoolAccount
 );
 
+// =====================================================
+// RESET USER PASSWORD
+// POST /api/management-users/:id/reset-password
+// =====================================================
+
+router.post(
+    '/:id/reset-password',
+    resetSchoolAccountPassword
+);
 
 // =====================================================
 // DELETE ACCOUNT
