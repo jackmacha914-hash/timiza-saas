@@ -12,16 +12,30 @@ const {
 
 
 // =====================================================
+// SUPER ADMIN AUTHENTICATION
+// =====================================================
+//
+// Every protected route below requires:
+// 1. Valid JWT token
+// 2. User role = superadmin
+//
+// =====================================================
+
+
+// =====================================================
 // TEST ROUTE
 // =====================================================
 
 router.get(
     "/create-school",
+    protect,
+    authorize("superadmin"),
     (req, res) => {
 
-        res.send(
-            "Super Admin route is working!"
-        );
+        res.json({
+            success: true,
+            message: "Super Admin route is working!"
+        });
 
     }
 );
@@ -33,12 +47,21 @@ router.get(
 
 router.post(
     "/create-school",
-
     protect,
-
     authorize("superadmin"),
-
     superAdminController.createSchool
+);
+
+
+// =====================================================
+// LIST ALL SCHOOLS
+// =====================================================
+
+router.get(
+    "/schools",
+    protect,
+    authorize("superadmin"),
+    superAdminController.getSchools
 );
 
 
@@ -48,44 +71,11 @@ router.post(
 
 router.patch(
     "/schools/:id/status",
-
     protect,
-
     authorize("superadmin"),
-
     superAdminController.toggleSchoolStatus
 );
 
 
-// =====================================================
-// LOAD ALL SCHOOLS
-// =====================================================
-
-router.get(
-    "/schools",
-
-    protect,
-
-    authorize("superadmin"),
-
-    superAdminController.getSchools
-);
-
-
-// =====================================================
-// RESET SCHOOL ADMIN PASSWORD
-// ONLY SUPER ADMIN CAN DO THIS
-// =====================================================
-
-router.post(
-    "/schools/:id/reset-password",
-
-    protect,
-
-    authorize("superadmin"),
-
-    superAdminController.resetSchoolAdminPassword
-);
-
-
 module.exports = router;
+
