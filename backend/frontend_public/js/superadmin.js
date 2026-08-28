@@ -75,6 +75,7 @@ document.addEventListener(
                 "createSchoolBtn"
             );
 
+
         if (createSchoolBtn) {
 
             createSchoolBtn.addEventListener(
@@ -83,6 +84,10 @@ document.addEventListener(
             );
 
         }
+
+
+        createResetPasswordModal();
+
 
         loadSchools();
 
@@ -266,19 +271,31 @@ async function createSchool() {
                 "SCHOOL CREATED SUCCESSFULLY\n\n" +
 
                 "School: " +
-                (data.school?.name || schoolName) +
+                (
+                    data.school?.name ||
+                    schoolName
+                ) +
                 "\n\n" +
 
                 "School Code: " +
-                (data.school?.code || "-") +
+                (
+                    data.school?.code ||
+                    "-"
+                ) +
                 "\n\n" +
 
                 "Admin Name: " +
-                (data.admin?.name || adminName) +
+                (
+                    data.admin?.name ||
+                    adminName
+                ) +
                 "\n\n" +
 
                 "Admin Email: " +
-                (data.admin?.email || adminEmail) +
+                (
+                    data.admin?.email ||
+                    adminEmail
+                ) +
                 "\n\n" +
 
                 "Temporary Password:\n" +
@@ -290,13 +307,20 @@ async function createSchool() {
             );
 
 
-            schoolNameElement.value = "";
-            adminNameElement.value = "";
-            adminEmailElement.value = "";
-            adminPasswordElement.value = "";
+            schoolNameElement.value =
+                "";
+
+            adminNameElement.value =
+                "";
+
+            adminEmailElement.value =
+                "";
+
+            adminPasswordElement.value =
+                "";
 
 
-            loadSchools();
+            await loadSchools();
 
         }
 
@@ -418,7 +442,8 @@ async function loadSchools() {
         }
 
 
-        tbody.innerHTML = "";
+        tbody.innerHTML =
+            "";
 
 
         if (
@@ -431,7 +456,10 @@ async function loadSchools() {
 
                     <td
                         colspan="9"
-                        style="text-align:center;"
+                        style="
+                            text-align:center;
+                            padding:30px;
+                        "
                     >
                         No schools found.
                     </td>
@@ -582,10 +610,18 @@ async function loadSchools() {
                                     <button
                                         type="button"
                                         class="reset-password-button"
-                                        data-school-id="${escapeHtml(schoolId)}"
-                                        data-admin-id="${escapeHtml(adminId)}"
-                                        data-admin-name="${escapeHtml(admin.name || "")}"
-                                        data-admin-email="${escapeHtml(admin.email || "")}"
+                                        data-school-id="${escapeHtml(
+                                            schoolId
+                                        )}"
+                                        data-admin-id="${escapeHtml(
+                                            adminId
+                                        )}"
+                                        data-admin-name="${escapeHtml(
+                                            admin.name || ""
+                                        )}"
+                                        data-admin-email="${escapeHtml(
+                                            admin.email || ""
+                                        )}"
                                     >
                                         🔐 Reset Password
                                     </button>
@@ -598,7 +634,9 @@ async function loadSchools() {
                         <button
                             type="button"
                             class="view-school-button"
-                            data-school-id="${escapeHtml(schoolId)}"
+                            data-school-id="${escapeHtml(
+                                schoolId
+                            )}"
                         >
                             View
                         </button>
@@ -607,7 +645,9 @@ async function loadSchools() {
                         <button
                             type="button"
                             class="toggle-school-button"
-                            data-school-id="${escapeHtml(schoolId)}"
+                            data-school-id="${escapeHtml(
+                                schoolId
+                            )}"
                         >
 
                             ${
@@ -632,7 +672,7 @@ async function loadSchools() {
 
 
         // -------------------------------------------------
-        // ATTACH BUTTON EVENTS
+        // RESET PASSWORD BUTTONS
         // -------------------------------------------------
 
         document
@@ -665,6 +705,10 @@ async function loadSchools() {
             );
 
 
+        // -------------------------------------------------
+        // VIEW BUTTONS
+        // -------------------------------------------------
+
         document
             .querySelectorAll(
                 ".view-school-button"
@@ -686,6 +730,10 @@ async function loadSchools() {
                 }
             );
 
+
+        // -------------------------------------------------
+        // TOGGLE BUTTONS
+        // -------------------------------------------------
 
         document
             .querySelectorAll(
@@ -756,7 +804,9 @@ function createResetPasswordModal() {
 
 
     if (modal) {
+
         return modal;
+
     }
 
 
@@ -781,7 +831,7 @@ function createResetPasswordModal() {
             style="
                 position:fixed;
                 inset:0;
-                background:rgba(0,0,0,0.55);
+                background:rgba(0,0,0,0.60);
                 display:flex;
                 align-items:center;
                 justify-content:center;
@@ -797,132 +847,299 @@ function createResetPasswordModal() {
                 style="
                     background:#ffffff;
                     width:100%;
-                    max-width:450px;
-                    border-radius:14px;
-                    padding:25px;
+                    max-width:480px;
+                    border-radius:16px;
+                    padding:28px;
                     box-sizing:border-box;
-                    box-shadow:0 20px 60px rgba(0,0,0,0.30);
+                    box-shadow:0 25px 80px rgba(0,0,0,0.30);
                 "
             >
 
-                <h2
-                    style="
-                        margin:0 0 8px 0;
-                    "
-                >
-                    🔐 Reset Admin Password
-                </h2>
+                <!-- ============================= -->
+                <!-- RESET VIEW -->
+                <!-- ============================= -->
 
+                <div id="resetPasswordResetView">
 
-                <p
-                    id="resetPasswordAdminInfo"
-                    style="
-                        color:#555;
-                        line-height:1.5;
-                        margin:0 0 20px 0;
-                    "
-                >
-                </p>
-
-
-                <label
-                    for="resetPasswordInput"
-                    style="
-                        display:block;
-                        margin-bottom:7px;
-                        font-weight:600;
-                    "
-                >
-                    New Temporary Password
-                </label>
-
-
-                <input
-                    id="resetPasswordInput"
-                    type="password"
-                    minlength="6"
-                    autocomplete="new-password"
-                    placeholder="Enter temporary password"
-                    style="
-                        width:100%;
-                        box-sizing:border-box;
-                        padding:12px;
-                        border:1px solid #ccc;
-                        border-radius:8px;
-                        margin-bottom:8px;
-                        font-size:15px;
-                    "
-                >
-
-
-                <small
-                    style="
-                        display:block;
-                        color:#777;
-                        margin-bottom:20px;
-                        line-height:1.4;
-                    "
-                >
-                    Minimum 6 characters. The admin will be
-                    required to change it after login.
-                </small>
-
-
-                <div
-                    style="
-                        display:flex;
-                        justify-content:flex-end;
-                        gap:10px;
-                    "
-                >
-
-                    <button
-                        type="button"
-                        id="cancelResetPasswordBtn"
+                    <div
                         style="
-                            padding:10px 16px;
-                            border:1px solid #ccc;
-                            background:#fff;
-                            border-radius:8px;
-                            cursor:pointer;
+                            width:52px;
+                            height:52px;
+                            border-radius:50%;
+                            background:#eff6ff;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            font-size:25px;
+                            margin-bottom:15px;
                         "
                     >
-                        Cancel
-                    </button>
+                        🔐
+                    </div>
 
 
-                    <button
-                        type="button"
-                        id="confirmResetPasswordBtn"
+                    <h2
                         style="
-                            padding:10px 16px;
-                            border:none;
-                            background:#2563eb;
-                            color:#fff;
-                            border-radius:8px;
-                            cursor:pointer;
+                            margin:0 0 8px 0;
+                            font-size:22px;
                         "
                     >
-                        Reset Password
-                    </button>
+                        Reset Admin Password
+                    </h2>
+
+
+                    <p
+                        id="resetPasswordAdminInfo"
+                        style="
+                            color:#555;
+                            line-height:1.6;
+                            margin:0 0 22px 0;
+                        "
+                    >
+                    </p>
+
+
+                    <div
+                        style="
+                            background:#f8fafc;
+                            border:1px solid #e2e8f0;
+                            border-radius:10px;
+                            padding:14px;
+                            margin-bottom:22px;
+                            color:#475569;
+                            line-height:1.5;
+                            font-size:14px;
+                        "
+                    >
+                        A secure temporary password will be
+                        generated automatically.
+                        <br><br>
+                        The admin will be required to change
+                        the password after logging in.
+                    </div>
+
+
+                    <div
+                        style="
+                            display:flex;
+                            justify-content:flex-end;
+                            gap:10px;
+                        "
+                    >
+
+                        <button
+                            type="button"
+                            id="cancelResetPasswordBtn"
+                            style="
+                                padding:11px 18px;
+                                border:1px solid #cbd5e1;
+                                background:#fff;
+                                border-radius:8px;
+                                cursor:pointer;
+                                font-size:14px;
+                            "
+                        >
+                            Cancel
+                        </button>
+
+
+                        <button
+                            type="button"
+                            id="confirmResetPasswordBtn"
+                            style="
+                                padding:11px 18px;
+                                border:none;
+                                background:#2563eb;
+                                color:#fff;
+                                border-radius:8px;
+                                cursor:pointer;
+                                font-size:14px;
+                                font-weight:600;
+                            "
+                        >
+                            Generate & Reset Password
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        id="resetPasswordError"
+                        style="
+                            display:none;
+                            color:#dc2626;
+                            background:#fef2f2;
+                            border:1px solid #fecaca;
+                            padding:11px;
+                            border-radius:8px;
+                            margin-top:15px;
+                            font-size:14px;
+                            line-height:1.4;
+                        "
+                    >
+                    </div>
 
                 </div>
 
 
+                <!-- ============================= -->
+                <!-- SUCCESS VIEW -->
+                <!-- ============================= -->
+
                 <div
-                    id="resetPasswordError"
+                    id="resetPasswordSuccessView"
                     style="
                         display:none;
-                        color:#dc2626;
-                        background:#fef2f2;
-                        border:1px solid #fecaca;
-                        padding:10px;
-                        border-radius:8px;
-                        margin-top:15px;
-                        font-size:14px;
-                        line-height:1.4;
                     "
                 >
+
+                    <div
+                        style="
+                            width:56px;
+                            height:56px;
+                            border-radius:50%;
+                            background:#dcfce7;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            font-size:28px;
+                            margin-bottom:15px;
+                        "
+                    >
+                        ✓
+                    </div>
+
+
+                    <h2
+                        style="
+                            margin:0 0 8px 0;
+                            font-size:22px;
+                        "
+                    >
+                        Password Reset Successful
+                    </h2>
+
+
+                    <p
+                        id="resetPasswordSuccessInfo"
+                        style="
+                            color:#555;
+                            line-height:1.5;
+                            margin:0 0 20px 0;
+                        "
+                    >
+                    </p>
+
+
+                    <label
+                        style="
+                            display:block;
+                            font-weight:600;
+                            margin-bottom:8px;
+                        "
+                    >
+                        Temporary Password
+                    </label>
+
+
+                    <div
+                        style="
+                            display:flex;
+                            gap:8px;
+                            margin-bottom:12px;
+                        "
+                    >
+
+                        <input
+                            id="generatedTemporaryPassword"
+                            type="text"
+                            readonly
+                            style="
+                                flex:1;
+                                min-width:0;
+                                box-sizing:border-box;
+                                padding:13px;
+                                border:2px solid #2563eb;
+                                border-radius:9px;
+                                background:#eff6ff;
+                                font-size:17px;
+                                font-weight:700;
+                                letter-spacing:0.5px;
+                            "
+                        >
+
+
+                        <button
+                            type="button"
+                            id="copyTemporaryPasswordBtn"
+                            style="
+                                padding:10px 15px;
+                                border:none;
+                                background:#2563eb;
+                                color:#fff;
+                                border-radius:9px;
+                                cursor:pointer;
+                                font-weight:600;
+                                white-space:nowrap;
+                            "
+                        >
+                            📋 Copy
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        id="copyPasswordMessage"
+                        style="
+                            display:none;
+                            color:#15803d;
+                            font-size:14px;
+                            margin-bottom:15px;
+                            font-weight:600;
+                        "
+                    >
+                        ✓ Password copied to clipboard
+                    </div>
+
+
+                    <div
+                        style="
+                            background:#fff7ed;
+                            border:1px solid #fed7aa;
+                            color:#9a3412;
+                            border-radius:10px;
+                            padding:13px;
+                            font-size:14px;
+                            line-height:1.5;
+                            margin-bottom:20px;
+                        "
+                    >
+                        ⚠️ Give this temporary password to
+                        the school admin securely.
+                        <br><br>
+                        The admin must change it after login.
+                    </div>
+
+
+                    <button
+                        type="button"
+                        id="closeResetSuccessBtn"
+                        style="
+                            width:100%;
+                            padding:12px;
+                            border:none;
+                            background:#111827;
+                            color:#fff;
+                            border-radius:9px;
+                            cursor:pointer;
+                            font-size:15px;
+                            font-weight:600;
+                        "
+                    >
+                        Done
+                    </button>
+
                 </div>
 
             </div>
@@ -959,6 +1176,26 @@ function createResetPasswordModal() {
 
     document
         .getElementById(
+            "closeResetSuccessBtn"
+        )
+        .addEventListener(
+            "click",
+            closeResetPasswordModal
+        );
+
+
+    document
+        .getElementById(
+            "copyTemporaryPasswordBtn"
+        )
+        .addEventListener(
+            "click",
+            copyGeneratedPassword
+        );
+
+
+    document
+        .getElementById(
             "resetPasswordOverlay"
         )
         .addEventListener(
@@ -968,35 +1205,6 @@ function createResetPasswordModal() {
                 if (
                     event.target.id ===
                     "resetPasswordOverlay"
-                ) {
-
-                    closeResetPasswordModal();
-
-                }
-
-            }
-        );
-
-
-    document
-        .getElementById(
-            "resetPasswordInput"
-        )
-        .addEventListener(
-            "keydown",
-            function (event) {
-
-                if (
-                    event.key === "Enter"
-                ) {
-
-                    submitResetPassword();
-
-                }
-
-
-                if (
-                    event.key === "Escape"
                 ) {
 
                     closeResetPasswordModal();
@@ -1050,15 +1258,21 @@ function openResetPasswordModal(
         );
 
 
-    const info =
+    const resetView =
         document.getElementById(
-            "resetPasswordAdminInfo"
+            "resetPasswordResetView"
         );
 
 
-    const passwordInput =
+    const successView =
         document.getElementById(
-            "resetPasswordInput"
+            "resetPasswordSuccessView"
+        );
+
+
+    const info =
+        document.getElementById(
+            "resetPasswordAdminInfo"
         );
 
 
@@ -1068,11 +1282,19 @@ function openResetPasswordModal(
         );
 
 
+    const button =
+        document.getElementById(
+            "confirmResetPasswordBtn"
+        );
+
+
     if (
         !modal ||
+        !resetView ||
+        !successView ||
         !info ||
-        !passwordInput ||
-        !errorBox
+        !errorBox ||
+        !button
     ) {
 
         console.error(
@@ -1082,6 +1304,13 @@ function openResetPasswordModal(
         return;
 
     }
+
+
+    resetView.style.display =
+        "block";
+
+    successView.style.display =
+        "none";
 
 
     info.innerHTML =
@@ -1098,10 +1327,6 @@ function openResetPasswordModal(
         );
 
 
-    passwordInput.value =
-        "";
-
-
     errorBox.textContent =
         "";
 
@@ -1109,18 +1334,15 @@ function openResetPasswordModal(
         "none";
 
 
+    button.disabled =
+        false;
+
+    button.textContent =
+        "Generate & Reset Password";
+
+
     modal.style.display =
         "block";
-
-
-    setTimeout(
-        function () {
-
-            passwordInput.focus();
-
-        },
-        100
-    );
 
 }
 
@@ -1163,6 +1385,20 @@ function closeResetPasswordModal() {
 // =====================================================
 // SUBMIT RESET PASSWORD
 // =====================================================
+//
+// IMPORTANT:
+//
+// The frontend does NOT ask for a password.
+//
+// The backend generates the temporary password.
+//
+// Request:
+//
+// PATCH
+// /superadmin/schools/:schoolId/admin/:adminId/reset-password
+//
+// No request body is required.
+// =====================================================
 
 async function submitResetPassword() {
 
@@ -1185,12 +1421,6 @@ async function submitResetPassword() {
     }
 
 
-    const passwordInput =
-        document.getElementById(
-            "resetPasswordInput"
-        );
-
-
     const errorBox =
         document.getElementById(
             "resetPasswordError"
@@ -1204,63 +1434,18 @@ async function submitResetPassword() {
 
 
     if (
-        !passwordInput ||
         !errorBox ||
         !confirmButton
     ) {
 
         console.error(
-            "[SUPERADMIN] Reset password form elements not found."
+            "[SUPERADMIN] Reset password modal controls not found."
         );
 
         return;
 
     }
 
-
-    const newPassword =
-        passwordInput.value.trim();
-
-
-    // -------------------------------------------------
-    // VALIDATE
-    // -------------------------------------------------
-
-    if (!newPassword) {
-
-        errorBox.textContent =
-            "Please enter a temporary password.";
-
-        errorBox.style.display =
-            "block";
-
-        passwordInput.focus();
-
-        return;
-
-    }
-
-
-    if (
-        newPassword.length < 6
-    ) {
-
-        errorBox.textContent =
-            "Temporary password must be at least 6 characters.";
-
-        errorBox.style.display =
-            "block";
-
-        passwordInput.focus();
-
-        return;
-
-    }
-
-
-    // -------------------------------------------------
-    // CONFIRM
-    // -------------------------------------------------
 
     const confirmed =
         confirm(
@@ -1269,7 +1454,7 @@ async function submitResetPassword() {
             resetPasswordAdminName +
             "?\n\n" +
 
-            "The temporary password you entered will be saved.\n\n" +
+            "A secure temporary password will be generated automatically.\n\n" +
 
             "The admin will be required to change it after login."
 
@@ -1281,15 +1466,11 @@ async function submitResetPassword() {
     }
 
 
-    // -------------------------------------------------
-    // DISABLE BUTTON
-    // -------------------------------------------------
-
     confirmButton.disabled =
         true;
 
     confirmButton.textContent =
-        "Resetting...";
+        "Generating Password...";
 
     errorBox.style.display =
         "none";
@@ -1326,22 +1507,14 @@ async function submitResetPassword() {
                         "PATCH",
 
                     headers:
-                        getAuthHeaders(),
-
-                    body:
-                        JSON.stringify({
-
-                            newPassword:
-                                newPassword
-
-                        })
+                        getAuthHeaders()
 
                 }
             );
 
 
         // -------------------------------------------------
-        // AUTH ERRORS
+        // AUTH ERROR
         // -------------------------------------------------
 
         if (
@@ -1360,6 +1533,10 @@ async function submitResetPassword() {
         }
 
 
+        // -------------------------------------------------
+        // PERMISSION ERROR
+        // -------------------------------------------------
+
         if (
             response.status === 403
         ) {
@@ -1375,7 +1552,12 @@ async function submitResetPassword() {
         }
 
 
+        // -------------------------------------------------
+        // READ RESPONSE
+        // -------------------------------------------------
+
         let data = {};
+
 
         try {
 
@@ -1413,42 +1595,31 @@ async function submitResetPassword() {
 
 
         // -------------------------------------------------
-        // SUCCESS
+        // GET GENERATED PASSWORD
         // -------------------------------------------------
 
-        closeResetPasswordModal();
+        const generatedPassword =
+            data.temporaryPassword ||
+            data.tempPassword ||
+            data.password;
 
 
-        alert(
+        if (!generatedPassword) {
 
-            "PASSWORD RESET SUCCESSFUL\n\n" +
+            throw new Error(
+                "Password was reset, but the server did not return the temporary password."
+            );
 
-            "School Admin:\n" +
-            (
-                data.user?.name ||
-                resetPasswordAdminName
-            ) +
-            "\n\n" +
+        }
 
-            "Email:\n" +
-            (
-                data.user?.email ||
-                resetPasswordAdminEmail
-            ) +
-            "\n\n" +
 
-            "NEW TEMPORARY PASSWORD:\n\n" +
+        // -------------------------------------------------
+        // SHOW SUCCESS VIEW INSIDE SAME MODAL
+        // -------------------------------------------------
 
-            (
-                data.temporaryPassword ||
-                newPassword
-            ) +
-            "\n\n" +
-
-            "Give this password to the school admin.\n\n" +
-
-            "They MUST change it after logging in."
-
+        showResetPasswordSuccess(
+            generatedPassword,
+            data.user
         );
 
 
@@ -1475,7 +1646,243 @@ async function submitResetPassword() {
             false;
 
         confirmButton.textContent =
-            "Reset Password";
+            "Generate & Reset Password";
+
+    }
+
+}
+
+
+// =====================================================
+// SHOW RESET PASSWORD SUCCESS
+// =====================================================
+
+function showResetPasswordSuccess(
+    temporaryPassword,
+    user
+) {
+
+    const resetView =
+        document.getElementById(
+            "resetPasswordResetView"
+        );
+
+
+    const successView =
+        document.getElementById(
+            "resetPasswordSuccessView"
+        );
+
+
+    const successInfo =
+        document.getElementById(
+            "resetPasswordSuccessInfo"
+        );
+
+
+    const passwordInput =
+        document.getElementById(
+            "generatedTemporaryPassword"
+        );
+
+
+    const copyMessage =
+        document.getElementById(
+            "copyPasswordMessage"
+        );
+
+
+    if (
+        !resetView ||
+        !successView ||
+        !successInfo ||
+        !passwordInput
+    ) {
+
+        console.error(
+            "[SUPERADMIN] Success modal elements not found."
+        );
+
+        return;
+
+    }
+
+
+    const adminName =
+        user?.name ||
+        resetPasswordAdminName ||
+        "-";
+
+
+    const adminEmail =
+        user?.email ||
+        resetPasswordAdminEmail ||
+        "-";
+
+
+    resetView.style.display =
+        "none";
+
+
+    successView.style.display =
+        "block";
+
+
+    successInfo.innerHTML =
+
+        "Password for <strong>" +
+        escapeHtml(
+            adminName
+        ) +
+        "</strong> has been reset successfully." +
+
+        "<br>" +
+
+        "<small>" +
+        escapeHtml(
+            adminEmail
+        ) +
+        "</small>";
+
+
+    passwordInput.value =
+        temporaryPassword;
+
+
+    if (copyMessage) {
+
+        copyMessage.style.display =
+            "none";
+
+    }
+
+
+    passwordInput.focus();
+
+    passwordInput.select();
+
+}
+
+
+// =====================================================
+// COPY GENERATED PASSWORD
+// =====================================================
+
+async function copyGeneratedPassword() {
+
+    const passwordInput =
+        document.getElementById(
+            "generatedTemporaryPassword"
+        );
+
+
+    const copyButton =
+        document.getElementById(
+            "copyTemporaryPasswordBtn"
+        );
+
+
+    const copyMessage =
+        document.getElementById(
+            "copyPasswordMessage"
+        );
+
+
+    if (
+        !passwordInput ||
+        !passwordInput.value
+    ) {
+
+        return;
+
+    }
+
+
+    const password =
+        passwordInput.value;
+
+
+    try {
+
+        if (
+            navigator.clipboard &&
+            window.isSecureContext
+        ) {
+
+            await navigator.clipboard.writeText(
+                password
+            );
+
+        } else {
+
+            passwordInput.removeAttribute(
+                "readonly"
+            );
+
+            passwordInput.select();
+
+            document.execCommand(
+                "copy"
+            );
+
+            passwordInput.setAttribute(
+                "readonly",
+                "readonly"
+            );
+
+        }
+
+
+        if (copyButton) {
+
+            copyButton.textContent =
+                "✓ Copied";
+
+        }
+
+
+        if (copyMessage) {
+
+            copyMessage.style.display =
+                "block";
+
+        }
+
+
+        setTimeout(
+            function () {
+
+                if (copyButton) {
+
+                    copyButton.textContent =
+                        "📋 Copy";
+
+                }
+
+            },
+            2000
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "[SUPERADMIN] COPY PASSWORD ERROR:",
+            error
+        );
+
+
+        // Fallback: select the password
+        passwordInput.focus();
+        passwordInput.select();
+
+
+        if (copyButton) {
+
+            copyButton.textContent =
+                "Select & Copy";
+
+        }
 
     }
 
@@ -1658,7 +2065,7 @@ function escapeHtml(
 
 
 // =====================================================
-// MAKE FRONTEND FUNCTIONS AVAILABLE TO HTML
+// MAKE FUNCTIONS AVAILABLE TO HTML
 // =====================================================
 
 window.openResetPasswordModal =
@@ -1669,6 +2076,9 @@ window.closeResetPasswordModal =
 
 window.submitResetPassword =
     submitResetPassword;
+
+window.copyGeneratedPassword =
+    copyGeneratedPassword;
 
 window.toggleSchool =
     toggleSchool;
@@ -1687,28 +2097,43 @@ window.createSchool =
 // IMPORTANT
 // =====================================================
 //
-// DO NOT PUT THIS IN THIS FILE:
-//
-// exports.resetSchoolAdminPassword = ...
+// THIS IS FRONTEND CODE.
 //
 // DO NOT PUT:
+//
+// exports.resetSchoolAdminPassword
 //
 // require(...)
 // bcrypt
 // School
 // User
 //
-// Those belong in the BACKEND controller.
+// IN THIS FILE.
 //
-// This browser file only sends:
+// Those belong ONLY in your Node/Express backend.
+//
+// The frontend now sends:
 //
 // PATCH
-// /superadmin/schools/:schoolId/admin/:adminId/reset-password
+// /api/superadmin/schools/:schoolId/admin/:adminId/reset-password
 //
-// with:
+// WITHOUT a password.
+//
+// The backend must generate:
+//
+// temporaryPassword
+//
+// and return:
 //
 // {
-//     newPassword: "..."
+//     success: true,
+//     temporaryPassword: "...",
+//     user: {
+//         name: "...",
+//         email: "...",
+//         mustChangePassword: true
+//     }
 // }
 //
 // =====================================================
+
