@@ -820,6 +820,7 @@ async function (id, userName) {
         const token =
             getToken();
 
+
         const response =
             await fetch(
                 `${API_URL}/${encodeURIComponent(id)}/reset-password`,
@@ -833,16 +834,17 @@ async function (id, userName) {
                         'Content-Type':
                             'application/json',
 
-                        (token
+                        ...(token
                             ? {
                                 'Authorization':
                                     `Bearer ${token}`
-                                }
+                            }
                             : {})
 
                     }
                 }
             );
+
 
         const result =
             await response.json();
@@ -865,7 +867,7 @@ async function (id, userName) {
 
 
         // =================================================
-        // SHOW PASSWORD RESET MODAL
+        // GET MODAL ELEMENTS
         // =================================================
 
         const modal =
@@ -873,21 +875,28 @@ async function (id, userName) {
                 'password-reset-modal'
             );
 
+
         const userNameElement =
             document.getElementById(
                 'password-reset-user-name'
             );
+
 
         const passwordElement =
             document.getElementById(
                 'temporary-password'
             );
 
+
         const copyMessage =
             document.getElementById(
                 'copy-password-message'
             );
 
+
+        // =================================================
+        // SET MODAL CONTENT
+        // =================================================
 
         if (userNameElement) {
 
@@ -912,6 +921,10 @@ async function (id, userName) {
         }
 
 
+        // =================================================
+        // SHOW MODAL
+        // =================================================
+
         if (modal) {
 
             modal.style.display =
@@ -922,12 +935,14 @@ async function (id, userName) {
 
         } else {
 
-            // Fallback if modal HTML is missing
+            // Fallback if modal HTML does not exist
+
             alert(
                 `Password reset successfully!\n\n` +
                 `User: ${userName || 'User'}\n\n` +
                 `Temporary Password:\n` +
-                `${result.temporaryPassword}`
+                `${result.temporaryPassword}\n\n` +
+                `Give this temporary password to the user.`
             );
 
         }
@@ -949,7 +964,7 @@ async function (id, userName) {
     }
 
 };
-```
+
 
 // =====================================================
 // PASSWORD RESET MODAL CONTROLS
@@ -957,180 +972,207 @@ async function (id, userName) {
 
 (function initializePasswordResetModal() {
 
-```
-const modal =
-    document.getElementById(
-        'password-reset-modal'
-    );
-
-const closeButton =
-    document.getElementById(
-        'close-password-reset-modal'
-    );
-
-const doneButton =
-    document.getElementById(
-        'password-reset-done'
-    );
-
-const copyButton =
-    document.getElementById(
-        'copy-temporary-password'
-    );
-
-const passwordInput =
-    document.getElementById(
-        'temporary-password'
-    );
-
-const copyMessage =
-    document.getElementById(
-        'copy-password-message'
-    );
+    const modal =
+        document.getElementById(
+            'password-reset-modal'
+        );
 
 
-function closePasswordResetModal() {
+    const closeButton =
+        document.getElementById(
+            'close-password-reset-modal'
+        );
 
-    if (modal) {
 
-        modal.style.display =
-            'none';
+    const doneButton =
+        document.getElementById(
+            'password-reset-done'
+        );
+
+
+    const copyButton =
+        document.getElementById(
+            'copy-temporary-password'
+        );
+
+
+    const passwordInput =
+        document.getElementById(
+            'temporary-password'
+        );
+
+
+    const copyMessage =
+        document.getElementById(
+            'copy-password-message'
+        );
+
+
+    // =================================================
+    // CLOSE MODAL
+    // =================================================
+
+    function closePasswordResetModal() {
+
+        if (modal) {
+
+            modal.style.display =
+                'none';
+
+        }
+
+
+        document.body.style.overflow =
+            '';
 
     }
 
-    document.body.style.overflow =
-        '';
 
-}
+    // =================================================
+    // CLOSE BUTTON
+    // =================================================
 
+    if (closeButton) {
 
-if (closeButton) {
+        closeButton.addEventListener(
+            'click',
+            closePasswordResetModal
+        );
 
-    closeButton.addEventListener(
-        'click',
-        closePasswordResetModal
-    );
-
-}
-
-
-if (doneButton) {
-
-    doneButton.addEventListener(
-        'click',
-        closePasswordResetModal
-    );
-
-}
+    }
 
 
-// Close when clicking outside modal
-if (modal) {
+    // =================================================
+    // DONE BUTTON
+    // =================================================
 
-    modal.addEventListener(
-        'click',
-        function (event) {
+    if (doneButton) {
 
-            if (event.target === modal) {
+        doneButton.addEventListener(
+            'click',
+            closePasswordResetModal
+        );
 
-                closePasswordResetModal();
+    }
+
+
+    // =================================================
+    // CLOSE WHEN CLICKING OUTSIDE
+    // =================================================
+
+    if (modal) {
+
+        modal.addEventListener(
+            'click',
+            function (event) {
+
+                if (
+                    event.target === modal
+                ) {
+
+                    closePasswordResetModal();
+
+                }
 
             }
+        );
 
-        }
-    );
-
-}
+    }
 
 
-// =================================================
-// COPY TEMPORARY PASSWORD
-// =================================================
+    // =================================================
+    // COPY TEMPORARY PASSWORD
+    // =================================================
 
-if (copyButton) {
+    if (copyButton) {
 
-    copyButton.addEventListener(
-        'click',
-        async function () {
+        copyButton.addEventListener(
+            'click',
+            async function () {
 
-            const password =
-                passwordInput
-                    ? passwordInput.value
-                    : '';
-
-            if (!password) {
-                return;
-            }
+                const password =
+                    passwordInput
+                        ? passwordInput.value
+                        : '';
 
 
-            try {
+                if (!password) {
 
-                await navigator.clipboard.writeText(
-                    password
-                );
-
-
-                if (copyMessage) {
-
-                    copyMessage.textContent =
-                        'Password copied to clipboard.';
+                    return;
 
                 }
 
 
-                copyButton.innerHTML =
-                    '<i class="fas fa-check"></i> Copied';
+                try {
 
-
-                setTimeout(
-                    function () {
-
-                        copyButton.innerHTML =
-                            '<i class="fas fa-copy"></i> Copy';
-
-                    },
-                    2000
-                );
-
-
-            } catch (error) {
-
-                console.error(
-                    'Failed to copy password:',
-                    error
-                );
-
-
-                // Fallback
-                if (passwordInput) {
-
-                    passwordInput.select();
-
-                    passwordInput.setSelectionRange(
-                        0,
-                        passwordInput.value.length
+                    await navigator.clipboard.writeText(
+                        password
                     );
 
-                }
+
+                    if (copyMessage) {
+
+                        copyMessage.textContent =
+                            'Password copied to clipboard.';
+
+                    }
 
 
-                if (copyMessage) {
+                    copyButton.innerHTML =
+                        '<i class="fas fa-check"></i> Copied';
 
-                    copyMessage.textContent =
-                        'Select the password and copy it manually.';
+
+                    setTimeout(
+                        function () {
+
+                            copyButton.innerHTML =
+                                '<i class="fas fa-copy"></i> Copy';
+
+                        },
+                        2000
+                    );
+
+
+                } catch (error) {
+
+                    console.error(
+                        '[USER MANAGEMENT] COPY PASSWORD ERROR:',
+                        error
+                    );
+
+
+                    // Fallback for browsers where
+                    // clipboard API is unavailable
+
+                    if (passwordInput) {
+
+                        passwordInput.focus();
+
+                        passwordInput.select();
+
+                        passwordInput.setSelectionRange(
+                            0,
+                            passwordInput.value.length
+                        );
+
+                    }
+
+
+                    if (copyMessage) {
+
+                        copyMessage.textContent =
+                            'Password selected. Press Ctrl+C to copy.';
+
+                    }
 
                 }
 
             }
+        );
 
-        }
-    );
-
-}
+    }
 
 })();
-
-
 
     // =====================================================
     // CREATE USER
