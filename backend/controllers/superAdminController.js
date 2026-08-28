@@ -17,8 +17,37 @@ function generateSchoolCode(name) {
     const numbers =
         Math.floor(100 + Math.random() * 900);
 
-    // Avoid template literals completely
     return letters + numbers;
+}
+
+
+// =====================================================
+// GENERATE TEMPORARY PASSWORD
+// =====================================================
+
+function generateTemporaryPassword() {
+
+    const chars =
+        "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+
+    let password = "";
+
+    for (
+        let i = 0;
+        i < 10;
+        i++
+    ) {
+
+        password +=
+            chars.charAt(
+                Math.floor(
+                    Math.random() * chars.length
+                )
+            );
+
+    }
+
+    return password;
 }
 
 
@@ -62,6 +91,46 @@ exports.createSchool = async (req, res) => {
         }
 
 
+        if (
+            adminPassword.length < 6
+        ) {
+
+            return res.status(400).json({
+
+                success: false,
+
+                message:
+                    "Temporary password must be at least 6 characters."
+
+            });
+
+        }
+
+
+        // ---------------------------------------------
+        // CHECK ADMIN EMAIL
+        // ---------------------------------------------
+
+        const existingAdmin =
+            await User.findOne({
+                email: adminEmail
+            });
+
+
+        if (existingAdmin) {
+
+            return res.status(409).json({
+
+                success: false,
+
+                message:
+                    "A user with this email already exists."
+
+            });
+
+        }
+
+
         // ---------------------------------------------
         // GENERATE UNIQUE SCHOOL CODE
         // ---------------------------------------------
@@ -71,7 +140,9 @@ exports.createSchool = async (req, res) => {
         do {
 
             schoolCode =
-                generateSchoolCode(schoolName);
+                generateSchoolCode(
+                    schoolName
+                );
 
         } while (
             await School.findOne({
@@ -129,6 +200,7 @@ exports.createSchool = async (req, res) => {
                 );
 
                 break;
+
         }
 
 
@@ -139,25 +211,36 @@ exports.createSchool = async (req, res) => {
         const school =
             await School.create({
 
-                name: schoolName,
+                name:
+                    schoolName,
 
-                code: schoolCode,
+                code:
+                    schoolCode,
 
-                slug: schoolName
-                    .toLowerCase()
-                    .replace(/\s+/g, "-"),
+                slug:
+                    schoolName
+                        .toLowerCase()
+                        .replace(
+                            /\s+/g,
+                            "-"
+                        ),
 
-                active: true,
+                active:
+                    true,
 
                 subscription: {
 
-                    plan: subscriptionType,
+                    plan:
+                        subscriptionType,
 
-                    status: "Active",
+                    status:
+                        "Active",
 
-                    startDate,
+                    startDate:
+                        startDate,
 
-                    endDate
+                    endDate:
+                        endDate
 
                 }
 
@@ -165,7 +248,7 @@ exports.createSchool = async (req, res) => {
 
 
         // ---------------------------------------------
-        // HASH ADMIN TEMPORARY PASSWORD
+        // HASH ADMIN PASSWORD
         // ---------------------------------------------
 
         const hashedPassword =
@@ -182,23 +265,26 @@ exports.createSchool = async (req, res) => {
         const admin =
             await User.create({
 
-                school: school._id,
+                school:
+                    school._id,
 
-                name: adminName,
+                name:
+                    adminName,
 
-                email: adminEmail,
+                email:
+                    adminEmail,
 
-                password: hashedPassword,
+                password:
+                    hashedPassword,
 
-                role: "admin",
+                role:
+                    "admin",
 
-                // IMPORTANT:
-                // Admin must change the temporary
-                // password on first login.
+                mustChangePassword:
+                    true,
 
-                mustChangePassword: true,
-
-                passwordResetAt: null
+                passwordResetAt:
+                    null
 
             });
 
@@ -209,7 +295,8 @@ exports.createSchool = async (req, res) => {
 
         return res.status(201).json({
 
-            success: true,
+            success:
+                true,
 
             message:
                 "School and school admin created successfully.",
@@ -217,17 +304,29 @@ exports.createSchool = async (req, res) => {
             loginCode:
                 school.code,
 
-            school,
+            // IMPORTANT:
+            // Returned once so Super Admin can give
+            // the temporary password to the admin.
+
+            temporaryPassword:
+                adminPassword,
+
+            school:
+                school,
 
             admin: {
 
-                id: admin._id,
+                id:
+                    admin._id,
 
-                name: admin.name,
+                name:
+                    admin.name,
 
-                email: admin.email,
+                email:
+                    admin.email,
 
-                role: admin.role,
+                role:
+                    admin.role,
 
                 mustChangePassword:
                     admin.mustChangePassword
@@ -247,7 +346,8 @@ exports.createSchool = async (req, res) => {
 
         return res.status(500).json({
 
-            success: false,
+            success:
+                false,
 
             message:
                 err.message
@@ -260,7 +360,7 @@ exports.createSchool = async (req, res) => {
 
 
 // =====================================================
-// LIST ALL SCHOOLS
+// LIST ALL SCHOOLS WITH SCHOOL ADMIN
 // =====================================================
 
 exports.getSchools = async (req, res) => {
@@ -271,11 +371,53 @@ exports.getSchools = async (req, res) => {
             await School.find()
                 .sort({
                     createdAt: -1
-                });
+                })
+                .lean();
+
+
+        // ---------------------------------------------
+        // FIND ADMIN FOR EACH SCHOOL
+        // ---------------------------------------------
+
+        const schoolsWithAdmins =
+            await Promise.all(
+
+                schools.map(
+                    async function (school) {
+
+                        const admin =
+                            await User.findOne({
+
+                                school:
+                                    school._id,
+
+                                role:
+                                    "admin"
+
+                            })
+                            .select(
+                                "_id name email role mustChangePassword"
+                            )
+                            .lean();
+
+
+                        return {
+
+                            ...school,
+
+                            admin:
+                                admin || null
+
+                        };
+
+                    }
+                )
+
+            );
 
 
         return res.json(
-            schools
+            schoolsWithAdmins
         );
 
 
@@ -289,9 +431,13 @@ exports.getSchools = async (req, res) => {
 
         return res.status(500).json({
 
-            success: false,
+            success:
+                false,
 
             message:
+                "Failed to load schools.",
+
+            error:
                 err.message
 
         });
@@ -319,10 +465,11 @@ exports.toggleSchoolStatus = async (req, res) => {
 
             return res.status(404).json({
 
-                success: false,
+                success:
+                    false,
 
                 message:
-                    "School not found"
+                    "School not found."
 
             });
 
@@ -338,7 +485,8 @@ exports.toggleSchoolStatus = async (req, res) => {
 
         return res.json({
 
-            success: true,
+            success:
+                true,
 
             active:
                 school.active
@@ -356,7 +504,8 @@ exports.toggleSchoolStatus = async (req, res) => {
 
         return res.status(500).json({
 
-            success: false,
+            success:
+                false,
 
             message:
                 err.message
@@ -372,17 +521,12 @@ exports.toggleSchoolStatus = async (req, res) => {
 // SUPER ADMIN RESET SCHOOL ADMIN PASSWORD
 // =====================================================
 //
-// This is intentionally different from the normal
-// change-password endpoint.
+// The Super Admin does NOT enter the new password.
 //
-// The school admin does NOT reset their own password.
-// Only Super Admin can reset it.
+// The system generates a temporary password.
 //
-// After reset:
+// The temporary password is returned once.
 //
-// mustChangePassword = true
-//
-// The new password becomes a temporary password.
 // The school admin must change it after login.
 // =====================================================
 
@@ -393,47 +537,8 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         const schoolId =
             req.params.id;
 
-
-        const {
-            newPassword
-        } = req.body;
-
-
-        // ---------------------------------------------
-        // VALIDATE PASSWORD
-        // ---------------------------------------------
-
-        if (
-            !newPassword ||
-            typeof newPassword !== "string"
-        ) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "Temporary password is required."
-
-            });
-
-        }
-
-
-        if (
-            newPassword.length < 6
-        ) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "Temporary password must be at least 6 characters."
-
-            });
-
-        }
+        const adminId =
+            req.params.adminId;
 
 
         // ---------------------------------------------
@@ -450,7 +555,8 @@ exports.resetSchoolAdminPassword = async (req, res) => {
 
             return res.status(404).json({
 
-                success: false,
+                success:
+                    false,
 
                 message:
                     "School not found."
@@ -461,15 +567,20 @@ exports.resetSchoolAdminPassword = async (req, res) => {
 
 
         // ---------------------------------------------
-        // FIND SCHOOL ADMIN
+        // FIND ADMIN
         // ---------------------------------------------
 
         const admin =
             await User.findOne({
 
-                school: school._id,
+                _id:
+                    adminId,
 
-                role: "admin"
+                school:
+                    school._id,
+
+                role:
+                    "admin"
 
             });
 
@@ -478,7 +589,8 @@ exports.resetSchoolAdminPassword = async (req, res) => {
 
             return res.status(404).json({
 
-                success: false,
+                success:
+                    false,
 
                 message:
                     "School admin not found."
@@ -489,12 +601,20 @@ exports.resetSchoolAdminPassword = async (req, res) => {
 
 
         // ---------------------------------------------
+        // GENERATE TEMPORARY PASSWORD
+        // ---------------------------------------------
+
+        const temporaryPassword =
+            generateTemporaryPassword();
+
+
+        // ---------------------------------------------
         // HASH TEMPORARY PASSWORD
         // ---------------------------------------------
 
         admin.password =
             await bcrypt.hash(
-                newPassword,
+                temporaryPassword,
                 10
             );
 
@@ -507,8 +627,6 @@ exports.resetSchoolAdminPassword = async (req, res) => {
             true;
 
 
-        // Store when the reset happened
-
         admin.passwordResetAt =
             new Date();
 
@@ -516,9 +634,14 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         await admin.save();
 
 
+        // ---------------------------------------------
+        // LOG RESET
+        // ---------------------------------------------
+
         console.log(
             "[SUPERADMIN] SCHOOL ADMIN PASSWORD RESET:",
             {
+
                 school:
                     school.name,
 
@@ -526,7 +649,11 @@ exports.resetSchoolAdminPassword = async (req, res) => {
                     school._id,
 
                 admin:
-                    admin.email
+                    admin.email,
+
+                adminId:
+                    admin._id
+
             }
         );
 
@@ -537,25 +664,16 @@ exports.resetSchoolAdminPassword = async (req, res) => {
 
         return res.json({
 
-            success: true,
+            success:
+                true,
 
             message:
                 "School admin password reset successfully. The admin must change the temporary password after login.",
 
-            school: {
+            temporaryPassword:
+                temporaryPassword,
 
-                id:
-                    school._id,
-
-                name:
-                    school.name,
-
-                code:
-                    school.code
-
-            },
-
-            admin: {
+            user: {
 
                 id:
                     admin._id,
@@ -565,6 +683,9 @@ exports.resetSchoolAdminPassword = async (req, res) => {
 
                 email:
                     admin.email,
+
+                role:
+                    admin.role,
 
                 mustChangePassword:
                     true
@@ -584,7 +705,8 @@ exports.resetSchoolAdminPassword = async (req, res) => {
 
         return res.status(500).json({
 
-            success: false,
+            success:
+                false,
 
             message:
                 "Failed to reset school admin password.",
@@ -614,24 +736,31 @@ exports.checkExpiredSubscriptions = async () => {
         await School.updateMany(
 
             {
+
                 "subscription.endDate":
                     {
-                        $lt: today
+                        $lt:
+                            today
                     },
 
                 active:
                     true
+
             },
 
             {
+
                 $set:
                     {
+
                         active:
                             false,
 
                         "subscription.status":
                             "Expired"
+
                     }
+
             }
 
         );
