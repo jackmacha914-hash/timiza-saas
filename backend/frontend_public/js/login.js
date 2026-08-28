@@ -1,275 +1,1243 @@
-// Helper function to get dashboard URL based on user role
+// =====================================================
+// DASHBOARD URL
+// =====================================================
+
 function getDashboardURL(role) {
+
     switch (role) {
-        case 'superadmin': return '/superadmin.html';
-        case 'admin':      return '/index.html';
-        case 'teacher':    return '/teacher.html';
-        case 'student':    return '/student.html';
-        default:           return '/login.html';
+
+        case 'superadmin':
+            return '/superadmin.html';
+
+        case 'admin':
+            return '/index.html';
+
+        case 'teacher':
+            return '/teacher.html';
+
+        case 'student':
+            return '/student.html';
+
+        case 'accountant':
+            return '/accountant.html';
+
+        default:
+            return '/login.html';
     }
 }
 
-// Helper to show errors
-function showError(message, elementId = 'error-message') {
-    const errorElement = document.getElementById(elementId);
-    if (errorElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-        errorElement.style.color = 'red';
-    }
+
+
+// =====================================================
+// SHOW ERROR
+// =====================================================
+
+function showError(
+    message,
+    elementId = 'error-message'
+) {
+
+    const element =
+        document.getElementById(elementId);
+
+    if (!element) return;
+
+    element.textContent =
+        message;
+
+    element.style.display =
+        'block';
+
+    element.style.color =
+        'red';
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const showRegisterLink = document.getElementById('show-register');
-    const showLoginLink = document.getElementById('show-login');
-    const roleSelect = document.getElementById('role');
-    const classGroup = document.getElementById('class-group');
-    const formTitle = document.getElementById('form-title');
 
-    // ---------------------------
-    // LOGIN
-    // ---------------------------
+
+// =====================================================
+// SHOW SUCCESS
+// =====================================================
+
+function showSuccess(
+    message,
+    elementId
+) {
+
+    const element =
+        document.getElementById(elementId);
+
+    if (!element) return;
+
+    element.textContent =
+        message;
+
+    element.style.display =
+        'block';
+
+    element.style.color =
+        'green';
+}
+
+
+
+// =====================================================
+// HIDE ALL AUTH FORMS
+// =====================================================
+
+function hideAllForms() {
+
+    const loginForm =
+        document.getElementById('login-form');
+
+    const registerForm =
+        document.getElementById('register-form');
+
+    const changePasswordForm =
+        document.getElementById(
+            'change-password-form'
+        );
+
+
     if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
 
-            const email = document.getElementById('login-email')?.value;
-            const password = document.getElementById('login-password')?.value;
-            const schoolCode = document.getElementById('school-code')?.value;
+        loginForm.style.display =
+            'none';
 
-            if (!email || !password || !schoolCode) {
-                showError('Please enter school code, email and password');
-                return;
-            }
-
-            try {
-                const response = await apiFetch(`${API_CONFIG.AUTH_URL}/login`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        email,
-                        password,
-                        schoolCode
-                    }),
-                });
-
-                if (response?.token) {
-                    localStorage.setItem('token', response.token);
-
-                    if (response.user) {
-                        localStorage.setItem(
-                            'user',
-                            JSON.stringify(response.user)
-                        );
-                    }
-
-                    const role = response.user?.role || 'student';
-                    window.location.href = getDashboardURL(role);
-
-                } else {
-                    showError('No authentication token received');
-                }
-
-            } catch (error) {
-                console.error('Login error:', error);
-
-                showError(
-                    error.message ||
-                    'Login failed. Please try again.'
-                );
-
-                const passwordField =
-                    document.getElementById('login-password');
-
-                if (passwordField) {
-                    passwordField.value = '';
-                }
-            }
-        });
     }
 
-    // ---------------------------
-    // TOGGLE LOGIN/REGISTER
-    // ---------------------------
-    if (showRegisterLink) {
-        showRegisterLink.addEventListener('click', (e) => {
-            e.preventDefault();
 
-            loginForm.style.display = 'none';
-            registerForm.style.display = 'block';
-            formTitle.textContent = 'Create Account';
-
-            document.getElementById('error-message').textContent = '';
-        });
-    }
-
-    if (showLoginLink) {
-        showLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-
-            registerForm.style.display = 'none';
-            loginForm.style.display = 'block';
-            formTitle.textContent = 'Login';
-
-            document.getElementById('register-message').textContent = '';
-        });
-    }
-
-    // ---------------------------
-    // ROLE SELECT
-    // ---------------------------
-    if (roleSelect && classGroup) {
-        roleSelect.addEventListener('change', function () {
-
-            const classInput =
-                document.getElementById('class');
-
-            if (this.value === 'student') {
-                classGroup.style.display = 'block';
-
-                if (classInput) {
-                    classInput.setAttribute(
-                        'required',
-                        'required'
-                    );
-                }
-
-            } else {
-
-                classGroup.style.display = 'none';
-
-                if (classInput) {
-                    classInput.removeAttribute(
-                        'required'
-                    );
-                }
-            }
-        });
-    }
-
-    // ---------------------------
-    // REGISTER
-    // ---------------------------
     if (registerForm) {
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
 
-            const name =
-                document.getElementById('register-name')?.value;
+        registerForm.style.display =
+            'none';
 
-            const email =
-                document.getElementById('register-email')?.value;
+    }
 
-            const password =
-                document.getElementById('register-password')?.value;
 
-            const confirmPassword =
-                document.getElementById('confirm-password')?.value;
+    if (changePasswordForm) {
 
-            const role =
-                document.getElementById('role')?.value;
+        changePasswordForm.style.display =
+            'none';
 
-            const schoolCode =
-                document.getElementById('register-school-code')?.value;
+    }
 
-            const studentClass =
-                role === 'student'
-                    ? document.getElementById('class')?.value
-                    : '';
+}
 
-            if (!schoolCode) {
-                showError(
-                    'Please enter school code',
-                    'register-message'
-                );
-                return;
-            }
 
-            if (password !== confirmPassword) {
-                showError(
-                    'Passwords do not match',
-                    'register-message'
-                );
-                return;
-            }
 
-            if (
-                role === 'student' &&
-                !studentClass
-            ) {
-                showError(
-                    'Please select a class',
-                    'register-message'
-                );
-                return;
-            }
+// =====================================================
+// SHOW LOGIN
+// =====================================================
 
-            try {
+function showLoginForm() {
 
-                const response = await apiFetch(
-                    `${API_CONFIG.AUTH_URL}/register`,
-                    {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            name,
-                            email,
-                            password,
-                            role,
-                            schoolCode,
-                            studentClass:
-                                role === 'student'
-                                    ? studentClass
-                                    : undefined
-                        }),
+    hideAllForms();
+
+    const loginForm =
+        document.getElementById('login-form');
+
+    const formTitle =
+        document.getElementById('form-title');
+
+
+    if (loginForm) {
+
+        loginForm.style.display =
+            'block';
+
+    }
+
+
+    if (formTitle) {
+
+        formTitle.textContent =
+            'Login';
+
+    }
+
+}
+
+
+
+// =====================================================
+// SHOW REGISTER
+// =====================================================
+
+function showRegisterForm() {
+
+    hideAllForms();
+
+    const registerForm =
+        document.getElementById('register-form');
+
+    const formTitle =
+        document.getElementById('form-title');
+
+
+    if (registerForm) {
+
+        registerForm.style.display =
+            'block';
+
+    }
+
+
+    if (formTitle) {
+
+        formTitle.textContent =
+            'Create Account';
+
+    }
+
+}
+
+
+
+// =====================================================
+// SHOW CHANGE PASSWORD
+// =====================================================
+
+function showChangePasswordForm() {
+
+    hideAllForms();
+
+    const changePasswordForm =
+        document.getElementById(
+            'change-password-form'
+        );
+
+    const formTitle =
+        document.getElementById(
+            'form-title'
+        );
+
+
+    if (changePasswordForm) {
+
+        changePasswordForm.style.display =
+            'block';
+
+    }
+
+
+    if (formTitle) {
+
+        formTitle.textContent =
+            'Change Password';
+
+    }
+
+}
+
+
+
+// =====================================================
+// DOM READY
+// =====================================================
+
+document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+
+        const loginForm =
+            document.getElementById(
+                'login-form'
+            );
+
+
+        const registerForm =
+            document.getElementById(
+                'register-form'
+            );
+
+
+        const changePasswordForm =
+            document.getElementById(
+                'change-password-form'
+            );
+
+
+        const showRegisterLink =
+            document.getElementById(
+                'show-register'
+            );
+
+
+        const showLoginButton =
+            document.getElementById(
+                'show-login'
+            );
+
+
+        const roleSelect =
+            document.getElementById(
+                'role'
+            );
+
+
+        const classGroup =
+            document.getElementById(
+                'class-group'
+            );
+
+
+
+        // =================================================
+        // LOGIN
+        // =================================================
+
+        if (loginForm) {
+
+            loginForm.addEventListener(
+                'submit',
+                async (e) => {
+
+                    e.preventDefault();
+
+
+                    const email =
+                        document
+                            .getElementById(
+                                'login-email'
+                            )
+                            ?.value
+                            ?.trim();
+
+
+                    const password =
+                        document
+                            .getElementById(
+                                'login-password'
+                            )
+                            ?.value;
+
+
+                    const schoolCode =
+                        document
+                            .getElementById(
+                                'school-code'
+                            )
+                            ?.value
+                            ?.trim();
+
+
+                    if (
+                        !email ||
+                        !password ||
+                        !schoolCode
+                    ) {
+
+                        showError(
+                            'Please enter school code, email and password'
+                        );
+
+                        return;
                     }
-                );
 
-                const registerMessage =
-                    document.getElementById(
-                        'register-message'
-                    );
 
-                if (registerMessage) {
 
-                    registerMessage.textContent =
-                        'Registration successful! Please login.';
+                    try {
 
-                    registerMessage.style.color = 'green';
+                        const response =
+                            await apiFetch(
+                                `${API_CONFIG.AUTH_URL}/login`,
+                                {
+                                    method: 'POST',
 
-                    registerForm.reset();
+                                    body:
+                                        JSON.stringify({
+                                            email,
+                                            password,
+                                            schoolCode
+                                        })
+                                }
+                            );
 
-                    setTimeout(() => {
 
-                        registerForm.style.display =
-                            'none';
 
-                        loginForm.style.display =
-                            'block';
+                        // =================================
+                        // SAVE TOKEN
+                        // =================================
 
-                        formTitle.textContent =
-                            'Login';
+                        if (!response?.token) {
 
-                        registerMessage.textContent =
+                            showError(
+                                'No authentication token received'
+                            );
+
+                            return;
+
+                        }
+
+
+                        localStorage.setItem(
+                            'token',
+                            response.token
+                        );
+
+
+
+                        // =================================
+                        // SAVE USER
+                        // =================================
+
+                        if (response.user) {
+
+                            localStorage.setItem(
+                                'user',
+                                JSON.stringify(
+                                    response.user
+                                )
+                            );
+
+                        }
+
+
+
+                        const role =
+                            response.user?.role ||
+                            response.role ||
+                            'student';
+
+
+
+                        // =================================
+                        // IMPORTANT:
+                        // TEMPORARY PASSWORD
+                        // =================================
+
+                        if (
+                            response.mustChangePassword === true ||
+                            response.user?.mustChangePassword === true
+                        ) {
+
+                            console.log(
+                                '[LOGIN] Temporary password detected'
+                            );
+
+
+                            console.log(
+                                '[LOGIN] User must change password'
+                            );
+
+
+                            // Show change password screen
+                            showChangePasswordForm();
+
+
+                            // Clear old login password
+                            const passwordField =
+                                document.getElementById(
+                                    'login-password'
+                                );
+
+
+                            if (passwordField) {
+
+                                passwordField.value =
+                                    '';
+
+                            }
+
+
+                            // Put the temporary password
+                            // in the current password field
+                            const currentPasswordField =
+                                document.getElementById(
+                                    'current-password'
+                                );
+
+
+                            if (currentPasswordField) {
+
+                                currentPasswordField.value =
+                                    password;
+
+                            }
+
+
+                            return;
+
+                        }
+
+
+
+                        // =================================
+                        // NORMAL LOGIN
+                        // =================================
+
+                        console.log(
+                            '[LOGIN] Normal login'
+                        );
+
+
+                        window.location.href =
+                            getDashboardURL(
+                                role
+                            );
+
+                    } catch (error) {
+
+                        console.error(
+                            '[LOGIN] ERROR:',
+                            error
+                        );
+
+
+                        showError(
+                            error.message ||
+                            'Login failed. Please try again.'
+                        );
+
+
+                        const passwordField =
+                            document.getElementById(
+                                'login-password'
+                            );
+
+
+                        if (passwordField) {
+
+                            passwordField.value =
+                                '';
+
+                        }
+
+                    }
+
+                }
+            );
+
+        }
+
+
+
+        // =================================================
+        // CHANGE PASSWORD
+        // =================================================
+
+        if (changePasswordForm) {
+
+            changePasswordForm.addEventListener(
+                'submit',
+                async (e) => {
+
+                    e.preventDefault();
+
+
+                    const currentPassword =
+                        document
+                            .getElementById(
+                                'current-password'
+                            )
+                            ?.value;
+
+
+                    const newPassword =
+                        document
+                            .getElementById(
+                                'new-password'
+                            )
+                            ?.value;
+
+
+                    const confirmNewPassword =
+                        document
+                            .getElementById(
+                                'confirm-new-password'
+                            )
+                            ?.value;
+
+
+
+                    // =================================
+                    // VALIDATION
+                    // =================================
+
+                    if (
+                        !currentPassword ||
+                        !newPassword ||
+                        !confirmNewPassword
+                    ) {
+
+                        showError(
+                            'Please fill in all password fields',
+                            'change-password-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (
+                        newPassword.length < 6
+                    ) {
+
+                        showError(
+                            'New password must be at least 6 characters',
+                            'change-password-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (
+                        newPassword !==
+                        confirmNewPassword
+                    ) {
+
+                        showError(
+                            'New passwords do not match',
+                            'change-password-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (
+                        currentPassword ===
+                        newPassword
+                    ) {
+
+                        showError(
+                            'New password must be different from the temporary password',
+                            'change-password-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    // =================================
+                    // GET TOKEN
+                    // =================================
+
+                    const token =
+                        localStorage.getItem(
+                            'token'
+                        );
+
+
+                    if (!token) {
+
+                        showError(
+                            'Your login session has expired. Please login again.',
+                            'change-password-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    try {
+
+                        const changeButton =
+                            document.getElementById(
+                                'change-password-btn'
+                            );
+
+
+                        if (changeButton) {
+
+                            changeButton.disabled =
+                                true;
+
+                            changeButton.innerHTML =
+                                '<i class="fas fa-spinner fa-spin"></i> Changing...';
+
+                        }
+
+
+
+                        // =================================
+                        // CHANGE PASSWORD REQUEST
+                        // =================================
+
+                        const response =
+                            await fetch(
+                                `${API_CONFIG.AUTH_URL}/change-password`,
+                                {
+                                    method: 'POST',
+
+                                    headers: {
+                                        'Content-Type':
+                                            'application/json',
+
+                                        'Authorization':
+                                            `Bearer ${token}`
+                                    },
+
+                                    body:
+                                        JSON.stringify({
+                                            currentPassword,
+                                            newPassword
+                                        })
+                                }
+                            );
+
+
+
+                        const data =
+                            await response.json();
+
+
+
+                        console.log(
+                            '[CHANGE PASSWORD] RESPONSE:',
+                            data
+                        );
+
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                data.message ||
+                                data.msg ||
+                                'Failed to change password'
+                            );
+
+                        }
+
+
+
+                        // =================================
+                        // SUCCESS
+                        // =================================
+
+                        showSuccess(
+                            data.message ||
+                            'Password changed successfully.',
+                            'change-password-message'
+                        );
+
+
+
+                        // =================================
+                        // UPDATE LOCAL USER
+                        // =================================
+
+                        const storedUser =
+                            localStorage.getItem(
+                                'user'
+                            );
+
+
+                        if (storedUser) {
+
+                            try {
+
+                                const user =
+                                    JSON.parse(
+                                        storedUser
+                                    );
+
+
+                                user.mustChangePassword =
+                                    false;
+
+
+                                localStorage.setItem(
+                                    'user',
+                                    JSON.stringify(
+                                        user
+                                    )
+                                );
+
+                            } catch (error) {
+
+                                console.warn(
+                                    'Could not update local user:',
+                                    error
+                                );
+
+                            }
+
+                        }
+
+
+
+                        // =================================
+                        // GET ROLE
+                        // =================================
+
+                        const user =
+                            storedUser
+                                ? JSON.parse(
+                                    storedUser
+                                )
+                                : null;
+
+
+                        const role =
+                            user?.role ||
+                            response.role ||
+                            'student';
+
+
+
+                        // =================================
+                        // GO TO DASHBOARD
+                        // =================================
+
+                        setTimeout(
+                            () => {
+
+                                window.location.href =
+                                    getDashboardURL(
+                                        role
+                                    );
+
+                            },
+                            1200
+                        );
+
+
+
+                    } catch (error) {
+
+                        console.error(
+                            '[CHANGE PASSWORD] ERROR:',
+                            error
+                        );
+
+
+                        showError(
+                            error.message ||
+                            'Failed to change password. Please try again.',
+                            'change-password-message'
+                        );
+
+
+                        const changeButton =
+                            document.getElementById(
+                                'change-password-btn'
+                            );
+
+
+                        if (changeButton) {
+
+                            changeButton.disabled =
+                                false;
+
+                            changeButton.innerHTML =
+                                '<i class="fas fa-key"></i> Change Password';
+
+                        }
+
+                    }
+
+                }
+            );
+
+        }
+
+
+
+        // =================================================
+        // SHOW REGISTER
+        // =================================================
+
+        if (showRegisterLink) {
+
+            showRegisterLink.addEventListener(
+                'click',
+                (e) => {
+
+                    e.preventDefault();
+
+                    showRegisterForm();
+
+                    const error =
+                        document.getElementById(
+                            'error-message'
+                        );
+
+
+                    if (error) {
+
+                        error.textContent =
                             '';
 
-                    }, 2000);
+                    }
+
                 }
+            );
 
-            } catch (error) {
+        }
 
-                console.error(
-                    'Registration error:',
-                    error
-                );
 
-                showError(
-                    error.message ||
-                    'Registration failed. Please try again.',
-                    'register-message'
-                );
-            }
-        });
+
+        // =================================================
+        // BACK TO LOGIN
+        // =================================================
+
+        if (showLoginButton) {
+
+            showLoginButton.addEventListener(
+                'click',
+                (e) => {
+
+                    e.preventDefault();
+
+                    showLoginForm();
+
+
+                    const message =
+                        document.getElementById(
+                            'register-message'
+                        );
+
+
+                    if (message) {
+
+                        message.textContent =
+                            '';
+
+                    }
+
+                }
+            );
+
+        }
+
+
+
+        // =================================================
+        // ROLE SELECT
+        // =================================================
+
+        if (
+            roleSelect &&
+            classGroup
+        ) {
+
+            roleSelect.addEventListener(
+                'change',
+                function () {
+
+                    const classInput =
+                        document.getElementById(
+                            'class'
+                        );
+
+
+                    if (
+                        this.value ===
+                        'student'
+                    ) {
+
+                        classGroup.style.display =
+                            'block';
+
+
+                        if (classInput) {
+
+                            classInput.setAttribute(
+                                'required',
+                                'required'
+                            );
+
+                        }
+
+                    } else {
+
+                        classGroup.style.display =
+                            'none';
+
+
+                        if (classInput) {
+
+                            classInput.removeAttribute(
+                                'required'
+                            );
+
+                            classInput.value =
+                                '';
+
+                        }
+
+                    }
+
+                }
+            );
+
+        }
+
+
+
+        // =================================================
+        // REGISTER
+        // =================================================
+
+        if (registerForm) {
+
+            registerForm.addEventListener(
+                'submit',
+                async (e) => {
+
+                    e.preventDefault();
+
+
+                    const name =
+                        document
+                            .getElementById(
+                                'register-name'
+                            )
+                            ?.value
+                            ?.trim();
+
+
+                    const email =
+                        document
+                            .getElementById(
+                                'register-email'
+                            )
+                            ?.value
+                            ?.trim();
+
+
+                    const password =
+                        document
+                            .getElementById(
+                                'register-password'
+                            )
+                            ?.value;
+
+
+                    const confirmPassword =
+                        document
+                            .getElementById(
+                                'confirm-password'
+                            )
+                            ?.value;
+
+
+                    const role =
+                        document
+                            .getElementById(
+                                'role'
+                            )
+                            ?.value;
+
+
+                    const schoolCode =
+                        document
+                            .getElementById(
+                                'register-school-code'
+                            )
+                            ?.value
+                            ?.trim();
+
+
+                    const studentClass =
+                        role === 'student'
+                            ? document
+                                .getElementById(
+                                    'class'
+                                )
+                                ?.value
+                            : '';
+
+
+
+                    if (!name) {
+
+                        showError(
+                            'Please enter your name',
+                            'register-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (!email) {
+
+                        showError(
+                            'Please enter your email',
+                            'register-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (!schoolCode) {
+
+                        showError(
+                            'Please enter school code',
+                            'register-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (!password) {
+
+                        showError(
+                            'Please enter a password',
+                            'register-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (
+                        password.length < 6
+                    ) {
+
+                        showError(
+                            'Password must be at least 6 characters',
+                            'register-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (
+                        password !==
+                        confirmPassword
+                    ) {
+
+                        showError(
+                            'Passwords do not match',
+                            'register-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (!role) {
+
+                        showError(
+                            'Please select a role',
+                            'register-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    if (
+                        role === 'student' &&
+                        !studentClass
+                    ) {
+
+                        showError(
+                            'Please select a class',
+                            'register-message'
+                        );
+
+                        return;
+
+                    }
+
+
+
+                    try {
+
+                        const response =
+                            await apiFetch(
+                                `${API_CONFIG.AUTH_URL}/register`,
+                                {
+                                    method: 'POST',
+
+                                    body:
+                                        JSON.stringify({
+                                            name,
+                                            email,
+                                            password,
+                                            role,
+                                            schoolCode,
+
+                                            class:
+                                                role === 'student'
+                                                    ? studentClass
+                                                    : undefined
+                                        })
+                                }
+                            );
+
+
+
+                        console.log(
+                            '[REGISTER] RESPONSE:',
+                            response
+                        );
+
+
+
+                        showSuccess(
+                            'Registration successful! Please login.',
+                            'register-message'
+                        );
+
+
+                        registerForm.reset();
+
+
+                        setTimeout(
+                            () => {
+
+                                showLoginForm();
+
+                            },
+                            1500
+                        );
+
+
+
+                    } catch (error) {
+
+                        console.error(
+                            '[REGISTER] ERROR:',
+                            error
+                        );
+
+
+                        showError(
+                            error.message ||
+                            'Registration failed. Please try again.',
+                            'register-message'
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
     }
-});
-
+);
