@@ -619,10 +619,211 @@ async function loadSchools() {
 
 
 // =====================================================
-// RESET SCHOOL ADMIN PASSWORD - FRONTEND
+// RESET SCHOOL ADMIN PASSWORD MODAL
 // =====================================================
 
-async function resetSchoolAdminPassword(
+function createResetPasswordModal() {
+
+    if (document.getElementById("resetPasswordModal")) {
+        return;
+    }
+
+    const modal =
+        document.createElement("div");
+
+    modal.id =
+        "resetPasswordModal";
+
+    modal.innerHTML = `
+
+        <div
+            style="
+                position:fixed;
+                inset:0;
+                background:rgba(0,0,0,0.55);
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                z-index:99999;
+                padding:20px;
+            "
+        >
+
+            <div
+                style="
+                    background:#ffffff;
+                    width:100%;
+                    max-width:450px;
+                    border-radius:12px;
+                    padding:25px;
+                    box-shadow:0 20px 60px rgba(0,0,0,0.25);
+                "
+            >
+
+                <h2
+                    style="
+                        margin-top:0;
+                        margin-bottom:8px;
+                    "
+                >
+                    🔐 Reset Admin Password
+                </h2>
+
+
+                <p
+                    id="resetPasswordAdminInfo"
+                    style="
+                        color:#555;
+                        margin-bottom:20px;
+                    "
+                >
+                </p>
+
+
+                <label
+                    style="
+                        display:block;
+                        margin-bottom:6px;
+                        font-weight:600;
+                    "
+                >
+                    New Temporary Password
+                </label>
+
+
+                <input
+                    id="resetPasswordInput"
+                    type="password"
+                    minlength="6"
+                    autocomplete="new-password"
+                    placeholder="Enter temporary password"
+                    style="
+                        width:100%;
+                        box-sizing:border-box;
+                        padding:12px;
+                        border:1px solid #ccc;
+                        border-radius:8px;
+                        margin-bottom:8px;
+                    "
+                >
+
+
+                <small
+                    style="
+                        display:block;
+                        color:#777;
+                        margin-bottom:20px;
+                    "
+                >
+                    Minimum 6 characters. The admin will be
+                    required to change it after login.
+                </small>
+
+
+                <div
+                    style="
+                        display:flex;
+                        justify-content:flex-end;
+                        gap:10px;
+                    "
+                >
+
+                    <button
+                        type="button"
+                        id="cancelResetPasswordBtn"
+                        style="
+                            padding:10px 16px;
+                            border:1px solid #ccc;
+                            background:#fff;
+                            border-radius:8px;
+                            cursor:pointer;
+                        "
+                    >
+                        Cancel
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="confirmResetPasswordBtn"
+                        style="
+                            padding:10px 16px;
+                            border:none;
+                            background:#2563eb;
+                            color:#fff;
+                            border-radius:8px;
+                            cursor:pointer;
+                        "
+                    >
+                        Reset Password
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="resetPasswordError"
+                    style="
+                        display:none;
+                        color:#dc2626;
+                        margin-top:15px;
+                        font-size:14px;
+                    "
+                >
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    document
+        .getElementById(
+            "cancelResetPasswordBtn"
+        )
+        .addEventListener(
+            "click",
+            closeResetPasswordModal
+        );
+
+
+    document
+        .getElementById(
+            "confirmResetPasswordBtn"
+        )
+        .addEventListener(
+            "click",
+            submitResetPassword
+        );
+
+}
+
+
+// =====================================================
+// OPEN RESET PASSWORD MODAL
+// =====================================================
+
+let resetPasswordSchoolId =
+    null;
+
+let resetPasswordAdminId =
+    null;
+
+let resetPasswordAdminName =
+    null;
+
+let resetPasswordAdminEmail =
+    null;
+
+
+function openResetPasswordModal(
     schoolId,
     adminId,
     adminName,
@@ -633,99 +834,79 @@ async function resetSchoolAdminPassword(
         return;
     }
 
+
+    createResetPasswordModal();
+
+
+    resetPasswordSchoolId =
+        schoolId;
+
+    resetPasswordAdminId =
+        adminId;
+
+    resetPasswordAdminName =
+        adminName;
+
+    resetPasswordAdminEmail =
+        adminEmail;
+
+
     const modal =
         document.getElementById(
             "resetPasswordModal"
         );
 
-    if (!modal) {
 
-        console.error(
-            "resetPasswordModal not found."
-        );
-
-        alert(
-            "Reset password modal was not found in the page."
-        );
-
-        return;
-    }
-
-
-    // -------------------------------------------------
-    // FILL ADMIN DETAILS
-    // -------------------------------------------------
-
-    const nameElement =
+    const info =
         document.getElementById(
-            "resetAdminName"
+            "resetPasswordAdminInfo"
         );
 
-    const emailElement =
+
+    const passwordInput =
         document.getElementById(
-            "resetAdminEmail"
+            "resetPasswordInput"
         );
 
-    const passwordElement =
+
+    const errorBox =
         document.getElementById(
-            "resetTemporaryPassword"
+            "resetPasswordError"
         );
 
 
-    if (nameElement) {
-
-        nameElement.textContent =
-            adminName || "-";
-
-    }
-
-
-    if (emailElement) {
-
-        emailElement.textContent =
-            adminEmail || "-";
-
-    }
+    info.innerHTML =
+        "Admin: <strong>" +
+        escapeHtml(adminName) +
+        "</strong><br>" +
+        "Email: " +
+        escapeHtml(adminEmail);
 
 
-    if (passwordElement) {
-
-        passwordElement.value = "";
-
-    }
+    passwordInput.value =
+        "";
 
 
-    // -------------------------------------------------
-    // STORE SCHOOL + ADMIN IDS
-    // -------------------------------------------------
-
-    modal.dataset.schoolId =
-        schoolId;
-
-    modal.dataset.adminId =
-        adminId;
+    errorBox.style.display =
+        "none";
 
 
-    // -------------------------------------------------
-    // SHOW MODAL
-    // -------------------------------------------------
+    errorBox.textContent =
+        "";
+
 
     modal.style.display =
-        "flex";
+        "block";
 
 
-    if (passwordElement) {
+    setTimeout(
+        function () {
 
-        setTimeout(
-            function() {
+            passwordInput.focus();
 
-                passwordElement.focus();
-
-            },
-            100
-        );
-
-    }
+        },
+        100
+    );
 
 }
 
@@ -741,12 +922,26 @@ function closeResetPasswordModal() {
             "resetPasswordModal"
         );
 
+
     if (modal) {
 
         modal.style.display =
             "none";
 
     }
+
+
+    resetPasswordSchoolId =
+        null;
+
+    resetPasswordAdminId =
+        null;
+
+    resetPasswordAdminName =
+        null;
+
+    resetPasswordAdminEmail =
+        null;
 
 }
 
@@ -755,64 +950,43 @@ function closeResetPasswordModal() {
 // SUBMIT RESET PASSWORD
 // =====================================================
 
-async function submitResetSchoolAdminPassword() {
+async function submitResetPassword() {
 
     if (!checkAuthentication()) {
         return;
     }
 
 
-    const modal =
-        document.getElementById(
-            "resetPasswordModal"
-        );
+    if (
+        !resetPasswordSchoolId ||
+        !resetPasswordAdminId
+    ) {
 
-
-    if (!modal) {
-
-        alert(
-            "Reset password modal was not found."
+        console.error(
+            "[SUPERADMIN] Missing school/admin ID"
         );
 
         return;
 
     }
-
-
-    const schoolId =
-        modal.dataset.schoolId;
-
-
-    const adminId =
-        modal.dataset.adminId;
 
 
     const passwordInput =
         document.getElementById(
-            "resetTemporaryPassword"
+            "resetPasswordInput"
         );
 
 
-    if (!schoolId || !adminId) {
-
-        alert(
-            "School admin information is missing."
+    const errorBox =
+        document.getElementById(
+            "resetPasswordError"
         );
 
-        return;
 
-    }
-
-
-    if (!passwordInput) {
-
-        alert(
-            "Temporary password field was not found."
+    const confirmButton =
+        document.getElementById(
+            "confirmResetPasswordBtn"
         );
-
-        return;
-
-    }
 
 
     const newPassword =
@@ -820,14 +994,16 @@ async function submitResetSchoolAdminPassword() {
 
 
     // -------------------------------------------------
-    // VALIDATE PASSWORD
+    // VALIDATION
     // -------------------------------------------------
 
     if (!newPassword) {
 
-        alert(
-            "Please enter a temporary password."
-        );
+        errorBox.textContent =
+            "Please enter a temporary password.";
+
+        errorBox.style.display =
+            "block";
 
         passwordInput.focus();
 
@@ -838,9 +1014,11 @@ async function submitResetSchoolAdminPassword() {
 
     if (newPassword.length < 6) {
 
-        alert(
-            "Temporary password must be at least 6 characters."
-        );
+        errorBox.textContent =
+            "Temporary password must be at least 6 characters.";
+
+        errorBox.style.display =
+            "block";
 
         passwordInput.focus();
 
@@ -849,40 +1027,42 @@ async function submitResetSchoolAdminPassword() {
     }
 
 
+    // -------------------------------------------------
+    // CONFIRM
+    // -------------------------------------------------
+
     const confirmed =
         confirm(
 
-            "RESET SCHOOL ADMIN PASSWORD?\n\n" +
+            "Reset the password for " +
+            resetPasswordAdminName +
+            "?\n\n" +
 
-            "A new temporary password will be assigned.\n\n" +
+            "A new temporary password will be created.\n" +
 
-            "The school admin will be required to change it after login."
+            "The admin must change it after login."
 
         );
 
 
     if (!confirmed) {
-
         return;
-
     }
 
 
-    const submitButton =
-        document.getElementById(
-            "confirmResetPasswordBtn"
-        );
+    // -------------------------------------------------
+    // DISABLE BUTTON
+    // -------------------------------------------------
+
+    confirmButton.disabled =
+        true;
+
+    confirmButton.textContent =
+        "Resetting...";
 
 
-    if (submitButton) {
-
-        submitButton.disabled =
-            true;
-
-        submitButton.textContent =
-            "Resetting...";
-
-    }
+    errorBox.style.display =
+        "none";
 
 
     try {
@@ -893,11 +1073,11 @@ async function submitResetSchoolAdminPassword() {
                 API +
                 "/superadmin/schools/" +
                 encodeURIComponent(
-                    schoolId
+                    resetPasswordSchoolId
                 ) +
                 "/admin/" +
                 encodeURIComponent(
-                    adminId
+                    resetPasswordAdminId
                 ) +
                 "/reset-password",
 
@@ -922,7 +1102,13 @@ async function submitResetSchoolAdminPassword() {
             );
 
 
-        if (response.status === 401) {
+        // -------------------------------------------------
+        // AUTH ERRORS
+        // -------------------------------------------------
+
+        if (
+            response.status === 401
+        ) {
 
             alert(
                 "Your Superadmin session has expired. Please login again."
@@ -936,10 +1122,162 @@ async function submitResetSchoolAdminPassword() {
         }
 
 
-        if (response.status === 403) {
+        if (
+            response.status === 403
+        ) {
+
+            errorBox.textContent =
+                "Only the Superadmin can reset school admin passwords.";
+
+            errorBox.style.display =
+                "block";
+
+            return;
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.message ||
+                data.msg ||
+                "Failed to reset password."
+            );
+
+        }
+
+
+        if (!data.success) {
+
+            throw new Error(
+                data.message ||
+                "Password reset failed."
+            );
+
+        }
+
+
+        // -------------------------------------------------
+        // CLOSE MODAL
+        // -------------------------------------------------
+
+        closeResetPasswordModal();
+
+
+        // -------------------------------------------------
+        // SHOW TEMPORARY PASSWORD
+        // -------------------------------------------------
+
+        alert(
+
+            "PASSWORD RESET SUCCESSFUL\n\n" +
+
+            "School Admin:\n" +
+            data.user.name +
+            "\n\n" +
+
+            "Email:\n" +
+            data.user.email +
+            "\n\n" +
+
+            "NEW TEMPORARY PASSWORD:\n\n" +
+
+            data.temporaryPassword +
+            "\n\n" +
+
+            "Give this password to the school admin.\n\n" +
+
+            "They MUST change it after logging in."
+
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "[SUPERADMIN] RESET PASSWORD ERROR:",
+            error
+        );
+
+
+        errorBox.textContent =
+            error.message ||
+            "Failed to reset password.";
+
+
+        errorBox.style.display =
+            "block";
+
+
+    } finally {
+
+        confirmButton.disabled =
+            false;
+
+        confirmButton.textContent =
+            "Reset Password";
+
+    }
+
+}
+
+
+// =====================================================
+// LOAD SCHOOLS
+// =====================================================
+
+async function loadSchools() {
+
+    if (!checkAuthentication()) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                API +
+                "/superadmin/schools",
+                {
+
+                    method:
+                        "GET",
+
+                    headers:
+                        getAuthHeaders()
+
+                }
+            );
+
+
+        if (
+            response.status === 401
+        ) {
 
             alert(
-                "Only the Superadmin can reset school admin passwords."
+                "Your Superadmin session has expired. Please login again."
+            );
+
+            window.location.href =
+                "/login.html";
+
+            return;
+
+        }
+
+
+        if (
+            response.status === 403
+        ) {
+
+            alert(
+                "Only the Superadmin can access schools."
             );
 
             return;
@@ -954,154 +1292,242 @@ async function submitResetSchoolAdminPassword() {
         if (!response.ok) {
 
             throw new Error(
-
                 data.message ||
-                data.msg ||
-                "Failed to reset password."
-
+                "Failed to load schools."
             );
 
         }
 
 
-        if (!data.success) {
+        const schools =
+            Array.isArray(data)
+                ? data
+                : data.schools || [];
 
-            throw new Error(
 
-                data.message ||
-                "Password reset failed."
-
+        const tbody =
+            document.querySelector(
+                "#schoolsTable tbody"
             );
+
+
+        if (!tbody) {
+
+            console.error(
+                "schoolsTable tbody not found"
+            );
+
+            return;
 
         }
 
 
-        // -------------------------------------------------
-        // CLOSE RESET MODAL
-        // -------------------------------------------------
-
-        closeResetPasswordModal();
+        tbody.innerHTML = "";
 
 
-        // -------------------------------------------------
-        // SHOW SUCCESS MODAL
-        // -------------------------------------------------
+        if (
+            schools.length === 0
+        ) {
 
-        const successModal =
-            document.getElementById(
-                "passwordResetSuccessModal"
-            );
+            tbody.innerHTML = `
 
+                <tr>
 
-        if (successModal) {
+                    <td
+                        colspan="9"
+                        style="text-align:center;"
+                    >
+                        No schools found.
+                    </td>
 
-            const successName =
-                document.getElementById(
-                    "successAdminName"
-                );
+                </tr>
 
+            `;
 
-            const successEmail =
-                document.getElementById(
-                    "successAdminEmail"
-                );
-
-
-            const successPassword =
-                document.getElementById(
-                    "successTemporaryPassword"
-                );
-
-
-            if (successName) {
-
-                successName.textContent =
-                    data.user &&
-                    data.user.name
-                        ? data.user.name
-                        : "-";
-
-            }
-
-
-            if (successEmail) {
-
-                successEmail.textContent =
-                    data.user &&
-                    data.user.email
-                        ? data.user.email
-                        : "-";
-
-            }
-
-
-            if (successPassword) {
-
-                successPassword.textContent =
-                    data.temporaryPassword || "";
-
-            }
-
-
-            successModal.style.display =
-                "flex";
-
-
-        } else {
-
-            // Fallback if success modal does not exist.
-
-            alert(
-
-                "PASSWORD RESET SUCCESSFUL\n\n" +
-
-                "Admin: " +
-
-                (
-                    data.user &&
-                    data.user.name
-                        ? data.user.name
-                        : "-"
-                ) +
-
-                "\n\nTemporary Password:\n" +
-
-                data.temporaryPassword +
-
-                "\n\nThe admin must change this password after login."
-
-            );
+            return;
 
         }
+
+
+        schools.forEach(
+            function (school) {
+
+                const subscription =
+                    school.subscription || {};
+
+
+                const admin =
+                    school.admin || null;
+
+
+                const row =
+                    document.createElement(
+                        "tr"
+                    );
+
+
+                row.innerHTML = `
+
+                    <td>
+                        ${escapeHtml(
+                            school.name
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            school.code
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            subscription.plan ||
+                            "-"
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${escapeHtml(
+                            subscription.status ||
+                            "-"
+                        )}
+                    </td>
+
+
+                    <td>
+                        ${
+                            subscription.endDate
+                                ? new Date(
+                                    subscription.endDate
+                                  ).toLocaleDateString()
+                                : "-"
+                        }
+                    </td>
+
+
+                    <td>
+                        ${
+                            school.createdAt
+                                ? new Date(
+                                    school.createdAt
+                                  ).toLocaleDateString()
+                                : "-"
+                        }
+                    </td>
+
+
+                    <td>
+                        ${
+                            school.active
+                                ? "🟢 Active"
+                                : "🔴 Suspended"
+                        }
+                    </td>
+
+
+                    <td>
+
+                        ${
+                            admin
+                                ? `
+                                    <strong>
+                                        ${escapeHtml(
+                                            admin.name
+                                        )}
+                                    </strong>
+
+                                    <br>
+
+                                    <small>
+                                        ${escapeHtml(
+                                            admin.email
+                                        )}
+                                    </small>
+                                  `
+                                : `
+                                    <span>
+                                        No admin found
+                                    </span>
+                                  `
+                        }
+
+                    </td>
+
+
+                    <td>
+
+                        ${
+                            admin
+                                ? `
+                                    <button
+                                        type="button"
+                                        onclick="openResetPasswordModal(
+                                            '${escapeJs(school._id)}',
+                                            '${escapeJs(admin._id)}',
+                                            '${escapeJs(admin.name)}',
+                                            '${escapeJs(admin.email)}'
+                                        )"
+                                    >
+                                        🔐 Reset Password
+                                    </button>
+                                  `
+                                : ""
+                        }
+
+
+                        <button
+                            type="button"
+                            onclick="viewSchool(
+                                '${escapeJs(school._id)}'
+                            )"
+                        >
+                            View
+                        </button>
+
+
+                        <button
+                            type="button"
+                            onclick="toggleSchool(
+                                '${escapeJs(school._id)}'
+                            )"
+                        >
+
+                            ${
+                                school.active
+                                    ? "Suspend"
+                                    : "Activate"
+                            }
+
+                        </button>
+
+                    </td>
+
+                `;
+
+
+                tbody.appendChild(
+                    row
+                );
+
+            }
+        );
 
 
     } catch (error) {
 
         console.error(
-            "[SUPERADMIN] RESET PASSWORD ERROR:",
+            "[SUPERADMIN] LOAD SCHOOLS ERROR:",
             error
         );
 
-
         alert(
-
             error.message ||
-            "Failed to reset password."
-
+            "Failed to load schools."
         );
-
-
-    } finally {
-
-        if (submitButton) {
-
-            submitButton.disabled =
-                false;
-
-            submitButton.textContent =
-                "Reset Password";
-
-        }
 
     }
 
@@ -1109,53 +1535,17 @@ async function submitResetSchoolAdminPassword() {
 
 
 // =====================================================
-// CLOSE SUCCESS MODAL
+// MAKE FRONTEND FUNCTIONS AVAILABLE
 // =====================================================
 
-function closePasswordResetSuccessModal() {
-
-    const modal =
-        document.getElementById(
-            "passwordResetSuccessModal"
-        );
-
-
-    if (modal) {
-
-        modal.style.display =
-            "none";
-
-    }
-
-}
-
-
-// =====================================================
-// MAKE FUNCTIONS AVAILABLE TO HTML
-// =====================================================
-
-window.resetSchoolAdminPassword =
-    resetSchoolAdminPassword;
-
+window.openResetPasswordModal =
+    openResetPasswordModal;
 
 window.closeResetPasswordModal =
     closeResetPasswordModal;
 
-
-window.submitResetSchoolAdminPassword =
-    submitResetSchoolAdminPassword;
-
-
-window.closePasswordResetSuccessModal =
-    closePasswordResetSuccessModal;
-
-
-window.toggleSchool =
-    toggleSchool;
-
-
-window.viewSchool =
-    viewSchool;
+window.submitResetPassword =
+    submitResetPassword;
 
 
 // =====================================================
