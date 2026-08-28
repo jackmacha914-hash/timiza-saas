@@ -304,7 +304,7 @@ console.log("Matched user:", user);
             email: user.email,
             role: user.role,
             school: user.school,
-            class: user.class
+            class: user.class,
             mustChangePassword: user.mustChangePassword === true
         };
 
@@ -313,7 +313,7 @@ console.log("Matched user:", user);
             msg: 'Login successful',
             token,
             role: user.role,
-            user: userData
+            user: userData,
             mustChangePassword: user.mustChangePassword === true
         });
 
