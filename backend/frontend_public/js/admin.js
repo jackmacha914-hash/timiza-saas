@@ -766,13 +766,23 @@ if (document.readyState === 'loading') {
                     }
 
                     <button
-                        type="button"
-                        class="btn btn-sm btn-outline-danger"
-                        onclick="deleteManagementUser('${userId}')"
-                        title="Delete user"
-                    >
-                        <i class="fas fa-trash"></i>
-                    </button>
+    type="button"
+    class="btn btn-sm btn-outline-primary"
+    onclick="resetManagementUserPassword('${userId}', '${escapeHtml(user.name || '')}')"
+    title="Reset password"
+>
+    <i class="fas fa-key"></i>
+    Reset Password
+</button>
+
+<button
+    type="button"
+    class="btn btn-sm btn-outline-danger"
+    onclick="deleteManagementUser('${userId}')"
+    title="Delete user"
+>
+    <i class="fas fa-trash"></i>
+</button>
 
                 </td>
 
@@ -784,6 +794,103 @@ if (document.readyState === 'loading') {
         });
 
     }
+
+    // =====================================================
+// RESET USER PASSWORD
+// =====================================================
+
+window.resetManagementUserPassword =
+    async function (id, userName) {
+
+        if (!id) {
+            return;
+        }
+
+        const confirmed =
+            confirm(
+                `Reset the password for ${userName || 'this user'}?\n\n` +
+                `A new temporary password will be generated.`
+            );
+
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+
+            const token =
+                getToken();
+
+            const response =
+                await fetch(
+                    `${API_URL}/${encodeURIComponent(id)}/reset-password`,
+                    {
+                        method: 'POST',
+
+                        credentials: 'include',
+
+                        headers: {
+
+                            'Content-Type':
+                                'application/json',
+
+                            ...(token
+                                ? {
+                                    'Authorization':
+                                        `Bearer ${token}`
+                                }
+                                : {})
+
+                        }
+                    }
+                );
+
+
+            const result =
+                await response.json();
+
+
+            console.log(
+                '[USER MANAGEMENT] PASSWORD RESET:',
+                result
+            );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result.message ||
+                    'Failed to reset password'
+                );
+
+            }
+
+
+            // Show temporary password
+            alert(
+                `Password reset successfully!\n\n` +
+                `User: ${userName || 'User'}\n\n` +
+                `Temporary Password:\n${result.temporaryPassword}\n\n` +
+                `Give this temporary password to the user.`
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                '[USER MANAGEMENT] PASSWORD RESET ERROR:',
+                error
+            );
+
+
+            alert(
+                error.message ||
+                'Failed to reset password'
+            );
+
+        }
+
+    };
 
 
     // =====================================================
