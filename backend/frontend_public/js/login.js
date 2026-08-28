@@ -21,11 +21,13 @@ function getDashboardURL(role) {
         case 'accountant':
             return '/accountant.html';
 
+        case 'parent':
+            return '/parent.html';
+
         default:
             return '/login.html';
     }
 }
-
 
 
 // =====================================================
@@ -40,18 +42,18 @@ function showError(
     const element =
         document.getElementById(elementId);
 
-    if (!element) return;
+    if (!element) {
+        console.error(
+            '[LOGIN] Error element not found:',
+            elementId
+        );
+        return;
+    }
 
-    element.textContent =
-        message;
-
-    element.style.display =
-        'block';
-
-    element.style.color =
-        'red';
+    element.textContent = message;
+    element.style.display = 'block';
+    element.style.color = 'red';
 }
-
 
 
 // =====================================================
@@ -66,259 +68,288 @@ function showSuccess(
     const element =
         document.getElementById(elementId);
 
-    if (!element) return;
+    if (!element) {
+        return;
+    }
 
-    element.textContent =
-        message;
-
-    element.style.display =
-        'block';
-
-    element.style.color =
-        'green';
+    element.textContent = message;
+    element.style.display = 'block';
+    element.style.color = 'green';
 }
 
 
-
-/* =====================================================
-HIDE ALL AUTH SCREENS
-===================================================== */
+// =====================================================
+// HIDE ALL AUTH SCREENS
+// =====================================================
 
 function hideAllForms() {
 
-```
-const loginForm =
-    document.getElementById('login-form');
+    const loginForm =
+        document.getElementById('login-form');
 
-const registerForm =
-    document.getElementById('register-form');
+    const registerForm =
+        document.getElementById('register-form');
 
-const changePasswordContainer =
-    document.getElementById(
-        'change-password-container'
-    );
+    const changePasswordContainer =
+        document.getElementById(
+            'change-password-container'
+        );
 
 
-// Hide Login
-if (loginForm) {
-    loginForm.style.display = 'none';
+    // Hide login
+
+    if (loginForm) {
+
+        loginForm.style.display =
+            'none';
+
+    }
+
+
+    // Hide register
+
+    if (registerForm) {
+
+        registerForm.style.display =
+            'none';
+
+    }
+
+
+    // Hide change password container
+
+    if (changePasswordContainer) {
+
+        changePasswordContainer.style.display =
+            'none';
+
+    }
+
 }
 
 
-// Hide Register
-if (registerForm) {
-    registerForm.style.display = 'none';
-}
-
-
-// Hide CHANGE PASSWORD CONTAINER
-if (changePasswordContainer) {
-    changePasswordContainer.style.display = 'none';
-}
-```
-
-}
-
-/* =====================================================
-SHOW LOGIN
-===================================================== */
+// =====================================================
+// SHOW LOGIN FORM
+// =====================================================
 
 function showLoginForm() {
 
-```
-hideAllForms();
+    hideAllForms();
 
 
-const loginForm =
-    document.getElementById('login-form');
+    const loginForm =
+        document.getElementById(
+            'login-form'
+        );
 
-const formTitle =
-    document.getElementById('form-title');
+    const formTitle =
+        document.getElementById(
+            'form-title'
+        );
 
 
-if (loginForm) {
-    loginForm.style.display = 'block';
+    if (loginForm) {
+
+        loginForm.style.display =
+            'block';
+
+    }
+
+
+    if (formTitle) {
+
+        formTitle.style.display =
+            'block';
+
+        formTitle.textContent =
+            'Login';
+
+    }
+
 }
 
 
-if (formTitle) {
-    formTitle.style.display = 'block';
-    formTitle.textContent = 'Login';
-}
-```
-
-}
-
-/* =====================================================
-SHOW REGISTER
-===================================================== */
+// =====================================================
+// SHOW REGISTER FORM
+// =====================================================
 
 function showRegisterForm() {
 
-```
-hideAllForms();
+    hideAllForms();
 
 
-const registerForm =
-    document.getElementById('register-form');
+    const registerForm =
+        document.getElementById(
+            'register-form'
+        );
 
-const formTitle =
-    document.getElementById('form-title');
+    const formTitle =
+        document.getElementById(
+            'form-title'
+        );
 
 
-if (registerForm) {
-    registerForm.style.display = 'block';
+    if (registerForm) {
+
+        registerForm.style.display =
+            'block';
+
+    }
+
+
+    if (formTitle) {
+
+        formTitle.style.display =
+            'block';
+
+        formTitle.textContent =
+            'Create Account';
+
+    }
+
 }
 
 
-if (formTitle) {
-    formTitle.style.display = 'block';
-    formTitle.textContent = 'Create Account';
-}
-```
-
-}
-
-/* =====================================================
-SHOW CHANGE PASSWORD
-===================================================== */
+// =====================================================
+// SHOW CHANGE PASSWORD SCREEN
+// =====================================================
 
 function showChangePasswordForm() {
 
-```
-console.log(
-    '[LOGIN] SHOWING CHANGE PASSWORD SCREEN'
-);
-
-
-hideAllForms();
-
-
-const changePasswordContainer =
-    document.getElementById(
-        'change-password-container'
-    );
-
-const changePasswordForm =
-    document.getElementById(
-        'change-password-form'
-    );
-
-const formTitle =
-    document.getElementById(
-        'form-title'
+    console.log(
+        '[LOGIN] SHOWING CHANGE PASSWORD SCREEN'
     );
 
 
-/* ---------------------------------------------
-   Make sure container exists
---------------------------------------------- */
+    // Hide login/register
 
-if (!changePasswordContainer) {
-
-    console.error(
-        '[LOGIN] ERROR: change-password-container NOT FOUND'
-    );
-
-    alert(
-        'Change Password container is missing from login.html'
-    );
-
-    return;
-
-}
+    hideAllForms();
 
 
-/* ---------------------------------------------
-   SHOW PARENT CONTAINER
---------------------------------------------- */
+    const changePasswordContainer =
+        document.getElementById(
+            'change-password-container'
+        );
 
-changePasswordContainer.style.display =
-    'block';
+    const changePasswordForm =
+        document.getElementById(
+            'change-password-form'
+        );
+
+    const formTitle =
+        document.getElementById(
+            'form-title'
+        );
 
 
-changePasswordContainer.style.visibility =
-    'visible';
+    // =================================================
+    // MAKE SURE CONTAINER EXISTS
+    // =================================================
+
+    if (!changePasswordContainer) {
+
+        console.error(
+            '[LOGIN] change-password-container NOT FOUND'
+        );
+
+        alert(
+            'ERROR: change-password-container is missing from login.html'
+        );
+
+        return;
+
+    }
 
 
-changePasswordContainer.style.opacity =
-    '1';
+    // =================================================
+    // SHOW CHANGE PASSWORD CONTAINER
+    // =================================================
 
-
-/* ---------------------------------------------
-   SHOW FORM
---------------------------------------------- */
-
-if (changePasswordForm) {
-
-    changePasswordForm.style.display =
+    changePasswordContainer.style.display =
         'block';
 
-}
+    changePasswordContainer.style.visibility =
+        'visible';
+
+    changePasswordContainer.style.opacity =
+        '1';
 
 
-/* ---------------------------------------------
-   Hide main page title
---------------------------------------------- */
+    // =================================================
+    // SHOW CHANGE PASSWORD FORM
+    // =================================================
 
-if (formTitle) {
+    if (changePasswordForm) {
 
-    formTitle.style.display =
-        'none';
+        changePasswordForm.style.display =
+            'block';
 
-}
+        changePasswordForm.style.visibility =
+            'visible';
+
+        changePasswordForm.style.opacity =
+            '1';
+
+    }
 
 
-/* ---------------------------------------------
-   Clear old message
---------------------------------------------- */
+    // =================================================
+    // HIDE MAIN LOGIN TITLE
+    // =================================================
 
-const message =
-    document.getElementById(
-        'change-password-message'
+    if (formTitle) {
+
+        formTitle.style.display =
+            'none';
+
+    }
+
+
+    // =================================================
+    // CLEAR OLD MESSAGE
+    // =================================================
+
+    const message =
+        document.getElementById(
+            'change-password-message'
+        );
+
+    if (message) {
+
+        message.textContent =
+            '';
+
+        message.style.display =
+            'none';
+
+    }
+
+
+    // =================================================
+    // FOCUS CURRENT PASSWORD
+    // =================================================
+
+    const currentPassword =
+        document.getElementById(
+            'current-password'
+        );
+
+    if (currentPassword) {
+
+        setTimeout(() => {
+
+            currentPassword.focus();
+
+        }, 100);
+
+    }
+
+
+    console.log(
+        '[LOGIN] Change Password UI displayed successfully'
     );
 
-
-if (message) {
-
-    message.textContent =
-        '';
-
-    message.style.display =
-        'none';
-
 }
-
-
-/* ---------------------------------------------
-   Focus temporary password
---------------------------------------------- */
-
-const currentPassword =
-    document.getElementById(
-        'current-password'
-    );
-
-
-if (currentPassword) {
-
-    setTimeout(() => {
-
-        currentPassword.focus();
-
-    }, 100);
-
-}
-
-
-console.log(
-    '[LOGIN] Change Password UI displayed'
-);
-```
-
-}
-
-
 
 
 // =====================================================
@@ -327,49 +358,73 @@ console.log(
 
 document.addEventListener(
     'DOMContentLoaded',
-    () => {
+    function () {
+
+        console.log(
+            '[LOGIN] Login JavaScript loaded'
+        );
+
+
+        // =================================================
+        // GET ELEMENTS
+        // =================================================
 
         const loginForm =
             document.getElementById(
                 'login-form'
             );
 
-
         const registerForm =
             document.getElementById(
                 'register-form'
             );
-
 
         const changePasswordForm =
             document.getElementById(
                 'change-password-form'
             );
 
-
         const showRegisterLink =
             document.getElementById(
                 'show-register'
             );
-
 
         const showLoginButton =
             document.getElementById(
                 'show-login'
             );
 
-
         const roleSelect =
             document.getElementById(
                 'role'
             );
-
 
         const classGroup =
             document.getElementById(
                 'class-group'
             );
 
+
+        // =================================================
+        // DEBUG ELEMENT CHECK
+        // =================================================
+
+        console.log(
+            '[LOGIN] Elements:',
+            {
+                loginForm: !!loginForm,
+                registerForm: !!registerForm,
+                changePasswordForm: !!changePasswordForm,
+                changePasswordContainer:
+                    !!document.getElementById(
+                        'change-password-container'
+                    ),
+                showRegisterLink:
+                    !!showRegisterLink,
+                showLoginButton:
+                    !!showLoginButton
+            }
+        );
 
 
         // =================================================
@@ -380,36 +435,45 @@ document.addEventListener(
 
             loginForm.addEventListener(
                 'submit',
-                async (e) => {
+                async function (e) {
 
                     e.preventDefault();
 
 
-                    const email =
-                        document
-                            .getElementById(
-                                'login-email'
-                            )
-                            ?.value
-                            ?.trim();
+                    console.log(
+                        '[LOGIN] Login submitted'
+                    );
 
+
+                    const emailElement =
+                        document.getElementById(
+                            'login-email'
+                        );
+
+                    const passwordElement =
+                        document.getElementById(
+                            'login-password'
+                        );
+
+                    const schoolCodeElement =
+                        document.getElementById(
+                            'school-code'
+                        );
+
+
+                    const email =
+                        emailElement?.value?.trim();
 
                     const password =
-                        document
-                            .getElementById(
-                                'login-password'
-                            )
-                            ?.value;
-
+                        passwordElement?.value || '';
 
                     const schoolCode =
-                        document
-                            .getElementById(
-                                'school-code'
-                            )
-                            ?.value
-                            ?.trim();
+                        schoolCodeElement?.value?.trim();
 
+
+                    // =================================================
+                    // VALIDATION
+                    // =================================================
 
                     if (
                         !email ||
@@ -422,11 +486,20 @@ document.addEventListener(
                         );
 
                         return;
+
                     }
 
 
-
                     try {
+
+                        console.log(
+                            '[LOGIN] Sending login request'
+                        );
+
+
+                        // =================================================
+                        // LOGIN REQUEST
+                        // =================================================
 
                         const response =
                             await apiFetch(
@@ -444,10 +517,15 @@ document.addEventListener(
                             );
 
 
+                        console.log(
+                            '[LOGIN] Server response:',
+                            response
+                        );
 
-                        // =================================
-                        // SAVE TOKEN
-                        // =================================
+
+                        // =================================================
+                        // CHECK TOKEN
+                        // =================================================
 
                         if (!response?.token) {
 
@@ -460,16 +538,24 @@ document.addEventListener(
                         }
 
 
+                        // =================================================
+                        // SAVE TOKEN
+                        // =================================================
+
                         localStorage.setItem(
                             'token',
                             response.token
                         );
 
 
+                        console.log(
+                            '[LOGIN] Token saved'
+                        );
 
-                        // =================================
+
+                        // =================================================
                         // SAVE USER
-                        // =================================
+                        // =================================================
 
                         if (response.user) {
 
@@ -483,6 +569,9 @@ document.addEventListener(
                         }
 
 
+                        // =================================================
+                        // GET ROLE
+                        // =================================================
 
                         const role =
                             response.user?.role ||
@@ -490,87 +579,92 @@ document.addEventListener(
                             'student';
 
 
+                        // =================================================
+                        // CHECK TEMPORARY PASSWORD
+                        // =================================================
 
-                        /* ================================================
-TEMPORARY PASSWORD DETECTED
-================================================ */
-
-const mustChangePassword =
-response?.mustChangePassword === true ||
-response?.user?.mustChangePassword === true;
-
-console.log(
-'[LOGIN] mustChangePassword:',
-mustChangePassword
-);
-
-if (mustChangePassword) {
-
-console.log(
-    '[LOGIN] Temporary password detected'
-);
-
-console.log(
-    '[LOGIN] User must change password'
-);
+                        const mustChangePassword =
+                            response.mustChangePassword === true ||
+                            response.user?.mustChangePassword === true;
 
 
-/*
- * IMPORTANT:
- *
- * Do NOT redirect to the dashboard.
- *
- * Show the CHANGE PASSWORD CONTAINER.
- */
-
-showChangePasswordForm();
+                        console.log(
+                            '[LOGIN] mustChangePassword:',
+                            mustChangePassword
+                        );
 
 
-/*
- * Clear login password field.
- */
+                        // =================================================
+                        // TEMPORARY PASSWORD
+                        // =================================================
 
-const loginPasswordField =
-    document.getElementById(
-        'login-password'
-    );
+                        if (mustChangePassword) {
 
-
-if (loginPasswordField) {
-
-    loginPasswordField.value = '';
-
-}
+                            console.log(
+                                '[LOGIN] Temporary password detected'
+                            );
 
 
-/*
- * Automatically put the temporary password
- * into the current-password field.
- */
-
-const currentPasswordField =
-    document.getElementById(
-        'current-password'
-    );
+                            console.log(
+                                '[LOGIN] User must change password'
+                            );
 
 
-if (currentPasswordField) {
+                            // -------------------------------------------------
+                            // SHOW CHANGE PASSWORD SCREEN
+                            // -------------------------------------------------
 
-    currentPasswordField.value =
-        password;
-
-}
-
-
-return;
-```
-
-}
+                            showChangePasswordForm();
 
 
-                        // =================================
+                            // -------------------------------------------------
+                            // CLEAR LOGIN PASSWORD
+                            // -------------------------------------------------
+
+                            if (passwordElement) {
+
+                                passwordElement.value =
+                                    '';
+
+                            }
+
+
+                            // -------------------------------------------------
+                            // PUT TEMP PASSWORD INTO CURRENT PASSWORD
+                            // -------------------------------------------------
+
+                            const currentPasswordField =
+                                document.getElementById(
+                                    'current-password'
+                                );
+
+
+                            if (currentPasswordField) {
+
+                                currentPasswordField.value =
+                                    password;
+
+                            }
+
+
+                            console.log(
+                                '[LOGIN] Temporary password placed in current password field'
+                            );
+
+
+                            // -------------------------------------------------
+                            // STOP HERE
+                            // DO NOT REDIRECT
+                            // -------------------------------------------------
+
+                            return;
+
+                        }
+
+
+                        // =================================================
                         // NORMAL LOGIN
-                        // =================================
+                        // =================================================
 
                         console.log(
                             '[LOGIN] Normal login'
@@ -596,15 +690,9 @@ return;
                         );
 
 
-                        const passwordField =
-                            document.getElementById(
-                                'login-password'
-                            );
+                        if (passwordElement) {
 
-
-                        if (passwordField) {
-
-                            passwordField.value =
+                            passwordElement.value =
                                 '';
 
                         }
@@ -617,26 +705,34 @@ return;
         }
 
 
-
-        // =================================================
+        // =====================================================
         // CHANGE PASSWORD
-        // =================================================
+        // =====================================================
 
         if (changePasswordForm) {
 
             changePasswordForm.addEventListener(
                 'submit',
-                async (e) => {
+                async function (e) {
 
                     e.preventDefault();
 
+
+                    console.log(
+                        '[CHANGE PASSWORD] Form submitted'
+                    );
+
+
+                    // =================================================
+                    // GET VALUES
+                    // =================================================
 
                     const currentPassword =
                         document
                             .getElementById(
                                 'current-password'
                             )
-                            ?.value;
+                            ?.value || '';
 
 
                     const newPassword =
@@ -644,7 +740,7 @@ return;
                             .getElementById(
                                 'new-password'
                             )
-                            ?.value;
+                            ?.value || '';
 
 
                     const confirmNewPassword =
@@ -652,13 +748,12 @@ return;
                             .getElementById(
                                 'confirm-new-password'
                             )
-                            ?.value;
+                            ?.value || '';
 
 
-
-                    // =================================
+                    // =================================================
                     // VALIDATION
-                    // =================================
+                    // =================================================
 
                     if (
                         !currentPassword ||
@@ -676,7 +771,6 @@ return;
                     }
 
 
-
                     if (
                         newPassword.length < 6
                     ) {
@@ -689,7 +783,6 @@ return;
                         return;
 
                     }
-
 
 
                     if (
@@ -707,7 +800,6 @@ return;
                     }
 
 
-
                     if (
                         currentPassword ===
                         newPassword
@@ -723,10 +815,9 @@ return;
                     }
 
 
-
-                    // =================================
+                    // =================================================
                     // GET TOKEN
-                    // =================================
+                    // =================================================
 
                     const token =
                         localStorage.getItem(
@@ -746,30 +837,37 @@ return;
                     }
 
 
+                    // =================================================
+                    // CHANGE BUTTON
+                    // =================================================
+
+                    const changeButton =
+                        document.getElementById(
+                            'change-password-btn'
+                        );
+
 
                     try {
-
-                        const changeButton =
-                            document.getElementById(
-                                'change-password-btn'
-                            );
-
 
                         if (changeButton) {
 
                             changeButton.disabled =
                                 true;
 
-                            changeButton.innerHTML =
-                                '<i class="fas fa-spinner fa-spin"></i> Changing...';
+                            changeButton.textContent =
+                                'Changing...';
 
                         }
 
 
+                        console.log(
+                            '[CHANGE PASSWORD] Sending request'
+                        );
 
-                        // =================================
+
+                        // =================================================
                         // CHANGE PASSWORD REQUEST
-                        // =================================
+                        // =================================================
 
                         const response =
                             await fetch(
@@ -778,11 +876,13 @@ return;
                                     method: 'POST',
 
                                     headers: {
+
                                         'Content-Type':
                                             'application/json',
 
                                         'Authorization':
                                             `Bearer ${token}`
+
                                     },
 
                                     body:
@@ -794,18 +894,35 @@ return;
                             );
 
 
+                        // =================================================
+                        // READ RESPONSE
+                        // =================================================
 
-                        const data =
-                            await response.json();
+                        let data = {};
 
+                        try {
+
+                            data =
+                                await response.json();
+
+                        } catch (jsonError) {
+
+                            console.warn(
+                                '[CHANGE PASSWORD] Response was not JSON'
+                            );
+
+                        }
 
 
                         console.log(
-                            '[CHANGE PASSWORD] RESPONSE:',
+                            '[CHANGE PASSWORD] Server response:',
                             data
                         );
 
 
+                        // =================================================
+                        // CHECK RESPONSE
+                        // =================================================
 
                         if (!response.ok) {
 
@@ -818,10 +935,9 @@ return;
                         }
 
 
-
-                        // =================================
+                        // =================================================
                         // SUCCESS
-                        // =================================
+                        // =================================================
 
                         showSuccess(
                             data.message ||
@@ -830,10 +946,14 @@ return;
                         );
 
 
+                        console.log(
+                            '[CHANGE PASSWORD] Password changed successfully'
+                        );
 
-                        // =================================
+
+                        // =================================================
                         // UPDATE LOCAL USER
-                        // =================================
+                        // =================================================
 
                         const storedUser =
                             localStorage.getItem(
@@ -841,11 +961,14 @@ return;
                             );
 
 
+                        let user = null;
+
+
                         if (storedUser) {
 
                             try {
 
-                                const user =
+                                user =
                                     JSON.parse(
                                         storedUser
                                     );
@@ -862,11 +985,12 @@ return;
                                     )
                                 );
 
-                            } catch (error) {
+
+                            } catch (parseError) {
 
                                 console.warn(
-                                    'Could not update local user:',
-                                    error
+                                    '[CHANGE PASSWORD] Could not update local user',
+                                    parseError
                                 );
 
                             }
@@ -874,42 +998,31 @@ return;
                         }
 
 
-
-                        // =================================
+                        // =================================================
                         // GET ROLE
-                        // =================================
+                        // =================================================
 
-                        const user =
-                            storedUser
-                                ? JSON.parse(
-                                    storedUser
-                                )
-                                : null;
-
-
-                        const role =
+                        const dashboardRole =
                             user?.role ||
-                            response.role ||
+                            data.role ||
                             'student';
 
 
-
-                        // =================================
-                        // GO TO DASHBOARD
-                        // =================================
+                        // =================================================
+                        // REDIRECT
+                        // =================================================
 
                         setTimeout(
-                            () => {
+                            function () {
 
                                 window.location.href =
                                     getDashboardURL(
-                                        role
+                                        dashboardRole
                                     );
 
                             },
                             1200
                         );
-
 
 
                     } catch (error) {
@@ -927,19 +1040,13 @@ return;
                         );
 
 
-                        const changeButton =
-                            document.getElementById(
-                                'change-password-btn'
-                            );
-
-
                         if (changeButton) {
 
                             changeButton.disabled =
                                 false;
 
-                            changeButton.innerHTML =
-                                '<i class="fas fa-key"></i> Change Password';
+                            changeButton.textContent =
+                                'Change Password';
 
                         }
 
@@ -948,23 +1055,30 @@ return;
                 }
             );
 
+        } else {
+
+            console.error(
+                '[LOGIN] change-password-form NOT FOUND'
+            );
+
         }
 
 
-
-        // =================================================
+        // =====================================================
         // SHOW REGISTER
-        // =================================================
+        // =====================================================
 
         if (showRegisterLink) {
 
             showRegisterLink.addEventListener(
                 'click',
-                (e) => {
+                function (e) {
 
                     e.preventDefault();
 
+
                     showRegisterForm();
+
 
                     const error =
                         document.getElementById(
@@ -977,6 +1091,9 @@ return;
                         error.textContent =
                             '';
 
+                        error.style.display =
+                            'none';
+
                     }
 
                 }
@@ -985,18 +1102,18 @@ return;
         }
 
 
-
-        // =================================================
+        // =====================================================
         // BACK TO LOGIN
-        // =================================================
+        // =====================================================
 
         if (showLoginButton) {
 
             showLoginButton.addEventListener(
                 'click',
-                (e) => {
+                function (e) {
 
                     e.preventDefault();
+
 
                     showLoginForm();
 
@@ -1012,6 +1129,9 @@ return;
                         message.textContent =
                             '';
 
+                        message.style.display =
+                            'none';
+
                     }
 
                 }
@@ -1020,10 +1140,9 @@ return;
         }
 
 
-
-        // =================================================
+        // =====================================================
         // ROLE SELECT
-        // =================================================
+        // =====================================================
 
         if (
             roleSelect &&
@@ -1083,16 +1202,15 @@ return;
         }
 
 
-
-        // =================================================
+        // =====================================================
         // REGISTER
-        // =================================================
+        // =====================================================
 
         if (registerForm) {
 
             registerForm.addEventListener(
                 'submit',
-                async (e) => {
+                async function (e) {
 
                     e.preventDefault();
 
@@ -1139,10 +1257,19 @@ return;
                             ?.value;
 
 
+                    /*
+                     * IMPORTANT:
+                     *
+                     * Your current login.html does NOT contain
+                     * register-school-code.
+                     *
+                     * Therefore we use the login school code.
+                     */
+
                     const schoolCode =
                         document
                             .getElementById(
-                                'register-school-code'
+                                'school-code'
                             )
                             ?.value
                             ?.trim();
@@ -1158,6 +1285,9 @@ return;
                             : '';
 
 
+                    // =================================================
+                    // VALIDATION
+                    // =================================================
 
                     if (!name) {
 
@@ -1169,7 +1299,6 @@ return;
                         return;
 
                     }
-
 
 
                     if (!email) {
@@ -1184,18 +1313,16 @@ return;
                     }
 
 
-
                     if (!schoolCode) {
 
                         showError(
-                            'Please enter school code',
+                            'Please enter the school code in the Login section first.',
                             'register-message'
                         );
 
                         return;
 
                     }
-
 
 
                     if (!password) {
@@ -1210,7 +1337,6 @@ return;
                     }
 
 
-
                     if (
                         password.length < 6
                     ) {
@@ -1223,7 +1349,6 @@ return;
                         return;
 
                     }
-
 
 
                     if (
@@ -1241,7 +1366,6 @@ return;
                     }
 
 
-
                     if (!role) {
 
                         showError(
@@ -1252,7 +1376,6 @@ return;
                         return;
 
                     }
-
 
 
                     if (
@@ -1270,6 +1393,9 @@ return;
                     }
 
 
+                    // =================================================
+                    // REGISTER REQUEST
+                    // =================================================
 
                     try {
 
@@ -1296,12 +1422,10 @@ return;
                             );
 
 
-
                         console.log(
                             '[REGISTER] RESPONSE:',
                             response
                         );
-
 
 
                         showSuccess(
@@ -1314,14 +1438,13 @@ return;
 
 
                         setTimeout(
-                            () => {
+                            function () {
 
                                 showLoginForm();
 
                             },
                             1500
                         );
-
 
 
                     } catch (error) {
@@ -1347,3 +1470,4 @@ return;
 
     }
 );
+
