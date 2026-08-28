@@ -617,21 +617,8 @@ async function loadSchools() {
 
 }
 
-
 // =====================================================
-// RESET SCHOOL ADMIN PASSWORD
-// =====================================================
-//
-// THIS IS FRONTEND CODE ONLY.
-//
-// Do NOT use:
-// exports
-// require()
-// School
-// User
-// bcrypt
-//
-// Those belong in the backend controller.
+// RESET SCHOOL ADMIN PASSWORD MODAL
 // =====================================================
 
 async function resetSchoolAdminPassword(
@@ -646,145 +633,728 @@ async function resetSchoolAdminPassword(
     }
 
 
-    const confirmed =
-        confirm(
+    // -------------------------------------------------
+    // REMOVE OLD MODAL IF IT EXISTS
+    // -------------------------------------------------
 
-            "RESET SCHOOL ADMIN PASSWORD?\n\n" +
-
-            "School Admin: " +
-            adminName +
-            "\n" +
-
-            "Email: " +
-            adminEmail +
-            "\n\n" +
-
-            "A new temporary password will be generated.\n\n" +
-
-            "The admin will be forced to change it after login."
-
+    const oldModal =
+        document.getElementById(
+            "resetPasswordModal"
         );
 
-
-    if (!confirmed) {
-        return;
+    if (oldModal) {
+        oldModal.remove();
     }
 
 
-    try {
+    // -------------------------------------------------
+    // CREATE MODAL
+    // -------------------------------------------------
 
-        const response =
-            await fetch(
+    const modal =
+        document.createElement("div");
 
-                API +
-                "/superadmin/schools/" +
-                encodeURIComponent(
-                    schoolId
-                ) +
-                "/admin/" +
-                encodeURIComponent(
-                    adminId
-                ) +
-                "/reset-password",
+    modal.id =
+        "resetPasswordModal";
 
-                {
+    modal.innerHTML = `
 
-                    method:
-                        "PATCH",
+        <div class="reset-modal-overlay">
 
-                    headers:
-                        getAuthHeaders()
+            <div class="reset-modal-box">
+
+                <div class="reset-modal-header">
+
+                    <div>
+
+                        <h2>
+                            🔐 Reset Admin Password
+                        </h2>
+
+                        <p>
+                            Create a temporary password
+                            for this school administrator.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        class="reset-modal-close"
+                        id="closeResetPasswordModal"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div class="reset-admin-info">
+
+                    <div>
+
+                        <span>
+                            School Admin
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(adminName)}
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            Email
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(adminEmail)}
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <form
+                    id="resetPasswordForm"
+                >
+
+                    <div class="reset-form-group">
+
+                        <label
+                            for="newTemporaryPassword"
+                        >
+                            Temporary Password
+                        </label>
+
+
+                        <input
+                            type="text"
+                            id="newTemporaryPassword"
+                            name="newTemporaryPassword"
+                            minlength="6"
+                            autocomplete="off"
+                            placeholder="Enter temporary password"
+                            required
+                        />
+
+
+                        <small>
+                            Minimum 6 characters.
+                            The admin will be required
+                            to change it after login.
+                        </small>
+
+                    </div>
+
+
+                    <div
+                        id="resetPasswordError"
+                        class="reset-password-error"
+                        style="display:none;"
+                    ></div>
+
+
+                    <div class="reset-modal-actions">
+
+                        <button
+                            type="button"
+                            id="cancelResetPassword"
+                        >
+                            Cancel
+                        </button>
+
+
+                        <button
+                            type="submit"
+                            id="confirmResetPassword"
+                        >
+                            🔐 Reset Password
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    // -------------------------------------------------
+    // MODAL ELEMENTS
+    // -------------------------------------------------
+
+    const closeButton =
+        document.getElementById(
+            "closeResetPasswordModal"
+        );
+
+
+    const cancelButton =
+        document.getElementById(
+            "cancelResetPassword"
+        );
+
+
+    const form =
+        document.getElementById(
+            "resetPasswordForm"
+        );
+
+
+    const passwordInput =
+        document.getElementById(
+            "newTemporaryPassword"
+        );
+
+
+    const errorBox =
+        document.getElementById(
+            "resetPasswordError"
+        );
+
+
+    const resetButton =
+        document.getElementById(
+            "confirmResetPassword"
+        );
+
+
+    // -------------------------------------------------
+    // CLOSE MODAL
+    // -------------------------------------------------
+
+    function closeModal() {
+
+        const currentModal =
+            document.getElementById(
+                "resetPasswordModal"
+            );
+
+        if (currentModal) {
+
+            currentModal.remove();
+
+        }
+
+    }
+
+
+    closeButton.addEventListener(
+        "click",
+        closeModal
+    );
+
+
+    cancelButton.addEventListener(
+        "click",
+        closeModal
+    );
+
+
+    // -------------------------------------------------
+    // CLOSE WHEN CLICKING OUTSIDE
+    // -------------------------------------------------
+
+    const overlay =
+        modal.querySelector(
+            ".reset-modal-overlay"
+        );
+
+
+    overlay.addEventListener(
+        "click",
+        function(event) {
+
+            if (
+                event.target === overlay
+            ) {
+
+                closeModal();
+
+            }
+
+        }
+    );
+
+
+    // -------------------------------------------------
+    // FOCUS PASSWORD
+    // -------------------------------------------------
+
+    setTimeout(
+        function() {
+
+            passwordInput.focus();
+
+        },
+        100
+    );
+
+
+    // -------------------------------------------------
+    // SUBMIT RESET
+    // -------------------------------------------------
+
+    form.addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+
+            const newPassword =
+                passwordInput.value.trim();
+
+
+            // -----------------------------------------
+            // VALIDATE
+            // -----------------------------------------
+
+            if (
+                !newPassword
+            ) {
+
+                errorBox.textContent =
+                    "Please enter a temporary password.";
+
+                errorBox.style.display =
+                    "block";
+
+                passwordInput.focus();
+
+                return;
+
+            }
+
+
+            if (
+                newPassword.length < 6
+            ) {
+
+                errorBox.textContent =
+                    "Temporary password must be at least 6 characters.";
+
+                errorBox.style.display =
+                    "block";
+
+                passwordInput.focus();
+
+                return;
+
+            }
+
+
+            // -----------------------------------------
+            // DISABLE BUTTON
+            // -----------------------------------------
+
+            resetButton.disabled =
+                true;
+
+            resetButton.textContent =
+                "Resetting...";
+
+
+            errorBox.style.display =
+                "none";
+
+
+            try {
+
+                // -------------------------------------
+                // SEND TO BACKEND
+                // -------------------------------------
+
+                const response =
+                    await fetch(
+
+                        API +
+                        "/superadmin/schools/" +
+                        encodeURIComponent(
+                            schoolId
+                        ) +
+                        "/admin/" +
+                        encodeURIComponent(
+                            adminId
+                        ) +
+                        "/reset-password",
+
+                        {
+
+                            method:
+                                "PATCH",
+
+                            headers:
+                                getAuthHeaders(),
+
+                            body:
+                                JSON.stringify({
+
+                                    newPassword:
+                                        newPassword
+
+                                })
+
+                        }
+
+                    );
+
+
+                // -------------------------------------
+                // AUTH ERROR
+                // -------------------------------------
+
+                if (
+                    response.status === 401
+                ) {
+
+                    closeModal();
+
+                    alert(
+                        "Your Superadmin session has expired. Please login again."
+                    );
+
+                    window.location.href =
+                        "/login.html";
+
+                    return;
 
                 }
 
-            );
+
+                // -------------------------------------
+                // PERMISSION ERROR
+                // -------------------------------------
+
+                if (
+                    response.status === 403
+                ) {
+
+                    errorBox.textContent =
+                        "Only the Superadmin can reset school admin passwords.";
+
+                    errorBox.style.display =
+                        "block";
+
+                    resetButton.disabled =
+                        false;
+
+                    resetButton.textContent =
+                        "🔐 Reset Password";
+
+                    return;
+
+                }
 
 
-        if (
-            response.status === 401
-        ) {
+                // -------------------------------------
+                // READ RESPONSE
+                // -------------------------------------
 
-            alert(
-                "Your Superadmin session has expired. Please login again."
-            );
+                const data =
+                    await response.json();
 
-            window.location.href =
-                "/login.html";
 
-            return;
+                // -------------------------------------
+                // BACKEND ERROR
+                // -------------------------------------
+
+                if (
+                    !response.ok
+                ) {
+
+                    throw new Error(
+
+                        data.message ||
+                        data.msg ||
+                        "Failed to reset password."
+
+                    );
+
+                }
+
+
+                // -------------------------------------
+                // SUCCESS
+                // -------------------------------------
+
+                if (
+                    data.success
+                ) {
+
+                    closeModal();
+
+
+                    showPasswordResetSuccessModal({
+
+                        adminName:
+                            data.admin
+                                ? data.admin.name
+                                : adminName,
+
+                        adminEmail:
+                            data.admin
+                                ? data.admin.email
+                                : adminEmail,
+
+                        temporaryPassword:
+                            newPassword
+
+                    });
+
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "[SUPERADMIN] RESET PASSWORD ERROR:",
+                    error
+                );
+
+
+                errorBox.textContent =
+                    error.message ||
+                    "Failed to reset password.";
+
+
+                errorBox.style.display =
+                    "block";
+
+
+                resetButton.disabled =
+                    false;
+
+
+                resetButton.textContent =
+                    "🔐 Reset Password";
+
+            }
 
         }
+    );
+
+}
 
 
-        if (
-            response.status === 403
-        ) {
+// =====================================================
+// PASSWORD RESET SUCCESS MODAL
+// =====================================================
 
-            alert(
-                "Only the Superadmin can reset school admin passwords."
-            );
+function showPasswordResetSuccessModal(
+    details
+) {
 
-            return;
-
-        }
-
-
-        const data =
-            await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.message ||
-                data.msg ||
-                "Failed to reset password."
-            );
-
-        }
-
-
-        if (data.success) {
-
-            alert(
-
-                "PASSWORD RESET SUCCESSFUL\n\n" +
-
-                "School Admin:\n" +
-                data.user.name +
-                "\n\n" +
-
-                "Email:\n" +
-                data.user.email +
-                "\n\n" +
-
-                "NEW TEMPORARY PASSWORD:\n\n" +
-
-                data.temporaryPassword +
-                "\n\n" +
-
-                "Give this temporary password to the school admin.\n\n" +
-
-                "They MUST change it after logging in."
-
-            );
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "[SUPERADMIN] RESET PASSWORD ERROR:",
-            error
+    const oldModal =
+        document.getElementById(
+            "passwordResetSuccessModal"
         );
 
-        alert(
-            error.message ||
-            "Failed to reset password."
-        );
 
+    if (oldModal) {
+        oldModal.remove();
     }
+
+
+    const modal =
+        document.createElement("div");
+
+
+    modal.id =
+        "passwordResetSuccessModal";
+
+
+    modal.innerHTML = `
+
+        <div class="reset-modal-overlay">
+
+            <div class="reset-modal-box success-modal">
+
+                <div class="success-icon">
+                    ✓
+                </div>
+
+
+                <h2>
+                    Password Reset Successful
+                </h2>
+
+
+                <p>
+                    A new temporary password has been
+                    created for the school administrator.
+                </p>
+
+
+                <div class="temporary-password-box">
+
+                    <span>
+                        Temporary Password
+                    </span>
+
+
+                    <strong id="temporaryPasswordValue">
+                        ${escapeHtml(
+                            details.temporaryPassword
+                        )}
+                    </strong>
+
+                </div>
+
+
+                <div class="reset-success-info">
+
+                    <strong>
+                        ${escapeHtml(
+                            details.adminName
+                        )}
+                    </strong>
+
+
+                    <span>
+                        ${escapeHtml(
+                            details.adminEmail
+                        )}
+                    </span>
+
+                </div>
+
+
+                <div class="reset-warning">
+
+                    ⚠️ The school admin must change
+                    this password after logging in.
+
+                </div>
+
+
+                <div class="reset-modal-actions">
+
+                    <button
+                        type="button"
+                        id="copyTemporaryPassword"
+                    >
+                        📋 Copy Password
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="closeSuccessModal"
+                    >
+                        Done
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    // -------------------------------------------------
+    // CLOSE
+    // -------------------------------------------------
+
+    document
+        .getElementById(
+            "closeSuccessModal"
+        )
+        .addEventListener(
+            "click",
+            function() {
+
+                modal.remove();
+
+            }
+        );
+
+
+    // -------------------------------------------------
+    // COPY PASSWORD
+    // -------------------------------------------------
+
+    document
+        .getElementById(
+            "copyTemporaryPassword"
+        )
+        .addEventListener(
+            "click",
+            async function() {
+
+                try {
+
+                    await navigator.clipboard.writeText(
+                        details.temporaryPassword
+                    );
+
+
+                    this.textContent =
+                        "✓ Copied";
+
+
+                } catch (error) {
+
+                    console.error(
+                        "COPY PASSWORD ERROR:",
+                        error
+                    );
+
+                    alert(
+                        "Unable to copy password. Please copy it manually."
+                    );
+
+                }
+
+            }
+        );
+
+
+    // -------------------------------------------------
+    // CLOSE OUTSIDE
+    // -------------------------------------------------
+
+    const overlay =
+        modal.querySelector(
+            ".reset-modal-overlay"
+        );
+
+
+    overlay.addEventListener(
+        "click",
+        function(event) {
+
+            if (
+                event.target === overlay
+            ) {
+
+                modal.remove();
+
+            }
+
+        }
+    );
 
 }
 
