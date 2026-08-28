@@ -848,3 +848,147 @@ async (req, res) => {
 
     }
 };
+
+// =====================================================
+// RESET USER PASSWORD
+// POST /api/management-users/:id/reset-password
+// =====================================================
+
+exports.resetSchoolAccountPassword = async (req, res) => {
+
+    try {
+
+        const schoolId =
+            getSchoolId(req);
+
+        if (!schoolId) {
+
+            return res.status(403).json({
+                success: false,
+                message: 'School not found'
+            });
+
+        }
+
+        // ---------------------------------------------
+        // FIND USER
+        // Only allow students and teachers
+        // belonging to the logged-in admin's school
+        // ---------------------------------------------
+
+        const user =
+            await User.findOne({
+
+                _id:
+                    req.params.id,
+
+                school:
+                    schoolId,
+
+                role: {
+                    $in: [
+                        'student',
+                        'teacher'
+                    ]
+                }
+
+            });
+
+        if (!user) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message:
+                    'User not found'
+
+            });
+
+        }
+
+
+        // ---------------------------------------------
+        // GENERATE TEMPORARY PASSWORD
+        // ---------------------------------------------
+
+        const temporaryPassword =
+            Math.random()
+                .toString(36)
+                .slice(-8) +
+            Math.floor(
+                Math.random() * 10
+            );
+
+
+        // ---------------------------------------------
+        // HASH PASSWORD
+        // ---------------------------------------------
+
+        const hashedPassword =
+            await bcrypt.hash(
+                temporaryPassword,
+                10
+            );
+
+
+        // ---------------------------------------------
+        // SAVE NEW PASSWORD
+        // ---------------------------------------------
+
+        user.password =
+            hashedPassword;
+
+        await user.save();
+
+
+        console.log(
+            '[MANAGEMENT USERS] PASSWORD RESET:',
+            {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                school: user.school
+            }
+        );
+
+
+        // ---------------------------------------------
+        // RETURN TEMPORARY PASSWORD TO ADMIN
+        // ---------------------------------------------
+
+        return res.json({
+
+            success: true,
+
+            message:
+                'Password reset successfully',
+
+            temporaryPassword
+
+        });
+
+
+    } catch (err) {
+
+        console.error(
+            '[MANAGEMENT USERS] PASSWORD RESET ERROR:',
+            err
+        );
+
+        return res.status(500).json({
+
+            success: false,
+
+            message:
+                'Failed to reset password',
+
+            error:
+                err.message
+
+        });
+
+    }
+
+};
