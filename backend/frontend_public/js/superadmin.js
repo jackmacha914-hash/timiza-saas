@@ -627,13 +627,19 @@ async function loadSchools() {
 //
 // Super Admin only.
 //
-// The frontend sends:
+// Frontend sends:
+//
 // {
 //     newPassword: "temporary-password"
 // }
 //
-// The backend hashes the password and forces the
-// school admin to change it after login.
+// The backend:
+// 1. Finds the school
+// 2. Finds the exact school admin
+// 3. Hashes the new password
+// 4. Saves the password
+// 5. Forces password change
+// 6. Returns the temporary password
 // =====================================================
 
 exports.resetSchoolAdminPassword = async (req, res) => {
@@ -650,9 +656,9 @@ exports.resetSchoolAdminPassword = async (req, res) => {
             req.body.newPassword;
 
 
-        // -------------------------------------------------
+        // =================================================
         // VALIDATE PASSWORD
-        // -------------------------------------------------
+        // =================================================
 
         if (
             !newPassword ||
@@ -671,8 +677,12 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         }
 
 
+        const cleanPassword =
+            newPassword.trim();
+
+
         if (
-            newPassword.trim().length < 6
+            cleanPassword.length < 6
         ) {
 
             return res.status(400).json({
@@ -687,9 +697,9 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         }
 
 
-        // -------------------------------------------------
+        // =================================================
         // FIND SCHOOL
-        // -------------------------------------------------
+        // =================================================
 
         const school =
             await School.findById(
@@ -711,9 +721,9 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         }
 
 
-        // -------------------------------------------------
-        // FIND THE EXACT SCHOOL ADMIN
-        // -------------------------------------------------
+        // =================================================
+        // FIND EXACT SCHOOL ADMIN
+        // =================================================
 
         const admin =
             await User.findOne({
@@ -744,20 +754,20 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         }
 
 
-        // -------------------------------------------------
-        // HASH PASSWORD
-        // -------------------------------------------------
+        // =================================================
+        // HASH NEW PASSWORD
+        // =================================================
 
         const hashedPassword =
             await bcrypt.hash(
-                newPassword.trim(),
+                cleanPassword,
                 10
             );
 
 
-        // -------------------------------------------------
+        // =================================================
         // UPDATE ADMIN
-        // -------------------------------------------------
+        // =================================================
 
         admin.password =
             hashedPassword;
@@ -774,13 +784,13 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         await admin.save();
 
 
-        // -------------------------------------------------
-        // VERIFY PASSWORD WAS SAVED CORRECTLY
-        // -------------------------------------------------
+        // =================================================
+        // VERIFY SAVED PASSWORD
+        // =================================================
 
         const passwordWorks =
             await bcrypt.compare(
-                newPassword.trim(),
+                cleanPassword,
                 admin.password
             );
 
@@ -788,8 +798,10 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         if (!passwordWorks) {
 
             console.error(
-                "[SUPERADMIN] PASSWORD VERIFICATION FAILED"
+                "[SUPERADMIN] PASSWORD VERIFICATION FAILED:",
+                admin.email
             );
+
 
             return res.status(500).json({
 
@@ -803,9 +815,9 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         }
 
 
-        // -------------------------------------------------
-        // LOG
-        // -------------------------------------------------
+        // =================================================
+        // LOG RESET
+        // =================================================
 
         console.log(
             "[SUPERADMIN] SCHOOL ADMIN PASSWORD RESET:",
@@ -828,11 +840,11 @@ exports.resetSchoolAdminPassword = async (req, res) => {
         );
 
 
-        // -------------------------------------------------
+        // =================================================
         // RESPONSE
-        // -------------------------------------------------
+        // =================================================
 
-        return res.json({
+        return res.status(200).json({
 
             success:
                 true,
@@ -841,7 +853,7 @@ exports.resetSchoolAdminPassword = async (req, res) => {
                 "School admin password reset successfully.",
 
             temporaryPassword:
-                newPassword.trim(),
+                cleanPassword,
 
             school: {
 
@@ -902,6 +914,7 @@ exports.resetSchoolAdminPassword = async (req, res) => {
     }
 
 };
+
 
 // =====================================================
 // TOGGLE SCHOOL
