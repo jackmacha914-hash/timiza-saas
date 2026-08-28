@@ -80,154 +80,244 @@ function showSuccess(
 
 
 
-// =====================================================
-// HIDE ALL AUTH FORMS
-// =====================================================
+/* =====================================================
+HIDE ALL AUTH SCREENS
+===================================================== */
 
 function hideAllForms() {
 
-    const loginForm =
-        document.getElementById('login-form');
+```
+const loginForm =
+    document.getElementById('login-form');
 
-    const registerForm =
-        document.getElementById('register-form');
+const registerForm =
+    document.getElementById('register-form');
 
-    const changePasswordForm =
-        document.getElementById(
-            'change-password-form'
-        );
-
-
-    if (loginForm) {
-
-        loginForm.style.display =
-            'none';
-
-    }
+const changePasswordContainer =
+    document.getElementById(
+        'change-password-container'
+    );
 
 
-    if (registerForm) {
-
-        registerForm.style.display =
-            'none';
-
-    }
-
-
-    if (changePasswordForm) {
-
-        changePasswordForm.style.display =
-            'none';
-
-    }
-
+// Hide Login
+if (loginForm) {
+    loginForm.style.display = 'none';
 }
 
 
+// Hide Register
+if (registerForm) {
+    registerForm.style.display = 'none';
+}
 
-// =====================================================
-// SHOW LOGIN
-// =====================================================
+
+// Hide CHANGE PASSWORD CONTAINER
+if (changePasswordContainer) {
+    changePasswordContainer.style.display = 'none';
+}
+```
+
+}
+
+/* =====================================================
+SHOW LOGIN
+===================================================== */
 
 function showLoginForm() {
 
-    hideAllForms();
-
-    const loginForm =
-        document.getElementById('login-form');
-
-    const formTitle =
-        document.getElementById('form-title');
+```
+hideAllForms();
 
 
-    if (loginForm) {
+const loginForm =
+    document.getElementById('login-form');
 
-        loginForm.style.display =
-            'block';
-
-    }
+const formTitle =
+    document.getElementById('form-title');
 
 
-    if (formTitle) {
-
-        formTitle.textContent =
-            'Login';
-
-    }
-
+if (loginForm) {
+    loginForm.style.display = 'block';
 }
 
 
+if (formTitle) {
+    formTitle.style.display = 'block';
+    formTitle.textContent = 'Login';
+}
+```
 
-// =====================================================
-// SHOW REGISTER
-// =====================================================
+}
+
+/* =====================================================
+SHOW REGISTER
+===================================================== */
 
 function showRegisterForm() {
 
-    hideAllForms();
-
-    const registerForm =
-        document.getElementById('register-form');
-
-    const formTitle =
-        document.getElementById('form-title');
+```
+hideAllForms();
 
 
-    if (registerForm) {
+const registerForm =
+    document.getElementById('register-form');
 
-        registerForm.style.display =
-            'block';
-
-    }
+const formTitle =
+    document.getElementById('form-title');
 
 
-    if (formTitle) {
-
-        formTitle.textContent =
-            'Create Account';
-
-    }
-
+if (registerForm) {
+    registerForm.style.display = 'block';
 }
 
 
+if (formTitle) {
+    formTitle.style.display = 'block';
+    formTitle.textContent = 'Create Account';
+}
+```
 
-// =====================================================
-// SHOW CHANGE PASSWORD
-// =====================================================
+}
+
+/* =====================================================
+SHOW CHANGE PASSWORD
+===================================================== */
 
 function showChangePasswordForm() {
 
-    hideAllForms();
-
-    const changePasswordForm =
-        document.getElementById(
-            'change-password-form'
-        );
-
-    const formTitle =
-        document.getElementById(
-            'form-title'
-        );
+```
+console.log(
+    '[LOGIN] SHOWING CHANGE PASSWORD SCREEN'
+);
 
 
-    if (changePasswordForm) {
-
-        changePasswordForm.style.display =
-            'block';
-
-    }
+hideAllForms();
 
 
-    if (formTitle) {
+const changePasswordContainer =
+    document.getElementById(
+        'change-password-container'
+    );
 
-        formTitle.textContent =
-            'Change Password';
+const changePasswordForm =
+    document.getElementById(
+        'change-password-form'
+    );
 
-    }
+const formTitle =
+    document.getElementById(
+        'form-title'
+    );
+
+
+/* ---------------------------------------------
+   Make sure container exists
+--------------------------------------------- */
+
+if (!changePasswordContainer) {
+
+    console.error(
+        '[LOGIN] ERROR: change-password-container NOT FOUND'
+    );
+
+    alert(
+        'Change Password container is missing from login.html'
+    );
+
+    return;
 
 }
+
+
+/* ---------------------------------------------
+   SHOW PARENT CONTAINER
+--------------------------------------------- */
+
+changePasswordContainer.style.display =
+    'block';
+
+
+changePasswordContainer.style.visibility =
+    'visible';
+
+
+changePasswordContainer.style.opacity =
+    '1';
+
+
+/* ---------------------------------------------
+   SHOW FORM
+--------------------------------------------- */
+
+if (changePasswordForm) {
+
+    changePasswordForm.style.display =
+        'block';
+
+}
+
+
+/* ---------------------------------------------
+   Hide main page title
+--------------------------------------------- */
+
+if (formTitle) {
+
+    formTitle.style.display =
+        'none';
+
+}
+
+
+/* ---------------------------------------------
+   Clear old message
+--------------------------------------------- */
+
+const message =
+    document.getElementById(
+        'change-password-message'
+    );
+
+
+if (message) {
+
+    message.textContent =
+        '';
+
+    message.style.display =
+        'none';
+
+}
+
+
+/* ---------------------------------------------
+   Focus temporary password
+--------------------------------------------- */
+
+const currentPassword =
+    document.getElementById(
+        'current-password'
+    );
+
+
+if (currentPassword) {
+
+    setTimeout(() => {
+
+        currentPassword.focus();
+
+    }, 100);
+
+}
+
+
+console.log(
+    '[LOGIN] Change Password UI displayed'
+);
+```
+
+}
+
 
 
 
@@ -401,65 +491,82 @@ document.addEventListener(
 
 
 
-                        // =================================
-                        // IMPORTANT:
-                        // TEMPORARY PASSWORD
-                        // =================================
+                        /* ================================================
+TEMPORARY PASSWORD DETECTED
+================================================ */
 
-                        if (
-                            response.mustChangePassword === true ||
-                            response.user?.mustChangePassword === true
-                        ) {
+const mustChangePassword =
+response?.mustChangePassword === true ||
+response?.user?.mustChangePassword === true;
 
-                            console.log(
-                                '[LOGIN] Temporary password detected'
-                            );
+console.log(
+'[LOGIN] mustChangePassword:',
+mustChangePassword
+);
 
+if (mustChangePassword) {
 
-                            console.log(
-                                '[LOGIN] User must change password'
-                            );
+```
+console.log(
+    '[LOGIN] Temporary password detected'
+);
 
-
-                            // Show change password screen
-                            showChangePasswordForm();
-
-
-                            // Clear old login password
-                            const passwordField =
-                                document.getElementById(
-                                    'login-password'
-                                );
+console.log(
+    '[LOGIN] User must change password'
+);
 
 
-                            if (passwordField) {
+/*
+ * IMPORTANT:
+ *
+ * Do NOT redirect to the dashboard.
+ *
+ * Show the CHANGE PASSWORD CONTAINER.
+ */
 
-                                passwordField.value =
-                                    '';
-
-                            }
-
-
-                            // Put the temporary password
-                            // in the current password field
-                            const currentPasswordField =
-                                document.getElementById(
-                                    'current-password'
-                                );
+showChangePasswordForm();
 
 
-                            if (currentPasswordField) {
+/*
+ * Clear login password field.
+ */
 
-                                currentPasswordField.value =
-                                    password;
+const loginPasswordField =
+    document.getElementById(
+        'login-password'
+    );
 
-                            }
+
+if (loginPasswordField) {
+
+    loginPasswordField.value = '';
+
+}
 
 
-                            return;
+/*
+ * Automatically put the temporary password
+ * into the current-password field.
+ */
 
-                        }
+const currentPasswordField =
+    document.getElementById(
+        'current-password'
+    );
 
+
+if (currentPasswordField) {
+
+    currentPasswordField.value =
+        password;
+
+}
+
+
+return;
+```
+
+}
 
 
                         // =================================
