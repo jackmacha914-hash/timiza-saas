@@ -90,7 +90,7 @@ async (req, res) => {
             console.log('Processing class:', classValue);
 
             if (
-                !/^(Grade\s\d{1,2}|Form\s[1-4]|Pre-Primary 1 \(PP1\)|Pre-Primary 2 \(PP2\))$/i.test(
+                !/^(Playgroup|Grade\s\d{1,2}|Form\s[1-4]|Pre-Primary 1 \(PP1\)|Pre-Primary 2 \(PP2\))$/i.test(
                     classValue
                 )
             ) {
