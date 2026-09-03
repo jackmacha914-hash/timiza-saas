@@ -21,6 +21,7 @@ const CLASS_STRUCTURE = [
     {
         label: 'Pre-Primary',
         classes: [
+            { value: 'playgroup', text: 'Playgroup - Age 2-3' },
             { value: 'pp1', text: 'Pre-Primary 1 (PP1) - Age 4-5' },
             { value: 'pp2', text: 'Pre-Primary 2 (PP2) - Age 5-6' }
         ]
@@ -803,6 +804,7 @@ const CLASS_STRUCTURE = [
     {
         label: 'Pre-Primary',
         classes: [
+            { value: 'playgroup', text: 'Playgroup - Age 2-3' },
             { value: 'pp1', text: 'Pre-Primary 1 (PP1) - Age 4-5' },
             { value: 'pp2', text: 'Pre-Primary 2 (PP2) - Age 5-6' }
         ]
