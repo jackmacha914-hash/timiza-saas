@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const validateClass = (value) => {
   if (!value) return true;
 
-  return /^(Grade\s\d{1,2}|Form\s[1-4]|Pre-Primary 1 \(PP1\)|Pre-Primary 2 \(PP2\))$/i.test(value);
+  return /^(Playgroup|Grade\s\d{1,2}|Form\s[1-4]|Pre-Primary 1 \(PP1\)|Pre-Primary 2 \(PP2\))$/i.test(value);
 };
 
 const userSchema = new mongoose.Schema({
