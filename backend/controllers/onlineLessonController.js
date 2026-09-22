@@ -832,9 +832,24 @@ exports.endOnlineLesson = async (req, res) => {
     try {
         const schoolId = getSchoolId(req);
         const teacherId = req.user.id;
+        const lessonId = req.params.id;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: "No school context."
+            });
+        }
+
+        if (!isValidObjectId(lessonId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid lesson ID."
+            });
+        }
 
         const lesson = await OnlineLesson.findOne({
-            _id: req.params.id,
+            _id: lessonId,
             school: schoolId,
             teacher: teacherId
         });
@@ -846,10 +861,27 @@ exports.endOnlineLesson = async (req, res) => {
             });
         }
 
+        // Cancelled lessons cannot be ended.
+        if (lesson.status === "cancelled") {
+            return res.status(400).json({
+                success: false,
+                message: "Cancelled lessons cannot be ended."
+            });
+        }
+
+        // A completed lesson cannot be ended again.
+        if (lesson.status === "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "Lesson is already completed."
+            });
+        }
+
+        // Only a live lesson can be ended.
         if (lesson.status !== "live") {
             return res.status(400).json({
                 success: false,
-                message: "Only live lessons can be ended."
+                message: "Only a live lesson can be ended."
             });
         }
 
@@ -860,11 +892,15 @@ exports.endOnlineLesson = async (req, res) => {
 
         return res.json({
             success: true,
-            message: "Online lesson completed.",
+            message: "Online lesson ended successfully.",
             lesson
         });
+
     } catch (error) {
-        console.error("End online lesson error:", error);
+        console.error(
+            "End online lesson error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
@@ -872,7 +908,6 @@ exports.endOnlineLesson = async (req, res) => {
         });
     }
 };
-
 // =====================================================
 // RECORD STUDENT JOIN
 // =====================================================
