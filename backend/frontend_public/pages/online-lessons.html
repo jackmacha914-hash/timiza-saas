@@ -225,6 +225,195 @@
             </button>
         </header>
 
+        <section
+    id="createOnlineLessonSection"
+    style="display: none;"
+>
+    <div class="online-lesson-card">
+
+        <div class="online-lesson-card-header">
+            <div>
+                <h2>Create Online Lesson</h2>
+                <p>Schedule a new virtual lesson for your class.</p>
+            </div>
+
+            <button
+                type="button"
+                class="online-lesson-btn"
+                id="closeCreateLessonBtn"
+            >
+                Close
+            </button>
+        </div>
+
+        <form id="createOnlineLessonForm">
+
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin-top:20px;">
+
+                <div>
+                    <label for="lessonTitle">
+                        Lesson Title
+                    </label>
+
+                    <input
+                        type="text"
+                        id="lessonTitle"
+                        name="title"
+                        placeholder="e.g. Introduction to Algebra"
+                        maxlength="200"
+                        required
+                        style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;"
+                    >
+                </div>
+
+                <div>
+                    <label for="lessonClass">
+                        Class
+                    </label>
+
+                    <select
+                        id="lessonClass"
+                        name="classId"
+                        required
+                        style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;"
+                    >
+                        <option value="">
+                            Select class
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="lessonSubject">
+                        Subject
+                    </label>
+
+                    <select
+                        id="lessonSubject"
+                        name="subjectId"
+                        required
+                        style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;"
+                    >
+                        <option value="">
+                            Select subject
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="lessonDuration">
+                        Duration (minutes)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="lessonDuration"
+                        name="duration"
+                        min="1"
+                        max="1440"
+                        value="60"
+                        required
+                        style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;"
+                    >
+                </div>
+
+                <div>
+                    <label for="lessonDateTime">
+                        Date & Time
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        id="lessonDateTime"
+                        name="scheduledAt"
+                        required
+                        style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;"
+                    >
+                </div>
+
+                <div>
+                    <label for="meetingProvider">
+                        Meeting Platform
+                    </label>
+
+                    <select
+                        id="meetingProvider"
+                        name="meetingProvider"
+                        style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;"
+                    >
+                        <option value="external">
+                            External / Existing Link
+                        </option>
+
+                        <option value="google_meet">
+                            Google Meet
+                        </option>
+
+                        <option value="zoom">
+                            Zoom
+                        </option>
+
+                        <option value="microsoft_teams">
+                            Microsoft Teams
+                        </option>
+                    </select>
+                </div>
+
+            </div>
+
+            <div style="margin-top:15px;">
+                <label for="meetingUrl">
+                    Meeting URL
+                </label>
+
+                <input
+                    type="url"
+                    id="meetingUrl"
+                    name="meetingUrl"
+                    placeholder="https://..."
+                    style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;"
+                >
+            </div>
+
+            <div style="margin-top:15px;">
+                <label for="lessonDescription">
+                    Description
+                </label>
+
+                <textarea
+                    id="lessonDescription"
+                    name="description"
+                    rows="5"
+                    maxlength="5000"
+                    placeholder="Describe what students will learn..."
+                    style="width:100%;padding:10px;margin-top:6px;box-sizing:border-box;"
+                ></textarea>
+            </div>
+
+            <div style="margin-top:20px;display:flex;gap:10px;">
+
+                <button
+                    type="submit"
+                    class="online-lesson-btn online-lesson-start"
+                >
+                    Create Lesson
+                </button>
+
+                <button
+                    type="button"
+                    class="online-lesson-btn online-lesson-cancel"
+                    id="cancelCreateLessonBtn"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</section>
+
         <section id="onlineLessonsList">
             <div class="online-lessons-loading">
                 Loading online lessons...
@@ -235,15 +424,47 @@
 
     <script src="/js/onlineLessons.js"></script>
 
-    <script>
-        document
-            .getElementById("createOnlineLessonBtn")
-            .addEventListener("click", function () {
-                alert(
-                    "Create Online Lesson form will be added next."
-                );
-            });
-    </script>
+   <script>
+    const createLessonBtn =
+        document.getElementById("createOnlineLessonBtn");
+
+    const createLessonSection =
+        document.getElementById("createOnlineLessonSection");
+
+    const closeCreateLessonBtn =
+        document.getElementById("closeCreateLessonBtn");
+
+    const cancelCreateLessonBtn =
+        document.getElementById("cancelCreateLessonBtn");
+
+    function openCreateLessonForm() {
+        createLessonSection.style.display = "block";
+
+        createLessonSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+
+    function closeCreateLessonForm() {
+        createLessonSection.style.display = "none";
+    }
+
+    createLessonBtn.addEventListener(
+        "click",
+        openCreateLessonForm
+    );
+
+    closeCreateLessonBtn.addEventListener(
+        "click",
+        closeCreateLessonForm
+    );
+
+    cancelCreateLessonBtn.addEventListener(
+        "click",
+        closeCreateLessonForm
+    );
+</script>
 
 </body>
 </html>
