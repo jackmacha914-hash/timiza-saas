@@ -9,7 +9,9 @@
 
     function getUser() {
         try {
-            return JSON.parse(localStorage.getItem("user") || "null");
+            return JSON.parse(
+                localStorage.getItem("user") || "null"
+            );
         } catch (error) {
             return null;
         }
@@ -42,7 +44,8 @@
 
         if (!response.ok) {
             throw new Error(
-                data.message || "Online Lessons request failed."
+                data.message ||
+                "Online Lessons request failed."
             );
         }
 
@@ -59,7 +62,9 @@
     }
 
     function formatDate(dateValue) {
-        if (!dateValue) return "Not scheduled";
+        if (!dateValue) {
+            return "Not scheduled";
+        }
 
         const date = new Date(dateValue);
 
@@ -88,17 +93,23 @@
         return lesson?._id || lesson?.id || "";
     }
 
+    /* =====================================================
+       LOAD TEACHER LESSONS
+       ===================================================== */
+
     async function loadTeacherLessons() {
-        const container = document.getElementById(
-            "onlineLessonsList"
-        );
+        const container =
+            document.getElementById(
+                "onlineLessonsList"
+            );
 
         if (!container) {
             return;
         }
 
         container.innerHTML = `
-            <div class="online-lessons-loading">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
                 Loading online lessons...
             </div>
         `;
@@ -108,165 +119,251 @@
                 `${API_BASE}/teacher`
             );
 
-            const lessons = Array.isArray(data.lessons)
-                ? data.lessons
-                : [];
+            const lessons =
+                Array.isArray(data.lessons)
+                    ? data.lessons
+                    : [];
 
             renderTeacherLessons(lessons);
 
         } catch (error) {
+
             console.error(
                 "Load teacher online lessons error:",
                 error
             );
 
             container.innerHTML = `
-                <div class="online-lessons-error">
+                <div class="error">
                     ${escapeHtml(error.message)}
                 </div>
             `;
         }
     }
 
+
+    /* =====================================================
+       RENDER LESSONS
+       ===================================================== */
+
     function renderTeacherLessons(lessons) {
-        const container = document.getElementById(
-            "onlineLessonsList"
-        );
+
+        const container =
+            document.getElementById(
+                "onlineLessonsList"
+            );
 
         if (!container) {
             return;
         }
 
         if (lessons.length === 0) {
+
             container.innerHTML = `
-                <div class="online-lessons-empty">
-                    <h3>No online lessons yet</h3>
-                    <p>Create your first online lesson to get started.</p>
+                <div class="empty-state">
+
+                    <i class="fas fa-video"></i>
+
+                    <h3>No Online Lessons Yet</h3>
+
+                    <p>
+                        Create your first online lesson
+                        to get started.
+                    </p>
+
                 </div>
             `;
+
             return;
         }
 
         container.innerHTML = lessons
             .map((lesson) => {
-                const lessonId = getLessonId(lesson);
+
+                const lessonId =
+                    getLessonId(lesson);
 
                 const className =
-                    lesson.class?.name || "Class";
+                    lesson.class?.name ||
+                    "Class";
 
                 const subjectName =
-                    lesson.subject?.name || "Subject";
+                    lesson.subject?.name ||
+                    "Subject";
 
                 const title =
-                    lesson.title || "Online Lesson";
+                    lesson.title ||
+                    "Online Lesson";
 
                 const status =
-                    lesson.status || "scheduled";
+                    lesson.status ||
+                    "scheduled";
 
                 const meetingUrl =
-                    lesson.meeting?.meetingUrl || "";
+                    lesson.meeting?.meetingUrl ||
+                    "";
 
                 return `
                     <div
-                        class="online-lesson-card"
-                        data-lesson-id="${escapeHtml(lessonId)}"
+                        class="lesson-card"
+                        data-lesson-id="${escapeHtml(
+                            lessonId
+                        )}"
                     >
-                        <div class="online-lesson-card-header">
+
+                        <div class="lesson-card-header">
+
                             <div>
+
                                 <h3>
                                     ${escapeHtml(title)}
                                 </h3>
 
                                 <p>
-                                    ${escapeHtml(subjectName)}
+                                    ${escapeHtml(
+                                        subjectName
+                                    )}
                                     ·
-                                    ${escapeHtml(className)}
+                                    ${escapeHtml(
+                                        className
+                                    )}
                                 </p>
+
                             </div>
 
-                            <span class="online-lesson-status status-${escapeHtml(status)}">
+                            <span
+                                class="status-badge status-${escapeHtml(
+                                    status
+                                )}"
+                            >
                                 ${escapeHtml(
-                                    getStatusLabel(status)
+                                    getStatusLabel(
+                                        status
+                                    )
                                 )}
                             </span>
+
                         </div>
 
-                        <div class="online-lesson-details">
-                            <div>
-                                <strong>Date & Time</strong>
-                                <span>
+
+                        <div class="lesson-details">
+
+                            <div class="lesson-detail">
+
+                                <span class="lesson-detail-label">
+                                    Date & Time
+                                </span>
+
+                                <span class="lesson-detail-value">
                                     ${escapeHtml(
                                         formatDate(
                                             lesson.scheduledAt
                                         )
                                     )}
                                 </span>
+
                             </div>
 
-                            <div>
-                                <strong>Duration</strong>
-                                <span>
+
+                            <div class="lesson-detail">
+
+                                <span class="lesson-detail-label">
+                                    Duration
+                                </span>
+
+                                <span class="lesson-detail-value">
                                     ${escapeHtml(
                                         lesson.duration
-                                    )} minutes
+                                    )}
+                                    minutes
                                 </span>
+
                             </div>
 
-                            <div>
-                                <strong>Meeting</strong>
-                                <span>
+
+                            <div class="lesson-detail">
+
+                                <span class="lesson-detail-label">
+                                    Meeting
+                                </span>
+
+                                <span class="lesson-detail-value">
                                     ${
                                         meetingUrl
                                             ? escapeHtml(
-                                                  lesson.meeting
-                                                      ?.provider ||
-                                                      "External"
-                                              )
+                                                lesson.meeting
+                                                    ?.provider ||
+                                                "External"
+                                            )
                                             : "Not connected"
                                     }
                                 </span>
+
                             </div>
+
                         </div>
 
-                        <div class="online-lesson-actions">
-                            ${renderLessonActions(lesson)}
+
+                        <div class="lesson-actions">
+
+                            ${renderLessonActions(
+                                lesson
+                            )}
+
                         </div>
+
                     </div>
                 `;
             })
             .join("");
     }
 
+
+    /* =====================================================
+       LESSON ACTIONS
+       ===================================================== */
+
     function renderLessonActions(lesson) {
-        const lessonId = getLessonId(lesson);
+
+        const lessonId =
+            getLessonId(lesson);
 
         if (!lessonId) {
             return "";
         }
 
         if (lesson.status === "scheduled") {
+
             return `
                 <button
                     type="button"
-                    class="online-lesson-btn online-lesson-start"
+                    class="btn btn-primary"
                     data-action="start"
-                    data-lesson-id="${escapeHtml(lessonId)}"
+                    data-lesson-id="${escapeHtml(
+                        lessonId
+                    )}"
                 >
+                    <i class="fas fa-play"></i>
                     Start Lesson
                 </button>
 
                 <button
                     type="button"
-                    class="online-lesson-btn online-lesson-cancel"
+                    class="btn btn-danger"
                     data-action="cancel"
-                    data-lesson-id="${escapeHtml(lessonId)}"
+                    data-lesson-id="${escapeHtml(
+                        lessonId
+                    )}"
                 >
+                    <i class="fas fa-times"></i>
                     Cancel
                 </button>
             `;
         }
 
+
         if (lesson.status === "live") {
+
             return `
                 ${
                     lesson.meeting?.meetingUrl
@@ -277,8 +374,9 @@
                                 )}"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                class="online-lesson-btn"
+                                class="btn btn-primary"
                             >
+                                <i class="fas fa-video"></i>
                                 Open Meeting
                             </a>
                         `
@@ -287,38 +385,57 @@
 
                 <button
                     type="button"
-                    class="online-lesson-btn online-lesson-end"
+                    class="btn btn-danger"
                     data-action="end"
-                    data-lesson-id="${escapeHtml(lessonId)}"
+                    data-lesson-id="${escapeHtml(
+                        lessonId
+                    )}"
                 >
+                    <i class="fas fa-stop"></i>
                     End Lesson
                 </button>
             `;
         }
 
+
         if (lesson.status === "completed") {
+
             return `
-                <span class="online-lesson-completed-label">
+                <span>
+                    <i class="fas fa-check-circle"></i>
                     Lesson completed
                 </span>
             `;
         }
 
+
         if (lesson.status === "cancelled") {
+
             return `
-                <span class="online-lesson-cancelled-label">
+                <span>
+                    <i class="fas fa-ban"></i>
                     Lesson cancelled
                 </span>
             `;
         }
 
+
         return "";
     }
 
+
+    /* =====================================================
+       START LESSON
+       ===================================================== */
+
     async function startLesson(lessonId) {
-        if (!lessonId) return;
+
+        if (!lessonId) {
+            return;
+        }
 
         try {
+
             await apiRequest(
                 `${API_BASE}/${lessonId}/start`,
                 {
@@ -329,6 +446,7 @@
             await loadTeacherLessons();
 
         } catch (error) {
+
             console.error(
                 "Start online lesson error:",
                 error
@@ -338,10 +456,19 @@
         }
     }
 
+
+    /* =====================================================
+       END LESSON
+       ===================================================== */
+
     async function endLesson(lessonId) {
-        if (!lessonId) return;
+
+        if (!lessonId) {
+            return;
+        }
 
         try {
+
             await apiRequest(
                 `${API_BASE}/${lessonId}/end`,
                 {
@@ -352,6 +479,7 @@
             await loadTeacherLessons();
 
         } catch (error) {
+
             console.error(
                 "End online lesson error:",
                 error
@@ -361,18 +489,28 @@
         }
     }
 
-    async function cancelLesson(lessonId) {
-        if (!lessonId) return;
 
-        const confirmed = window.confirm(
-            "Are you sure you want to cancel this online lesson?"
-        );
+    /* =====================================================
+       CANCEL LESSON
+       ===================================================== */
+
+    async function cancelLesson(lessonId) {
+
+        if (!lessonId) {
+            return;
+        }
+
+        const confirmed =
+            window.confirm(
+                "Are you sure you want to cancel this online lesson?"
+            );
 
         if (!confirmed) {
             return;
         }
 
         try {
+
             await apiRequest(
                 `${API_BASE}/${lessonId}`,
                 {
@@ -383,6 +521,7 @@
             await loadTeacherLessons();
 
         } catch (error) {
+
             console.error(
                 "Cancel online lesson error:",
                 error
@@ -392,10 +531,196 @@
         }
     }
 
+
+    /* =====================================================
+       CREATE LESSON MODAL
+       ===================================================== */
+
+    function openCreateLessonModal() {
+
+        const modal =
+            document.getElementById(
+                "onlineLessonModal"
+            );
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.add("show");
+    }
+
+
+    function closeCreateLessonModal() {
+
+        const modal =
+            document.getElementById(
+                "onlineLessonModal"
+            );
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.remove("show");
+    }
+
+
+    /* =====================================================
+       CREATE LESSON
+       ===================================================== */
+
+    async function createLesson(event) {
+
+        event.preventDefault();
+
+        const title =
+            document
+                .getElementById("lessonTitle")
+                .value
+                .trim();
+
+        const classValue =
+            document
+                .getElementById("lessonClass")
+                .value;
+
+        const subjectValue =
+            document
+                .getElementById("lessonSubject")
+                .value;
+
+        const scheduledAt =
+            document
+                .getElementById("lessonDateTime")
+                .value;
+
+        const duration =
+            document
+                .getElementById("lessonDuration")
+                .value;
+
+        const description =
+            document
+                .getElementById("lessonDescription")
+                .value
+                .trim();
+
+        const meetingProvider =
+            document
+                .getElementById("meetingProvider")
+                .value;
+
+        const meetingUrl =
+            document
+                .getElementById("meetingUrl")
+                .value
+                .trim();
+
+
+        if (!title) {
+            alert("Please enter a lesson title.");
+            return;
+        }
+
+        if (!classValue) {
+            alert("Please select a class.");
+            return;
+        }
+
+        if (!subjectValue) {
+            alert("Please select a subject.");
+            return;
+        }
+
+        if (!scheduledAt) {
+            alert("Please select the lesson date and time.");
+            return;
+        }
+
+
+        /*
+         * The static dropdown currently contains names,
+         * while the backend requires MongoDB ObjectIds.
+         *
+         * We intentionally stop here until we connect
+         * those selections to the teacher's real class
+         * and subject records.
+         */
+
+        alert(
+            "The lesson form is ready. Class and Subject still need to be connected to their database records before the lesson can be created."
+        );
+    }
+
+
+    /* =====================================================
+       EVENT HANDLERS
+       ===================================================== */
+
     function setupEventHandlers() {
+
+        const createButton =
+            document.getElementById(
+                "createOnlineLessonBtn"
+            );
+
+        const closeButton =
+            document.getElementById(
+                "closeOnlineLessonModal"
+            );
+
+        const cancelButton =
+            document.getElementById(
+                "cancelOnlineLesson"
+            );
+
+        const form =
+            document.getElementById(
+                "createOnlineLessonForm"
+            );
+
+
+        if (createButton) {
+
+            createButton.addEventListener(
+                "click",
+                openCreateLessonModal
+            );
+        }
+
+
+        if (closeButton) {
+
+            closeButton.addEventListener(
+                "click",
+                closeCreateLessonModal
+            );
+        }
+
+
+        if (cancelButton) {
+
+            cancelButton.addEventListener(
+                "click",
+                closeCreateLessonModal
+            );
+        }
+
+
+        if (form) {
+
+            form.addEventListener(
+                "submit",
+                createLesson
+            );
+        }
+
+
         document.addEventListener(
             "click",
             function (event) {
+
                 const button =
                     event.target.closest(
                         "[data-action]"
@@ -411,48 +736,108 @@
                 const lessonId =
                     button.dataset.lessonId;
 
+
                 if (action === "start") {
-                    startLesson(lessonId);
+
+                    startLesson(
+                        lessonId
+                    );
                 }
+
 
                 if (action === "end") {
-                    endLesson(lessonId);
+
+                    endLesson(
+                        lessonId
+                    );
                 }
+
 
                 if (action === "cancel") {
-                    cancelLesson(lessonId);
+
+                    cancelLesson(
+                        lessonId
+                    );
                 }
+
             }
         );
+
+
+        /* Close modal when clicking outside */
+
+        const modal =
+            document.getElementById(
+                "onlineLessonModal"
+            );
+
+        if (modal) {
+
+            modal.addEventListener(
+                "click",
+                function (event) {
+
+                    if (
+                        event.target === modal
+                    ) {
+                        closeCreateLessonModal();
+                    }
+
+                }
+            );
+        }
     }
 
+
+    /* =====================================================
+       INIT
+       ===================================================== */
+
     function init() {
+
         setupEventHandlers();
 
         const user = getUser();
 
         if (
             user &&
-            String(user.role || "").toLowerCase() ===
-                "teacher"
+            String(user.role || "")
+                .toLowerCase() === "teacher"
         ) {
             loadTeacherLessons();
         }
     }
 
+
     window.onlineLessons = {
+
         loadTeacherLessons,
+
         startLesson,
+
         endLesson,
-        cancelLesson
+
+        cancelLesson,
+
+        openCreateLessonModal,
+
+        closeCreateLessonModal
+
     };
 
-    if (document.readyState === "loading") {
+
+    if (
+        document.readyState === "loading"
+    ) {
+
         document.addEventListener(
             "DOMContentLoaded",
             init
         );
+
     } else {
+
         init();
     }
+
 })();
