@@ -1051,3 +1051,92 @@ exports.deleteLessonMeeting = async (req, res) => {
         });
     }
 };
+
+//student section//
+exports.getStudentLessons = async (req, res) => {
+    try {
+        const schoolId = getSchoolId(req);
+        const studentId = req.user.id;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                message: "No school context."
+            });
+        }
+
+        // Find classes where this student is actually enrolled.
+        const classes = await Class.find({
+            school: schoolId,
+            students: studentId
+        }).select("_id");
+
+        const classIds = classes.map((item) => item._id);
+
+        if (classIds.length === 0) {
+            return res.json({
+                today: [],
+                upcoming: [],
+                completed: []
+            });
+        }
+
+        const lessons = await OnlineLesson.find({
+            school: schoolId,
+            class: { $in: classIds }
+        })
+            .populate("class", "name level section academicYear")
+            .populate("subject", "name code category")
+            .populate("teacher", "name email")
+            .sort({ scheduledAt: 1 });
+
+        const now = new Date();
+
+        const startOfToday = new Date(now);
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date(now);
+        endOfToday.setHours(23, 59, 59, 999);
+
+        const today = [];
+        const upcoming = [];
+        const completed = [];
+
+        for (const lesson of lessons) {
+            if (lesson.status === "cancelled") {
+                continue;
+            }
+
+            if (
+                lesson.scheduledAt >= startOfToday &&
+                lesson.scheduledAt <= endOfToday
+            ) {
+                today.push(lesson);
+                continue;
+            }
+
+            if (
+                lesson.status === "completed" ||
+                lesson.endedAt
+            ) {
+                completed.push(lesson);
+                continue;
+            }
+
+            if (lesson.scheduledAt > endOfToday) {
+                upcoming.push(lesson);
+            }
+        }
+
+        res.json({
+            today,
+            upcoming,
+            completed
+        });
+    } catch (error) {
+        console.error("Get student lessons error:", error);
+
+        res.status(500).json({
+            message: "Failed to fetch student lessons."
+        });
+    }
+};
