@@ -93,6 +93,148 @@
         return lesson?._id || lesson?.id || "";
     }
 
+
+    /* =====================================================
+       LOAD LESSON FORM OPTIONS
+       ===================================================== */
+
+    async function loadLessonOptions() {
+        const classSelect =
+            document.getElementById("lessonClass");
+
+        const subjectSelect =
+            document.getElementById("lessonSubject");
+
+        if (!classSelect || !subjectSelect) {
+            return;
+        }
+
+        classSelect.innerHTML = `
+            <option value="">
+                Loading classes...
+            </option>
+        `;
+
+        subjectSelect.innerHTML = `
+            <option value="">
+                Loading subjects...
+            </option>
+        `;
+
+        try {
+            const data = await apiRequest(
+                `${API_BASE}/options`
+            );
+
+            const classes =
+                Array.isArray(data.classes)
+                    ? data.classes
+                    : [];
+
+            const subjects =
+                Array.isArray(data.subjects)
+                    ? data.subjects
+                    : [];
+
+
+            /* -------------------------------------------------
+               POPULATE CLASSES
+               ------------------------------------------------- */
+
+            classSelect.innerHTML = `
+                <option value="">
+                    Select Class
+                </option>
+            `;
+
+            classes.forEach((classRecord) => {
+
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    classRecord._id;
+
+                const section =
+                    classRecord.section
+                        ? ` - ${classRecord.section}`
+                        : "";
+
+                option.textContent =
+                    `${classRecord.name}${section}`;
+
+                classSelect.appendChild(option);
+            });
+
+
+            /* -------------------------------------------------
+               POPULATE SUBJECTS
+               ------------------------------------------------- */
+
+            subjectSelect.innerHTML = `
+                <option value="">
+                    Select Subject
+                </option>
+            `;
+
+            subjects.forEach((subject) => {
+
+                const option =
+                    document.createElement("option");
+
+                option.value =
+                    subject._id;
+
+                option.textContent =
+                    subject.name;
+
+                subjectSelect.appendChild(option);
+            });
+
+
+            if (classes.length === 0) {
+                classSelect.innerHTML = `
+                    <option value="">
+                        No classes assigned
+                    </option>
+                `;
+            }
+
+            if (subjects.length === 0) {
+                subjectSelect.innerHTML = `
+                    <option value="">
+                        No active subjects
+                    </option>
+                `;
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Load online lesson options error:",
+                error
+            );
+
+            classSelect.innerHTML = `
+                <option value="">
+                    Failed to load classes
+                </option>
+            `;
+
+            subjectSelect.innerHTML = `
+                <option value="">
+                    Failed to load subjects
+                </option>
+            `;
+
+            alert(
+                error.message ||
+                "Failed to load lesson options."
+            );
+        }
+    }
+
+
     /* =====================================================
        LOAD TEACHER LESSONS
        ===================================================== */
@@ -548,6 +690,8 @@
         }
 
         modal.classList.add("show");
+
+        loadLessonOptions();
     }
 
 
@@ -580,12 +724,12 @@
                 .value
                 .trim();
 
-        const classValue =
+        const classId =
             document
                 .getElementById("lessonClass")
                 .value;
 
-        const subjectValue =
+        const subjectId =
             document
                 .getElementById("lessonSubject")
                 .value;
@@ -623,12 +767,12 @@
             return;
         }
 
-        if (!classValue) {
+        if (!classId) {
             alert("Please select a class.");
             return;
         }
 
-        if (!subjectValue) {
+        if (!subjectId) {
             alert("Please select a subject.");
             return;
         }
@@ -639,18 +783,64 @@
         }
 
 
-        /*
-         * The static dropdown currently contains names,
-         * while the backend requires MongoDB ObjectIds.
-         *
-         * We intentionally stop here until we connect
-         * those selections to the teacher's real class
-         * and subject records.
-         */
+        const payload = {
+            classId,
+            subjectId,
+            title,
+            scheduledAt,
+            duration: Number(duration),
+            description,
+            meeting: {
+                provider: meetingProvider || "external"
+            }
+        };
 
-        alert(
-            "The lesson form is ready. Class and Subject still need to be connected to their database records before the lesson can be created."
-        );
+
+        if (meetingProvider === "external") {
+
+            if (!meetingUrl) {
+                alert(
+                    "Please enter the meeting URL for an external meeting."
+                );
+                return;
+            }
+
+            payload.meeting.meetingUrl =
+                meetingUrl;
+        }
+
+
+        try {
+
+            await apiRequest(
+                API_BASE,
+                {
+                    method: "POST",
+                    body: JSON.stringify(
+                        payload
+                    )
+                }
+            );
+
+            alert(
+                "Online lesson created successfully."
+            );
+
+            closeCreateLessonModal();
+
+            event.target.reset();
+
+            await loadTeacherLessons();
+
+        } catch (error) {
+
+            console.error(
+                "Create online lesson error:",
+                error
+            );
+
+            alert(error.message);
+        }
     }
 
 
@@ -813,6 +1003,8 @@
 
         loadTeacherLessons,
 
+        loadLessonOptions,
+
         startLesson,
 
         endLesson,
@@ -841,3 +1033,4 @@
     }
 
 })();
+
