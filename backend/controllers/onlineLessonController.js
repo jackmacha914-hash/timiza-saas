@@ -746,9 +746,24 @@ exports.startOnlineLesson = async (req, res) => {
     try {
         const schoolId = getSchoolId(req);
         const teacherId = req.user.id;
+        const lessonId = req.params.id;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: "No school context."
+            });
+        }
+
+        if (!isValidObjectId(lessonId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid lesson ID."
+            });
+        }
 
         const lesson = await OnlineLesson.findOne({
-            _id: req.params.id,
+            _id: lessonId,
             school: schoolId,
             teacher: teacherId
         });
@@ -760,6 +775,7 @@ exports.startOnlineLesson = async (req, res) => {
             });
         }
 
+        // Cancelled lessons cannot be started.
         if (lesson.status === "cancelled") {
             return res.status(400).json({
                 success: false,
@@ -767,18 +783,39 @@ exports.startOnlineLesson = async (req, res) => {
             });
         }
 
+        // Completed lessons cannot be started again.
+        if (lesson.status === "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "Completed lessons cannot be started again."
+            });
+        }
+
+        // Prevent starting an already-live lesson.
+        if (lesson.status === "live") {
+            return res.status(400).json({
+                success: false,
+                message: "Lesson is already live."
+            });
+        }
+
         lesson.status = "live";
         lesson.startedAt = new Date();
+        lesson.endedAt = null;
 
         await lesson.save();
 
         return res.json({
             success: true,
-            message: "Online lesson started.",
+            message: "Online lesson started successfully.",
             lesson
         });
+
     } catch (error) {
-        console.error("Start online lesson error:", error);
+        console.error(
+            "Start online lesson error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
