@@ -98,7 +98,7 @@
        LOAD LESSON FORM OPTIONS
        ===================================================== */
 
-    async function loadLessonOptions() {
+    function loadLessonOptions() {
         const classSelect =
             document.getElementById("lessonClass");
 
@@ -109,115 +109,32 @@
             return;
         }
 
-        try {
-            const data = await apiRequest(
-                `${API_BASE}/options`
-            );
+        /*
+         * Online Lessons currently use the same static
+         * Class and Subject options as the existing
+         * Quiz creation flow.
+         *
+         * We intentionally do NOT call /options here.
+         * The selected values are the human-readable names,
+         * for example:
+         *
+         * Class: Grade 3
+         * Subject: French
+         */
 
-            const classes =
-                Array.isArray(data.classes)
-                    ? data.classes
-                    : [];
+        console.log(
+            "Online Lesson class options:",
+            Array.from(classSelect.options).map(
+                option => option.value
+            )
+        );
 
-            const subjects =
-                Array.isArray(data.subjects)
-                    ? data.subjects
-                    : [];
-
-
-            /* =================================================
-               POPULATE CLASSES
-               ================================================= */
-
-            classSelect.innerHTML = `
-                <option value="">
-                    Select Class
-                </option>
-            `;
-
-            classes.forEach((classRecord) => {
-
-                const option =
-                    document.createElement("option");
-
-                option.value =
-                    classRecord._id;
-
-                const section =
-                    classRecord.section
-                        ? ` - ${classRecord.section}`
-                        : "";
-
-                option.textContent =
-                    `${classRecord.name}${section}`;
-
-                classSelect.appendChild(option);
-            });
-
-
-            /* =================================================
-               POPULATE SUBJECTS
-               ================================================= */
-
-            subjectSelect.innerHTML = `
-                <option value="">
-                    Select Subject
-                </option>
-            `;
-
-            subjects.forEach((subject) => {
-
-                const option =
-                    document.createElement("option");
-
-                option.value =
-                    subject._id;
-
-                option.textContent =
-                    subject.name;
-
-                subjectSelect.appendChild(option);
-            });
-
-
-            /* =================================================
-               NO DATA
-               ================================================= */
-
-            if (classes.length === 0) {
-
-                classSelect.innerHTML = `
-                    <option value="">
-                        No classes assigned
-                    </option>
-                `;
-            }
-
-            if (subjects.length === 0) {
-
-                subjectSelect.innerHTML = `
-                    <option value="">
-                        No active subjects
-                    </option>
-                `;
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Load online lesson options error:",
-                error
-            );
-
-            /*
-             * Do not destroy the existing HTML dropdown
-             * options if the database request fails.
-             */
-
-            console.warn(
-                "Using existing lesson form options because database options could not be loaded."
-            );
-        }
+        console.log(
+            "Online Lesson subject options:",
+            Array.from(subjectSelect.options).map(
+                option => option.value
+            )
+        );
     }
 
 
@@ -313,10 +230,12 @@
 
                 const className =
                     lesson.class?.name ||
+                    lesson.class ||
                     "Class";
 
                 const subjectName =
                     lesson.subject?.name ||
+                    lesson.subject ||
                     "Subject";
 
                 const title =
@@ -710,12 +629,16 @@
                 .value
                 .trim();
 
-        const classId =
+        /*
+         * These are intentionally names, matching
+         * the existing Quiz creation flow.
+         */
+        const className =
             document
                 .getElementById("lessonClass")
                 .value;
 
-        const subjectId =
+        const subjectName =
             document
                 .getElementById("lessonSubject")
                 .value;
@@ -753,12 +676,12 @@
             return;
         }
 
-        if (!classId) {
+        if (!className) {
             alert("Please select a class.");
             return;
         }
 
-        if (!subjectId) {
+        if (!subjectName) {
             alert("Please select a subject.");
             return;
         }
@@ -768,25 +691,44 @@
             return;
         }
 
+        if (!duration || Number(duration) < 1) {
+            alert("Please enter a valid lesson duration.");
+            return;
+        }
+
+
         const payload = {
-            classId,
-            subjectId,
+
+            class: className,
+
+            subject: subjectName,
+
             title,
+
             scheduledAt,
+
             duration: Number(duration),
+
             description,
+
             meeting: {
-                provider: meetingProvider || "external"
+                provider:
+                    meetingProvider ||
+                    "external"
             }
         };
 
 
-        if (meetingProvider === "external") {
+        if (
+            meetingProvider === "external"
+        ) {
 
             if (!meetingUrl) {
+
                 alert(
                     "Please enter the meeting URL for an external meeting."
                 );
+
                 return;
             }
 
@@ -795,12 +737,19 @@
         }
 
 
+        console.log(
+            "Sending online lesson data:",
+            payload
+        );
+
+
         try {
 
             await apiRequest(
                 API_BASE,
                 {
                     method: "POST",
+
                     body: JSON.stringify(
                         payload
                     )
