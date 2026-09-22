@@ -10,7 +10,10 @@ const {
     endOnlineLesson,
     recordStudentJoin,
     recordStudentLeave,
-    getLessonAttendance
+    getLessonAttendance,
+    createLessonMeeting,
+    updateLessonMeeting,
+    deleteLessonMeeting
 } = require("../controllers/onlineLessonController");
 
 const { authorize } = require("../middleware/auth");
@@ -63,6 +66,35 @@ router.post(
     endOnlineLesson
 );
 
+// =====================================================
+// LESSON MEETING
+// =====================================================
+
+// Create lesson meeting
+router.post(
+    "/:id/meeting",
+    authorize("teacher"),
+    createLessonMeeting
+);
+
+// Update lesson meeting
+router.put(
+    "/:id/meeting",
+    authorize("teacher"),
+    updateLessonMeeting
+);
+
+// Delete lesson meeting
+router.delete(
+    "/:id/meeting",
+    authorize("teacher"),
+    deleteLessonMeeting
+);
+
+// =====================================================
+// TEACHER ATTENDANCE
+// =====================================================
+
 // Teacher views lesson attendance
 router.get(
     "/:id/attendance",
@@ -75,7 +107,7 @@ router.get(
 // =====================================================
 
 // Get individual lesson
-// Teachers and students are authorized inside controller.
+// Teacher/student authorization is handled inside controller.
 router.get(
     "/:id",
     authorize("teacher", "student"),
