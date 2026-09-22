@@ -3,6 +3,7 @@ const express = require("express");
 const {
     createOnlineLesson,
     getTeacherLessons,
+    getLessonOptions,
     getStudentLessons,
     getOnlineLesson,
     updateOnlineLesson,
@@ -25,6 +26,7 @@ const router = express.Router();
 // TEACHER LESSON MANAGEMENT
 // =====================================================
 
+
 // Create lesson
 router.post(
     "/",
@@ -37,6 +39,13 @@ router.get(
     "/teacher",
     authorize("teacher"),
     getTeacherLessons
+);
+
+// Get options for creating an online lesson
+router.get(
+    "/options",
+    authorize("teacher"),
+    getLessonOptions
 );
 
 // Update lesson
