@@ -3,6 +3,7 @@ const express = require("express");
 const {
     createOnlineLesson,
     getTeacherLessons,
+    getStudentLessons,
     getOnlineLesson,
     updateOnlineLesson,
     cancelOnlineLesson,
@@ -100,6 +101,13 @@ router.get(
     "/:id/attendance",
     authorize("teacher"),
     getLessonAttendance
+);
+
+// STUDENT LESSONS
+router.get(
+    "/student",
+    authorize("student"),
+    getStudentLessons
 );
 
 // =====================================================
