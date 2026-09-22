@@ -1168,22 +1168,21 @@ exports.getStudentLessons = async (req, res) => {
                 continue;
             }
 
-            if (
-                lesson.scheduledAt >= startOfToday &&
-                lesson.scheduledAt <= endOfToday
-            ) {
-                today.push(lesson);
-                continue;
-            }
+           if (
+    lesson.status === "completed" ||
+    lesson.endedAt
+) {
+    completed.push(lesson);
+    continue;
+}
 
-            if (
-                lesson.status === "completed" ||
-                lesson.endedAt
-            ) {
-                completed.push(lesson);
-                continue;
-            }
-
+if (
+    lesson.scheduledAt >= startOfToday &&
+    lesson.scheduledAt <= endOfToday
+) {
+    today.push(lesson);
+    continue;
+}
             if (lesson.scheduledAt > endOfToday) {
                 upcoming.push(lesson);
             }
