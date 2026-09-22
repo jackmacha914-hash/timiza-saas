@@ -7,6 +7,9 @@ const Subject = require("../models/Subject");
 const User = require("../models/User");
 
 const { createLessonMeeting, updateLessonMeeting, deleteLessonMeeting } = require("../services/meetingService");
+const {
+    validateLessonReferences
+} = require("../services/onlineLessonValidation");
 
 // =====================================================
 // HELPERS
@@ -54,16 +57,82 @@ exports.createOnlineLesson = async (req, res) => {
         if (!classId || !subjectId || !title || !scheduledAt || !duration) {
             return res.status(400).json({
                 success: false,
-                message: "Class, subject, title, scheduled time and duration are required."
+                message:
+                    "Class, subject, title, scheduled time and duration are required."
             });
         }
 
-        if (!isValidObjectId(classId) || !isValidObjectId(subjectId)) {
+        if (
+            !isValidObjectId(classId) ||
+            !isValidObjectId(subjectId)
+        ) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid class or subject ID."
             });
         }
+
+        // -------------------------------------------------
+        // DATE VALIDATION
+        // -------------------------------------------------
+
+        const scheduledDate = new Date(scheduledAt);
+
+        if (Number.isNaN(scheduledDate.getTime())) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid scheduled date and time."
+            });
+        }
+
+        if (scheduledDate.getTime() < Date.now()) {
+            return res.status(400).json({
+                success: false,
+                message: "Lesson cannot be scheduled in the past."
+            });
+        }
+
+        // -------------------------------------------------
+        // DURATION VALIDATION
+        // -------------------------------------------------
+
+        const lessonDuration = Number(duration);
+
+        if (
+            !Number.isFinite(lessonDuration) ||
+            lessonDuration < 1 ||
+            lessonDuration > 1440
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Duration must be between 1 and 1440 minutes."
+            });
+        }
+
+        // -------------------------------------------------
+        // VALIDATE CLASS, SUBJECT AND TEACHER
+        // -------------------------------------------------
+
+        const validation = await validateLessonReferences({
+            schoolId,
+            teacherId,
+            classId,
+            subjectId
+        });
+
+        if (!validation.valid) {
+            return res.status(validation.status).json({
+                success: false,
+                message: validation.message
+            });
+        }
+
+        const {
+            classRecord,
+            subject,
+            teacher
+        } = validation;
 
         // -------------------------------------------------
         // VERIFY CLASS BELONGS TO TEACHER + SCHOOL
