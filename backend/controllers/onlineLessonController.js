@@ -6,6 +6,8 @@ const Class = require("../models/Class");
 const Subject = require("../models/Subject");
 const User = require("../models/User");
 
+const { createLessonMeeting, updateLessonMeeting, deleteLessonMeeting } = require("../services/meetingService");
+
 // =====================================================
 // HELPERS
 // =====================================================
@@ -905,6 +907,147 @@ exports.getLessonAttendance = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Failed to load lesson attendance."
+        });
+    }
+};
+
+// =====================================================
+// CREATE LESSON MEETING
+// =====================================================
+
+exports.createLessonMeeting = async (req, res) => {
+    try {
+        const schoolId = req.school || req.user?.school;
+        const teacherId = req.user.id;
+
+        const {
+            provider,
+            meetingUrl,
+            meetingId,
+            options
+        } = req.body;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: "No school context."
+            });
+        }
+
+        if (!provider) {
+            return res.status(400).json({
+                success: false,
+                message: "Meeting provider is required."
+            });
+        }
+
+        const meeting = await createLessonMeeting({
+            schoolId,
+            teacherId,
+            lessonId: req.params.id,
+            provider,
+            meetingOptions: {
+                ...(options || {}),
+                meetingUrl,
+                meetingId
+            }
+        });
+
+        return res.json({
+            success: true,
+            message: "Lesson meeting created successfully.",
+            meeting
+        });
+    } catch (error) {
+        console.error(
+            "Create lesson meeting error:",
+            error
+        );
+
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// =====================================================
+// UPDATE LESSON MEETING
+// =====================================================
+
+exports.updateLessonMeeting = async (req, res) => {
+    try {
+        const schoolId = req.school || req.user?.school;
+        const teacherId = req.user.id;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: "No school context."
+            });
+        }
+
+        const meeting = await updateLessonMeeting({
+            schoolId,
+            teacherId,
+            lessonId: req.params.id,
+            meetingOptions: req.body || {}
+        });
+
+        return res.json({
+            success: true,
+            message: "Lesson meeting updated successfully.",
+            meeting
+        });
+    } catch (error) {
+        console.error(
+            "Update lesson meeting error:",
+            error
+        );
+
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// =====================================================
+// DELETE LESSON MEETING
+// =====================================================
+
+exports.deleteLessonMeeting = async (req, res) => {
+    try {
+        const schoolId = req.school || req.user?.school;
+        const teacherId = req.user.id;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: "No school context."
+            });
+        }
+
+        const result = await deleteLessonMeeting({
+            schoolId,
+            teacherId,
+            lessonId: req.params.id
+        });
+
+        return res.json({
+            success: true,
+            message: "Lesson meeting removed successfully.",
+            ...result
+        });
+    } catch (error) {
+        console.error(
+            "Delete lesson meeting error:",
+            error
+        );
+
+        return res.status(400).json({
+            success: false,
+            message: error.message
         });
     }
 };
