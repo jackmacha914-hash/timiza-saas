@@ -109,18 +109,6 @@
             return;
         }
 
-        classSelect.innerHTML = `
-            <option value="">
-                Loading classes...
-            </option>
-        `;
-
-        subjectSelect.innerHTML = `
-            <option value="">
-                Loading subjects...
-            </option>
-        `;
-
         try {
             const data = await apiRequest(
                 `${API_BASE}/options`
@@ -137,9 +125,9 @@
                     : [];
 
 
-            /* -------------------------------------------------
+            /* =================================================
                POPULATE CLASSES
-               ------------------------------------------------- */
+               ================================================= */
 
             classSelect.innerHTML = `
                 <option value="">
@@ -167,9 +155,9 @@
             });
 
 
-            /* -------------------------------------------------
+            /* =================================================
                POPULATE SUBJECTS
-               ------------------------------------------------- */
+               ================================================= */
 
             subjectSelect.innerHTML = `
                 <option value="">
@@ -192,7 +180,12 @@
             });
 
 
+            /* =================================================
+               NO DATA
+               ================================================= */
+
             if (classes.length === 0) {
+
                 classSelect.innerHTML = `
                     <option value="">
                         No classes assigned
@@ -201,6 +194,7 @@
             }
 
             if (subjects.length === 0) {
+
                 subjectSelect.innerHTML = `
                     <option value="">
                         No active subjects
@@ -215,21 +209,13 @@
                 error
             );
 
-            classSelect.innerHTML = `
-                <option value="">
-                    Failed to load classes
-                </option>
-            `;
+            /*
+             * Do not destroy the existing HTML dropdown
+             * options if the database request fails.
+             */
 
-            subjectSelect.innerHTML = `
-                <option value="">
-                    Failed to load subjects
-                </option>
-            `;
-
-            alert(
-                error.message ||
-                "Failed to load lesson options."
+            console.warn(
+                "Using existing lesson form options because database options could not be loaded."
             );
         }
     }
@@ -781,7 +767,6 @@
             alert("Please select the lesson date and time.");
             return;
         }
-
 
         const payload = {
             classId,
