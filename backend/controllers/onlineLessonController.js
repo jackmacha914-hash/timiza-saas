@@ -54,7 +54,13 @@ exports.createOnlineLesson = async (req, res) => {
             });
         }
 
-        if (!classId || !subjectId || !title || !scheduledAt || !duration) {
+        if (
+            !classId ||
+            !subjectId ||
+            !title ||
+            !scheduledAt ||
+            !duration
+        ) {
             return res.status(400).json({
                 success: false,
                 message:
@@ -140,14 +146,19 @@ exports.createOnlineLesson = async (req, res) => {
 
         const normalizedMaterials = Array.isArray(materials)
             ? materials
-                .filter((item) => item && item.title && item.url)
-                .map((item) => ({
-                    title: String(item.title).trim(),
-                    url: String(item.url).trim(),
-                    type: item.type
-                        ? String(item.type).trim()
-                        : "resource"
-                }))
+                  .filter(
+                      (material) =>
+                          material &&
+                          material.title &&
+                          material.url
+                  )
+                  .map((material) => ({
+                      title: String(material.title).trim(),
+                      url: String(material.url).trim(),
+                      type: material.type
+                          ? String(material.type).trim()
+                          : "resource"
+                  }))
             : [];
 
         // -------------------------------------------------
@@ -157,24 +168,28 @@ exports.createOnlineLesson = async (req, res) => {
         const normalizedMeeting = {
             provider:
                 meeting?.provider || "external",
+
             meetingId:
                 meeting?.meetingId || null,
+
             meetingUrl:
                 meeting?.meetingUrl || null,
+
             createdAt:
-                meeting?.meetingUrl
-                    ? new Date()
-                    : null
+                meeting?.createdAt || null
         };
 
         // -------------------------------------------------
-        // CREATE ONLINE LESSON
+        // CREATE LESSON
         // -------------------------------------------------
 
         const lesson = await OnlineLesson.create({
             school: schoolId,
+
             class: classRecord._id,
+
             subject: subject._id,
+
             teacher: teacher._id,
 
             title: String(title).trim(),
@@ -198,25 +213,29 @@ exports.createOnlineLesson = async (req, res) => {
         // POPULATE RESPONSE
         // -------------------------------------------------
 
-        await lesson.populate([
-            {
-                path: "class",
-                select: "name level section academicYear"
-            },
-            {
-                path: "subject",
-                select: "name code category"
-            },
-            {
-                path: "teacher",
-                select: "name email"
-            }
-        ]);
+        const populatedLesson =
+            await OnlineLesson.findOne({
+                _id: lesson._id,
+                school: schoolId
+            })
+                .populate(
+                    "class",
+                    "name level section academicYear"
+                )
+                .populate(
+                    "subject",
+                    "name code category"
+                )
+                .populate(
+                    "teacher",
+                    "name email"
+                );
 
         return res.status(201).json({
             success: true,
-            message: "Online lesson created successfully.",
-            lesson
+            message:
+                "Online lesson created successfully.",
+            lesson: populatedLesson
         });
 
     } catch (error) {
@@ -227,132 +246,8 @@ exports.createOnlineLesson = async (req, res) => {
 
         return res.status(500).json({
             success: false,
-            message: "Failed to create online lesson."
-        });
-    }
-};
-
-        // -------------------------------------------------
-        // VERIFY CLASS BELONGS TO TEACHER + SCHOOL
-        // -------------------------------------------------
-
-        const classDoc = await Class.findOne({
-            _id: classId,
-            school: schoolId,
-            teacher: teacherId
-        });
-
-        if (!classDoc) {
-            return res.status(403).json({
-                success: false,
-                message: "You are not authorized to create a lesson for this class."
-            });
-        }
-
-        // -------------------------------------------------
-        // VERIFY SUBJECT BELONGS TO SCHOOL
-        // -------------------------------------------------
-
-        const subjectDoc = await Subject.findOne({
-            _id: subjectId,
-            school: schoolId,
-            active: true
-        });
-
-        if (!subjectDoc) {
-            return res.status(400).json({
-                success: false,
-                message: "Subject not found or inactive."
-            });
-        }
-
-        // -------------------------------------------------
-        // VERIFY TEACHER
-        // -------------------------------------------------
-
-        const teacher = await User.findOne({
-            _id: teacherId,
-            school: schoolId,
-            role: "teacher"
-        }).select("_id name email");
-
-        if (!teacher) {
-            return res.status(403).json({
-                success: false,
-                message: "Teacher account is not valid for this school."
-            });
-        }
-
-        // -------------------------------------------------
-        // NORMALIZE MATERIALS
-        // -------------------------------------------------
-
-        const normalizedMaterials = Array.isArray(materials)
-            ? materials
-                  .filter((material) => material && material.title && material.url)
-                  .map((material) => ({
-                      title: String(material.title).trim(),
-                      url: String(material.url).trim(),
-                      type: material.type
-                          ? String(material.type).trim()
-                          : "resource"
-                  }))
-            : [];
-
-        // -------------------------------------------------
-        // NORMALIZE MEETING
-        // -------------------------------------------------
-
-        const normalizedMeeting = {
-            provider: meeting?.provider || "external",
-            meetingId: meeting?.meetingId || null,
-            meetingUrl: meeting?.meetingUrl || null,
-            createdAt: meeting?.createdAt || null
-        };
-
-        // -------------------------------------------------
-        // CREATE LESSON
-        // -------------------------------------------------
-
-        const lesson = await OnlineLesson.create({
-            school: schoolId,
-            class: classDoc._id,
-            subject: subjectDoc._id,
-            teacher: teacher._id,
-
-            title: String(title).trim(),
-            description: description ? String(description).trim() : "",
-
-            scheduledAt: new Date(scheduledAt),
-            duration: Number(duration),
-
-            meeting: normalizedMeeting,
-
-            materials: normalizedMaterials,
-
-            status: "scheduled"
-        });
-
-        const populatedLesson = await OnlineLesson.findOne({
-            _id: lesson._id,
-            school: schoolId
-        })
-            .populate("class", "name level section academicYear")
-            .populate("subject", "name code category")
-            .populate("teacher", "name email");
-
-        return res.status(201).json({
-            success: true,
-            message: "Online lesson created successfully.",
-            lesson: populatedLesson
-        });
-    } catch (error) {
-        console.error("Create online lesson error:", error);
-
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create online lesson.",
-            error: error.message
+            message:
+                "Failed to create online lesson."
         });
     }
 };
