@@ -291,6 +291,63 @@ exports.getTeacherLessons = async (req, res) => {
 };
 
 // =====================================================
+// GET ONLINE LESSON FORM OPTIONS
+// =====================================================
+
+exports.getLessonOptions = async (req, res) => {
+    try {
+        const schoolId = getSchoolId(req);
+        const teacherId = req.user.id;
+
+        if (!schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: "No school context."
+            });
+        }
+
+        // -------------------------------------------------
+        // GET CLASSES ASSIGNED TO THIS TEACHER
+        // -------------------------------------------------
+
+        const classes = await Class.find({
+            school: schoolId,
+            teacher: teacherId
+        })
+            .select("_id name level section academicYear")
+            .sort({ name: 1 });
+
+        // -------------------------------------------------
+        // GET ACTIVE SUBJECTS FOR THIS SCHOOL
+        // -------------------------------------------------
+
+        const subjects = await Subject.find({
+            school: schoolId,
+            active: true
+        })
+            .select("_id name code category")
+            .sort({ name: 1 });
+
+        return res.json({
+            success: true,
+            classes,
+            subjects
+        });
+
+    } catch (error) {
+        console.error(
+            "Get online lesson options error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to load lesson options."
+        });
+    }
+};
+
+// =====================================================
 // GET SINGLE LESSON
 // =====================================================
 
