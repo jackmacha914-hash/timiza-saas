@@ -670,6 +670,7 @@ exports.cancelOnlineLesson = async (req, res) => {
     try {
         const schoolId = getSchoolId(req);
         const teacherId = req.user.id;
+        const lessonId = req.params.id;
 
         if (!schoolId) {
             return res.status(403).json({
@@ -678,7 +679,7 @@ exports.cancelOnlineLesson = async (req, res) => {
             });
         }
 
-        if (!isValidObjectId(req.params.id)) {
+        if (!isValidObjectId(lessonId)) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid lesson ID."
@@ -686,7 +687,7 @@ exports.cancelOnlineLesson = async (req, res) => {
         }
 
         const lesson = await OnlineLesson.findOne({
-            _id: req.params.id,
+            _id: lessonId,
             school: schoolId,
             teacher: teacherId
         });
@@ -695,6 +696,22 @@ exports.cancelOnlineLesson = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: "Online lesson not found or access denied."
+            });
+        }
+
+        // A completed lesson cannot be cancelled.
+        if (lesson.status === "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "Completed lessons cannot be cancelled."
+            });
+        }
+
+        // A lesson that is already cancelled needs no further action.
+        if (lesson.status === "cancelled") {
+            return res.status(400).json({
+                success: false,
+                message: "Lesson is already cancelled."
             });
         }
 
@@ -707,8 +724,12 @@ exports.cancelOnlineLesson = async (req, res) => {
             message: "Online lesson cancelled successfully.",
             lesson
         });
+
     } catch (error) {
-        console.error("Cancel online lesson error:", error);
+        console.error(
+            "Cancel online lesson error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
