@@ -8,17 +8,17 @@ async function validateLessonReferences({
     classId,
     subjectId
 }) {
+    // Any teacher in the school can create a lesson for any school class.
     const classRecord = await Class.findOne({
         _id: classId,
-        school: schoolId,
-        teacher: teacherId
+        school: schoolId
     });
 
     if (!classRecord) {
         return {
             valid: false,
-            status: 403,
-            message: "Class not found or you are not the assigned teacher."
+            status: 404,
+            message: "Class not found in this school."
         };
     }
 
@@ -36,6 +36,7 @@ async function validateLessonReferences({
         };
     }
 
+    // The teacher must still belong to the same school.
     const teacher = await User.findOne({
         _id: teacherId,
         school: schoolId,
