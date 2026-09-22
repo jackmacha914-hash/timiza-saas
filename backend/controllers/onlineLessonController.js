@@ -391,6 +391,7 @@ exports.updateOnlineLesson = async (req, res) => {
     try {
         const schoolId = getSchoolId(req);
         const teacherId = req.user.id;
+        const lessonId = req.params.id;
 
         if (!schoolId) {
             return res.status(403).json({
@@ -399,7 +400,7 @@ exports.updateOnlineLesson = async (req, res) => {
             });
         }
 
-        if (!isValidObjectId(req.params.id)) {
+        if (!isValidObjectId(lessonId)) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid lesson ID."
@@ -407,7 +408,7 @@ exports.updateOnlineLesson = async (req, res) => {
         }
 
         const lesson = await OnlineLesson.findOne({
-            _id: req.params.id,
+            _id: lessonId,
             school: schoolId,
             teacher: teacherId
         });
@@ -419,6 +420,14 @@ exports.updateOnlineLesson = async (req, res) => {
             });
         }
 
+        // Cancelled lessons cannot be edited.
+        if (lesson.status === "cancelled") {
+            return res.status(400).json({
+                success: false,
+                message: "Cancelled lessons cannot be edited."
+            });
+        }
+
         const {
             title,
             description,
@@ -426,9 +435,7 @@ exports.updateOnlineLesson = async (req, res) => {
             duration,
             subjectId,
             classId,
-            meeting,
-            materials,
-            status
+            materials
         } = req.body;
 
         // -------------------------------------------------
@@ -452,7 +459,8 @@ exports.updateOnlineLesson = async (req, res) => {
             if (!classDoc) {
                 return res.status(403).json({
                     success: false,
-                    message: "You are not authorized to use this class."
+                    message:
+                        "You are not authorized to use this class."
                 });
             }
 
@@ -478,7 +486,7 @@ exports.updateOnlineLesson = async (req, res) => {
             });
 
             if (!subjectDoc) {
-                return res.status(400).json({
+                return res.status(404).json({
                     success: false,
                     message: "Subject not found or inactive."
                 });
@@ -488,67 +496,94 @@ exports.updateOnlineLesson = async (req, res) => {
         }
 
         // -------------------------------------------------
-        // BASIC FIELDS
+        // TITLE
         // -------------------------------------------------
 
         if (title !== undefined) {
-            lesson.title = String(title).trim();
-        }
+            const normalizedTitle = String(title).trim();
 
-        if (description !== undefined) {
-            lesson.description = String(description).trim();
-        }
-
-        if (scheduledAt !== undefined) {
-            const date = new Date(scheduledAt);
-
-            if (Number.isNaN(date.getTime())) {
+            if (!normalizedTitle) {
                 return res.status(400).json({
                     success: false,
-                    message: "Invalid scheduled date."
+                    message: "Lesson title cannot be empty."
                 });
             }
 
-            lesson.scheduledAt = date;
+            if (normalizedTitle.length > 200) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Lesson title cannot exceed 200 characters."
+                });
+            }
+
+            lesson.title = normalizedTitle;
         }
 
+        // -------------------------------------------------
+        // DESCRIPTION
+        // -------------------------------------------------
+
+        if (description !== undefined) {
+            const normalizedDescription =
+                String(description).trim();
+
+            if (normalizedDescription.length > 5000) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Description cannot exceed 5000 characters."
+                });
+            }
+
+            lesson.description = normalizedDescription;
+        }
+
+        // -------------------------------------------------
+        // SCHEDULED DATE
+        // -------------------------------------------------
+
+        if (scheduledAt !== undefined) {
+            const scheduledDate = new Date(scheduledAt);
+
+            if (Number.isNaN(scheduledDate.getTime())) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid scheduled date and time."
+                });
+            }
+
+            if (scheduledDate.getTime() < Date.now()) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Lesson cannot be scheduled in the past."
+                });
+            }
+
+            lesson.scheduledAt = scheduledDate;
+        }
+
+        // -------------------------------------------------
+        // DURATION
+        // -------------------------------------------------
+
         if (duration !== undefined) {
-            const numericDuration = Number(duration);
+            const lessonDuration = Number(duration);
 
             if (
-                !Number.isFinite(numericDuration) ||
-                numericDuration < 1 ||
-                numericDuration > 1440
+                !Number.isFinite(lessonDuration) ||
+                lessonDuration < 1 ||
+                lessonDuration > 1440
             ) {
                 return res.status(400).json({
                     success: false,
-                    message: "Duration must be between 1 and 1440 minutes."
+                    message:
+                        "Duration must be between 1 and 1440 minutes."
                 });
             }
 
-            lesson.duration = numericDuration;
-        }
-
-        // -------------------------------------------------
-        // MEETING
-        // -------------------------------------------------
-
-        if (meeting !== undefined) {
-            lesson.meeting = {
-                provider: meeting.provider || lesson.meeting?.provider || "external",
-                meetingId:
-                    meeting.meetingId !== undefined
-                        ? meeting.meetingId
-                        : lesson.meeting?.meetingId || null,
-                meetingUrl:
-                    meeting.meetingUrl !== undefined
-                        ? meeting.meetingUrl
-                        : lesson.meeting?.meetingUrl || null,
-                createdAt:
-                    meeting.createdAt !== undefined
-                        ? meeting.createdAt
-                        : lesson.meeting?.createdAt || null
-            };
+            lesson.duration = lessonDuration;
         }
 
         // -------------------------------------------------
@@ -556,63 +591,69 @@ exports.updateOnlineLesson = async (req, res) => {
         // -------------------------------------------------
 
         if (materials !== undefined) {
-            lesson.materials = Array.isArray(materials)
-                ? materials
-                      .filter(
-                          (material) =>
-                              material &&
-                              material.title &&
-                              material.url
-                      )
-                      .map((material) => ({
-                          title: String(material.title).trim(),
-                          url: String(material.url).trim(),
-                          type: material.type
-                              ? String(material.type).trim()
-                              : "resource"
-                      }))
-                : [];
-        }
-
-        // -------------------------------------------------
-        // STATUS
-        // -------------------------------------------------
-
-        if (status !== undefined) {
-            const allowedStatuses = [
-                "scheduled",
-                "live",
-                "completed",
-                "cancelled"
-            ];
-
-            if (!allowedStatuses.includes(status)) {
+            if (!Array.isArray(materials)) {
                 return res.status(400).json({
                     success: false,
-                    message: "Invalid lesson status."
+                    message: "Materials must be an array."
                 });
             }
 
-            lesson.status = status;
+            lesson.materials = materials
+                .filter(
+                    (material) =>
+                        material &&
+                        material.title &&
+                        material.url
+                )
+                .map((material) => ({
+                    title: String(material.title).trim(),
+                    url: String(material.url).trim(),
+                    type: material.type
+                        ? String(material.type).trim()
+                        : "resource"
+                }));
         }
+
+        // -------------------------------------------------
+        // SAVE
+        // -------------------------------------------------
 
         await lesson.save();
 
-        const updatedLesson = await OnlineLesson.findOne({
-            _id: lesson._id,
-            school: schoolId
-        })
-            .populate("class", "name level section academicYear")
-            .populate("subject", "name code category")
-            .populate("teacher", "name email");
+        // -------------------------------------------------
+        // POPULATE RESPONSE
+        // -------------------------------------------------
+
+        const updatedLesson =
+            await OnlineLesson.findOne({
+                _id: lesson._id,
+                school: schoolId,
+                teacher: teacherId
+            })
+                .populate(
+                    "class",
+                    "name level section academicYear"
+                )
+                .populate(
+                    "subject",
+                    "name code category"
+                )
+                .populate(
+                    "teacher",
+                    "name email"
+                );
 
         return res.json({
             success: true,
             message: "Online lesson updated successfully.",
             lesson: updatedLesson
         });
+
     } catch (error) {
-        console.error("Update online lesson error:", error);
+        console.error(
+            "Update online lesson error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
