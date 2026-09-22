@@ -135,6 +135,104 @@ exports.createOnlineLesson = async (req, res) => {
         } = validation;
 
         // -------------------------------------------------
+        // NORMALIZE MATERIALS
+        // -------------------------------------------------
+
+        const normalizedMaterials = Array.isArray(materials)
+            ? materials
+                .filter((item) => item && item.title && item.url)
+                .map((item) => ({
+                    title: String(item.title).trim(),
+                    url: String(item.url).trim(),
+                    type: item.type
+                        ? String(item.type).trim()
+                        : "resource"
+                }))
+            : [];
+
+        // -------------------------------------------------
+        // NORMALIZE MEETING
+        // -------------------------------------------------
+
+        const normalizedMeeting = {
+            provider:
+                meeting?.provider || "external",
+            meetingId:
+                meeting?.meetingId || null,
+            meetingUrl:
+                meeting?.meetingUrl || null,
+            createdAt:
+                meeting?.meetingUrl
+                    ? new Date()
+                    : null
+        };
+
+        // -------------------------------------------------
+        // CREATE ONLINE LESSON
+        // -------------------------------------------------
+
+        const lesson = await OnlineLesson.create({
+            school: schoolId,
+            class: classRecord._id,
+            subject: subject._id,
+            teacher: teacher._id,
+
+            title: String(title).trim(),
+
+            description: description
+                ? String(description).trim()
+                : "",
+
+            scheduledAt: scheduledDate,
+
+            duration: lessonDuration,
+
+            meeting: normalizedMeeting,
+
+            materials: normalizedMaterials,
+
+            status: "scheduled"
+        });
+
+        // -------------------------------------------------
+        // POPULATE RESPONSE
+        // -------------------------------------------------
+
+        await lesson.populate([
+            {
+                path: "class",
+                select: "name level section academicYear"
+            },
+            {
+                path: "subject",
+                select: "name code category"
+            },
+            {
+                path: "teacher",
+                select: "name email"
+            }
+        ]);
+
+        return res.status(201).json({
+            success: true,
+            message: "Online lesson created successfully.",
+            lesson
+        });
+
+    } catch (error) {
+        console.error(
+            "Create online lesson error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to create online lesson."
+        });
+    }
+};
+
+        // -------------------------------------------------
         // VERIFY CLASS BELONGS TO TEACHER + SCHOOL
         // -------------------------------------------------
 
