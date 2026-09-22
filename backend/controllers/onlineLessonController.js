@@ -33,6 +33,8 @@ exports.createOnlineLesson = async (req, res) => {
         const teacherId = req.user.id;
 
         const {
+            class: className,
+            subject: subjectName,
             classId,
             subjectId,
             title,
@@ -55,11 +57,12 @@ exports.createOnlineLesson = async (req, res) => {
         }
 
         if (
-            !classId ||
-            !subjectId ||
+            (!className && !classId) ||
+            (!subjectName && !subjectId) ||
             !title ||
             !scheduledAt ||
-            !duration
+            duration === undefined ||
+            duration === null
         ) {
             return res.status(400).json({
                 success: false,
@@ -68,13 +71,86 @@ exports.createOnlineLesson = async (req, res) => {
             });
         }
 
-        if (
-            !isValidObjectId(classId) ||
-            !isValidObjectId(subjectId)
-        ) {
-            return res.status(400).json({
+        // -------------------------------------------------
+        // RESOLVE CLASS
+        // -------------------------------------------------
+
+        let classRecord;
+
+        if (classId) {
+            if (!isValidObjectId(classId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid class ID."
+                });
+            }
+
+            classRecord = await Class.findOne({
+                _id: classId,
+                school: schoolId
+            });
+        } else {
+            classRecord = await Class.findOne({
+                school: schoolId,
+                name: String(className).trim()
+            }).sort({ academicYear: -1 });
+        }
+
+        if (!classRecord) {
+            return res.status(404).json({
                 success: false,
-                message: "Invalid class or subject ID."
+                message: "Class not found in this school."
+            });
+        }
+
+        // -------------------------------------------------
+        // RESOLVE SUBJECT
+        // -------------------------------------------------
+
+        let subject;
+
+        if (subjectId) {
+            if (!isValidObjectId(subjectId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid subject ID."
+                });
+            }
+
+            subject = await Subject.findOne({
+                _id: subjectId,
+                school: schoolId,
+                active: true
+            });
+        } else {
+            subject = await Subject.findOne({
+                school: schoolId,
+                name: String(subjectName).trim(),
+                active: true
+            });
+        }
+
+        if (!subject) {
+            return res.status(404).json({
+                success: false,
+                message: "Subject not found or inactive."
+            });
+        }
+
+        // -------------------------------------------------
+        // VALIDATE TEACHER
+        // -------------------------------------------------
+
+        const teacher = await User.findOne({
+            _id: teacherId,
+            school: schoolId,
+            role: "teacher"
+        }).select("_id name email role");
+
+        if (!teacher) {
+            return res.status(403).json({
+                success: false,
+                message: "Teacher account is not valid for this school."
             });
         }
 
@@ -117,30 +193,6 @@ exports.createOnlineLesson = async (req, res) => {
         }
 
         // -------------------------------------------------
-        // VALIDATE CLASS, SUBJECT AND TEACHER
-        // -------------------------------------------------
-
-        const validation = await validateLessonReferences({
-            schoolId,
-            teacherId,
-            classId,
-            subjectId
-        });
-
-        if (!validation.valid) {
-            return res.status(validation.status).json({
-                success: false,
-                message: validation.message
-            });
-        }
-
-        const {
-            classRecord,
-            subject,
-            teacher
-        } = validation;
-
-        // -------------------------------------------------
         // NORMALIZE MATERIALS
         // -------------------------------------------------
 
@@ -153,8 +205,12 @@ exports.createOnlineLesson = async (req, res) => {
                           material.url
                   )
                   .map((material) => ({
-                      title: String(material.title).trim(),
+                      title: String(material.title)
+                          .trim()
+                          .slice(0, 200),
+
                       url: String(material.url).trim(),
+
                       type: material.type
                           ? String(material.type).trim()
                           : "resource"
@@ -167,17 +223,52 @@ exports.createOnlineLesson = async (req, res) => {
 
         const normalizedMeeting = {
             provider:
-                meeting?.provider || "external",
+                String(meeting?.provider || "external")
+                    .trim()
+                    .toLowerCase(),
 
             meetingId:
-                meeting?.meetingId || null,
+                meeting?.meetingId
+                    ? String(meeting.meetingId).trim()
+                    : null,
 
             meetingUrl:
-                meeting?.meetingUrl || null,
+                meeting?.meetingUrl
+                    ? String(meeting.meetingUrl).trim()
+                    : null,
 
-            createdAt:
-                meeting?.createdAt || null
+            createdAt: null
         };
+
+        const allowedProviders = [
+            "google_meet",
+            "zoom",
+            "microsoft_teams",
+            "external",
+            "internal"
+        ];
+
+        if (!allowedProviders.includes(normalizedMeeting.provider)) {
+            return res.status(400).json({
+                success: false,
+                message: "Unsupported meeting provider."
+            });
+        }
+
+        // -------------------------------------------------
+        // EXTERNAL MEETING VALIDATION
+        // -------------------------------------------------
+
+        if (
+            normalizedMeeting.provider === "external" &&
+            !normalizedMeeting.meetingUrl
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Meeting URL is required for external meetings."
+            });
+        }
 
         // -------------------------------------------------
         // CREATE LESSON
@@ -297,7 +388,6 @@ exports.getTeacherLessons = async (req, res) => {
 exports.getLessonOptions = async (req, res) => {
     try {
         const schoolId = getSchoolId(req);
-        const teacherId = req.user.id;
 
         if (!schoolId) {
             return res.status(403).json({
@@ -306,20 +396,11 @@ exports.getLessonOptions = async (req, res) => {
             });
         }
 
-        // -------------------------------------------------
-        // GET CLASSES ASSIGNED TO THIS TEACHER
-        // -------------------------------------------------
-
         const classes = await Class.find({
-            school: schoolId,
-            teacher: teacherId
+            school: schoolId
         })
             .select("_id name level section academicYear")
             .sort({ name: 1 });
-
-        // -------------------------------------------------
-        // GET ACTIVE SUBJECTS FOR THIS SCHOOL
-        // -------------------------------------------------
 
         const subjects = await Subject.find({
             school: schoolId,
@@ -507,19 +588,17 @@ exports.updateOnlineLesson = async (req, res) => {
                 });
             }
 
-            const classDoc = await Class.findOne({
-                _id: classId,
-                school: schoolId,
-                teacher: teacherId
-            });
+           const classDoc = await Class.findOne({
+    _id: classId,
+    school: schoolId
+});
 
-            if (!classDoc) {
-                return res.status(403).json({
-                    success: false,
-                    message:
-                        "You are not authorized to use this class."
-                });
-            }
+if (!classDoc) {
+    return res.status(404).json({
+        success: false,
+        message: "Class not found in this school."
+    });
+}
 
             lesson.class = classDoc._id;
         }
