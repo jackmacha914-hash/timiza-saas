@@ -424,7 +424,7 @@
 
     <script src="/js/onlineLessons.js"></script>
 
-   <script>
+<script>
     const createLessonBtn =
         document.getElementById("createOnlineLessonBtn");
 
@@ -437,8 +437,140 @@
     const cancelCreateLessonBtn =
         document.getElementById("cancelCreateLessonBtn");
 
-    function openCreateLessonForm() {
+    const classSelect =
+        document.getElementById("lessonClass");
+
+    const subjectSelect =
+        document.getElementById("lessonSubject");
+
+    const token =
+        localStorage.getItem("token");
+
+    async function loadLessonClasses() {
+        try {
+            const response = await fetch(
+                "/api/classes",
+                {
+                    headers: {
+                        "x-auth-token": token
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to load classes."
+                );
+            }
+
+            const classes =
+                Array.isArray(data)
+                    ? data
+                    : data.classes || [];
+
+            classSelect.innerHTML = `
+                <option value="">
+                    Select class
+                </option>
+            `;
+
+            classes.forEach((item) => {
+                const option =
+                    document.createElement("option");
+
+                option.value = item._id;
+
+                option.textContent =
+                    item.section
+                        ? `${item.name} - ${item.section}`
+                        : item.name;
+
+                classSelect.appendChild(option);
+            });
+
+        } catch (error) {
+            console.error(
+                "Load lesson classes error:",
+                error
+            );
+
+            classSelect.innerHTML = `
+                <option value="">
+                    Failed to load classes
+                </option>
+            `;
+        }
+    }
+
+    async function loadLessonSubjects() {
+        try {
+            const response = await fetch(
+                "/api/subjects",
+                {
+                    headers: {
+                        "x-auth-token": token
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to load subjects."
+                );
+            }
+
+            const subjects =
+                Array.isArray(data)
+                    ? data
+                    : data.subjects || [];
+
+            subjectSelect.innerHTML = `
+                <option value="">
+                    Select subject
+                </option>
+            `;
+
+            subjects.forEach((item) => {
+                const option =
+                    document.createElement("option");
+
+                option.value = item._id;
+
+                option.textContent =
+                    item.code
+                        ? `${item.name} (${item.code})`
+                        : item.name;
+
+                subjectSelect.appendChild(option);
+            });
+
+        } catch (error) {
+            console.error(
+                "Load lesson subjects error:",
+                error
+            );
+
+            subjectSelect.innerHTML = `
+                <option value="">
+                    Failed to load subjects
+                </option>
+            `;
+        }
+    }
+
+    async function openCreateLessonForm() {
         createLessonSection.style.display = "block";
+
+        await Promise.all([
+            loadLessonClasses(),
+            loadLessonSubjects()
+        ]);
 
         createLessonSection.scrollIntoView({
             behavior: "smooth",
