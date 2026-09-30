@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Announcements | Timiza EduAnalytics</title>
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <!-- Announcements CSS -->
+    <link
+        rel="stylesheet"
+        href="../css/announcements.css"
+    >
+</head>
+
+<body>
+
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
+    <header class="announcement-header">
+
+        <div class="header-left">
+
+            <button
+                type="button"
+                class="back-btn"
+                onclick="window.history.back()"
+                title="Go Back"
+            >
+                <i class="fas fa-arrow-left"></i>
+            </button>
+
+            <div>
+
+                <span class="page-label">
+                    ADMINISTRATION
+                </span>
+
+                <h1>
+                    <i class="fas fa-bullhorn"></i>
+                    Announcements
+                </h1>
+
+                <p>
+                    Create and manage important school announcements.
+                </p>
+
+            </div>
+
+        </div>
+
+        <button
+            type="button"
+            class="primary-btn"
+            id="openAnnouncementBtn"
+        >
+            <i class="fas fa-plus"></i>
+            New Announcement
+        </button>
+
+    </header>
+
+
+    <!-- =====================================================
+         MAIN CONTENT
+    ====================================================== -->
+
+    <main class="announcement-container">
+
+
+        <!-- =================================================
+             SUMMARY CARDS
+        ================================================== -->
+
+        <section class="summary-grid">
+
+            <div class="summary-card">
+
+                <div class="summary-icon blue">
+                    <i class="fas fa-bullhorn"></i>
+                </div>
+
+                <div>
+
+                    <span>Total Announcements</span>
+
+                    <strong id="totalAnnouncements">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <div class="summary-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+
+                <div>
+
+                    <span>Active</span>
+
+                    <strong id="activeAnnouncements">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <div class="summary-icon orange">
+                    <i class="fas fa-clock"></i>
+                </div>
+
+                <div>
+
+                    <span>Scheduled</span>
+
+                    <strong id="scheduledAnnouncements">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="summary-card">
+
+                <div class="summary-icon red">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+
+                <div>
+
+                    <span>High Priority</span>
+
+                    <strong id="priorityAnnouncements">
+                        0
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             ANNOUNCEMENTS PANEL
+        ================================================== -->
+
+        <section class="announcement-panel">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        School Announcements
+                    </h2>
+
+                    <p>
+                        Keep students, teachers and parents informed.
+                    </p>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="refresh-btn"
+                    id="refreshAnnouncementsBtn"
+                    title="Refresh"
+                >
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
+                 FILTERS
+            ================================================== -->
+
+            <div class="announcement-filters">
+
+                <div class="search-box">
+
+                    <i class="fas fa-search"></i>
+
+                    <input
+                        type="search"
+                        id="announcementSearch"
+                        placeholder="Search announcements..."
+                    >
+
+                </div>
+
+
+                <select id="announcementPriorityFilter">
+
+                    <option value="">
+                        All Priorities
+                    </option>
+
+                    <option value="normal">
+                        Normal
+                    </option>
+
+                    <option value="important">
+                        Important
+                    </option>
+
+                    <option value="high">
+                        High Priority
+                    </option>
+
+                </select>
+
+
+                <select id="announcementAudienceFilter">
+
+                    <option value="">
+                        All Audiences
+                    </option>
+
+                    <option value="all">
+                        Everyone
+                    </option>
+
+                    <option value="students">
+                        Students
+                    </option>
+
+                    <option value="teachers">
+                        Teachers
+                    </option>
+
+                    <option value="parents">
+                        Parents
+                    </option>
+
+                    <option value="staff">
+                        Staff
+                    </option>
+
+                </select>
+
+
+                <select id="announcementStatusFilter">
+
+                    <option value="">
+                        All Status
+                    </option>
+
+                    <option value="active">
+                        Active
+                    </option>
+
+                    <option value="scheduled">
+                        Scheduled
+                    </option>
+
+                    <option value="expired">
+                        Expired
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- =================================================
+                 LOADING
+            ================================================== -->
+
+            <div
+                id="announcementLoading"
+                class="announcement-loading"
+                style="display:none;"
+            >
+
+                <i class="fas fa-spinner fa-spin"></i>
+
+                <span>
+                    Loading announcements...
+                </span>
+
+            </div>
+
+
+            <!-- =================================================
+                 EMPTY STATE
+            ================================================== -->
+
+            <div
+                id="announcementEmpty"
+                class="announcement-empty"
+                style="display:none;"
+            >
+
+                <div class="empty-icon">
+
+                    <i class="fas fa-bullhorn"></i>
+
+                </div>
+
+                <h3>
+                    No announcements found
+                </h3>
+
+                <p>
+                    Create your first announcement to communicate
+                    with your school community.
+                </p>
+
+                <button
+                    type="button"
+                    class="primary-btn"
+                    id="emptyCreateBtn"
+                >
+                    <i class="fas fa-plus"></i>
+                    Create Announcement
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
+                 ANNOUNCEMENTS LIST
+            ================================================== -->
+
+            <div
+                id="announcementsList"
+                class="announcements-list"
+            >
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =====================================================
+         ANNOUNCEMENT MODAL
+    ====================================================== -->
+
+    <div
+        id="announcementModal"
+        class="modal"
+        style="display:none;"
+    >
+
+        <div class="modal-overlay"></div>
+
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <span class="modal-label">
+                        SCHOOL COMMUNICATION
+                    </span>
+
+                    <h2 id="announcementModalTitle">
+
+                        <i class="fas fa-bullhorn"></i>
+
+                        New Announcement
+
+                    </h2>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    id="closeAnnouncementModal"
+                >
+                    <i class="fas fa-times"></i>
+                </button>
+
+            </div>
+
+
+            <!-- =================================================
+                 FORM
+            ================================================== -->
+
+            <form id="announcementForm">
+
+                <div
+                    id="announcementFormMessage"
+                    class="form-message"
+                    style="display:none;"
+                ></div>
+
+
+                <div class="form-group">
+
+                    <label for="announcementTitle">
+
+                        Announcement Title
+
+                        <span>*</span>
+
+                    </label>
+
+                    <input
+                        type="text"
+                        id="announcementTitle"
+                        name="title"
+                        placeholder="e.g. School closes early on Friday"
+                        maxlength="150"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="announcementText">
+
+                        Announcement Message
+
+                        <span>*</span>
+
+                    </label>
+
+                    <textarea
+                        id="announcementText"
+                        name="text"
+                        rows="6"
+                        maxlength="2000"
+                        placeholder="Write your announcement..."
+                        required
+                    ></textarea>
+
+                    <div class="character-count">
+
+                        <span id="announcementCharacterCount">
+                            0
+                        </span>
+
+                        / 2000
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-grid">
+
+
+                    <div class="form-group">
+
+                        <label for="announcementPriority">
+
+                            Priority
+
+                        </label>
+
+                        <select
+                            id="announcementPriority"
+                            name="priority"
+                        >
+
+                            <option value="normal">
+                                Normal
+                            </option>
+
+                            <option value="important">
+                                Important
+                            </option>
+
+                            <option value="high">
+                                High Priority
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="announcementAudience">
+
+                            Audience
+
+                        </label>
+
+                        <select
+                            id="announcementAudience"
+                            name="audience"
+                        >
+
+                            <option value="all">
+                                Everyone
+                            </option>
+
+                            <option value="students">
+                                Students
+                            </option>
+
+                            <option value="teachers">
+                                Teachers
+                            </option>
+
+                            <option value="parents">
+                                Parents
+                            </option>
+
+                            <option value="staff">
+                                Staff
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="form-grid">
+
+
+                    <div class="form-group">
+
+                        <label for="announcementPublishDate">
+
+                            Publish Date
+
+                        </label>
+
+                        <input
+                            type="datetime-local"
+                            id="announcementPublishDate"
+                            name="publishDate"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="announcementExpiryDate">
+
+                            Expiry Date
+
+                        </label>
+
+                        <input
+                            type="datetime-local"
+                            id="announcementExpiryDate"
+                            name="expiryDate"
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="announcement-preview">
+
+                    <div class="preview-header">
+
+                        <span>
+                            <i class="fas fa-eye"></i>
+                            Preview
+                        </span>
+
+                    </div>
+
+                    <div
+                        id="announcementPreview"
+                        class="preview-content"
+                    >
+
+                        <strong>
+                            Your announcement title
+                        </strong>
+
+                        <p>
+                            Your announcement message will appear here.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- FORM ACTIONS -->
+
+                <div class="modal-actions">
+
+                    <button
+                        type="button"
+                        class="secondary-btn"
+                        id="cancelAnnouncementBtn"
+                    >
+
+                        <i class="fas fa-times"></i>
+
+                        Cancel
+
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        class="primary-btn"
+                        id="saveAnnouncementBtn"
+                    >
+
+                        <i class="fas fa-paper-plane"></i>
+
+                        Publish Announcement
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         TOAST CONTAINER
+    ====================================================== -->
+
+    <div
+        id="announcementToastContainer"
+        class="toast-container"
+    ></div>
+
+
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
+    <script src="../js/announcements.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "timiza-saas-main",
+  "version": "1.0.0",
+  "description": "A comprehensive school management system built with Node.js, Express, and MongoDB.",
+  "main": "check-fees.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jackmacha914-hash/timiza-saas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jackmacha914-hash/timiza-saas/issues"
+  },
+  "homepage": "https://github.com/jackmacha914-hash/timiza-saas#readme"
+}

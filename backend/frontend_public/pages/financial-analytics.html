@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Financial Analytics</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+
+    <link rel="stylesheet" href="../css/financial-analytics.css">
+
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<div class="financial-analytics-page">
+
+    <!-- ===========================
+         PAGE HEADER
+    ============================ -->
+    <div class="page-header">
+
+        <div class="page-title">
+
+            <h1>
+                <i class="fas fa-chart-line"></i>
+                Financial Analytics & Reports
+            </h1>
+
+            <p>
+                Monitor school revenue, fee collection, balances, trends and financial performance.
+            </p>
+
+        </div>
+
+        <div class="page-actions">
+
+            <button
+    class="secondary-btn"
+    onclick="window.location.href='index.html'">
+
+    <i class="fas fa-arrow-left"></i>
+
+    Dashboard
+
+</button>
+
+            <button id="refreshAnalyticsBtn" class="primary-btn">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+
+            <button id="exportPdfBtn" class="secondary-btn">
+                <i class="fas fa-file-pdf"></i>
+                Export PDF
+            </button>
+
+            <button id="exportExcelBtn" class="secondary-btn">
+                <i class="fas fa-file-excel"></i>
+                Export Excel
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- ===========================
+         FILTER BAR
+    ============================ -->
+
+    <div class="analytics-filter-bar">
+
+        <select id="analyticsAcademicYear">
+            <option value="">Academic Year</option>
+        </select>
+
+        <select id="analyticsTerm">
+            <option value="">Term</option>
+            <option>Term 1</option>
+            <option>Term 2</option>
+            <option>Term 3</option>
+        </select>
+
+        <select id="analyticsClass">
+            <option value="">All Classes</option>
+        </select>
+
+        <button id="applyAnalyticsFilters" class="primary-btn">
+            Apply Filters
+        </button>
+
+    </div>
+
+    <!-- ===========================
+         KPI CARDS
+    ============================ -->
+
+    <div class="analytics-cards">
+
+        <div class="analytics-card">
+            <span class="card-icon blue">
+                <i class="fas fa-wallet"></i>
+            </span>
+
+            <div>
+                <h4>Expected Revenue</h4>
+                <h2 id="expectedRevenue">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon green">
+                <i class="fas fa-money-bill-wave"></i>
+            </span>
+
+            <div>
+                <h4>Collected Revenue</h4>
+                <h2 id="collectedRevenue">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon red">
+                <i class="fas fa-exclamation-circle"></i>
+            </span>
+
+            <div>
+                <h4>Outstanding Balance</h4>
+                <h2 id="outstandingRevenue">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon orange">
+                <i class="fas fa-percentage"></i>
+            </span>
+
+            <div>
+                <h4>Collection Rate</h4>
+                <h2 id="collectionRate">
+                    0%
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon purple">
+                <i class="fas fa-calendar-day"></i>
+            </span>
+
+            <div>
+                <h4>Today's Collection</h4>
+                <h2 id="todayCollection">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon teal">
+                <i class="fas fa-calendar-alt"></i>
+            </span>
+
+            <div>
+                <h4>This Month</h4>
+                <h2 id="monthCollection">
+                    KSh 0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon yellow">
+                <i class="fas fa-user-clock"></i>
+            </span>
+
+            <div>
+                <h4>Fee Defaulters</h4>
+                <h2 id="defaultersCount">
+                    0
+                </h2>
+            </div>
+        </div>
+
+        <div class="analytics-card">
+            <span class="card-icon dark">
+                <i class="fas fa-receipt"></i>
+            </span>
+
+            <div>
+                <h4>Total Transactions</h4>
+                <h2 id="transactionsCount">
+                    0
+                </h2>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===========================
+         CHARTS
+    ============================ -->
+
+    <div class="analytics-grid">
+
+        <div class="analytics-panel">
+
+            <div class="panel-header">
+                <h3>
+                    Revenue Trend
+                </h3>
+            </div>
+
+            <canvas id="revenueTrendChart"></canvas>
+
+        </div>
+
+        <div class="analytics-panel">
+
+            <div class="panel-header">
+                <h3>
+                    Collection by Class
+                </h3>
+            </div>
+
+            <canvas id="collectionByClassChart"></canvas>
+
+        </div>
+
+    </div>
+
+    <div class="analytics-grid">
+
+        <div class="analytics-panel">
+
+            <div class="panel-header">
+                <h3>
+                    Payment Methods
+                </h3>
+            </div>
+
+            <canvas id="paymentMethodChart"></canvas>
+
+        </div>
+
+        <div class="analytics-panel">
+
+            <div class="panel-header">
+                <h3>
+                    Fee Collection by Term
+                </h3>
+            </div>
+
+            <canvas id="collectionTermChart"></canvas>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ===========================
+     FINANCIAL TABLES
+=========================== -->
+
+<div class="analytics-grid">
+
+    <!-- Top Defaulters -->
+    <div class="analytics-panel">
+
+        <div class="panel-header">
+            <h3>
+                <i class="fas fa-user-clock"></i>
+                Top Fee Defaulters
+            </h3>
+
+            <button class="panel-btn">
+                View All
+            </button>
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="analytics-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Student</th>
+                        <th>Class</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="defaultersTableBody">
+
+                    <tr>
+                        <td colspan="4" class="empty-row">
+                            No data available
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <!-- Recent Payments -->
+    <div class="analytics-panel">
+
+        <div class="panel-header">
+            <h3>
+                <i class="fas fa-money-check-alt"></i>
+                Recent Payments
+            </h3>
+
+            <button class="panel-btn">
+                View All
+            </button>
+        </div>
+
+        <div class="table-responsive">
+
+            <table class="analytics-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Student</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Date</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="recentPaymentsBody">
+
+                    <tr>
+                        <td colspan="4" class="empty-row">
+                            No payments recorded
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ===========================
+     CLASS PERFORMANCE
+=========================== -->
+
+<div class="analytics-panel">
+
+    <div class="panel-header">
+
+        <h3>
+
+            <i class="fas fa-school"></i>
+
+            Fee Collection Performance by Class
+
+        </h3>
+
+    </div>
+
+    <div class="table-responsive">
+
+        <table class="analytics-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>Class</th>
+
+                    <th>Expected</th>
+
+                    <th>Collected</th>
+
+                    <th>Outstanding</th>
+
+                    <th>Collection %</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="classPerformanceBody">
+
+                <tr>
+
+                    <td colspan="5" class="empty-row">
+
+                        No class performance available
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- ===========================
+     QUICK REPORTS
+=========================== -->
+
+<div class="analytics-panel">
+
+    <div class="panel-header">
+
+        <h3>
+
+            <i class="fas fa-file-alt"></i>
+
+            Financial Reports
+
+        </h3>
+
+    </div>
+
+    <div class="reports-grid">
+
+        <button class="report-card" id="dailyCollectionReport">
+
+            <i class="fas fa-calendar-day"></i>
+
+            <span>Daily Collection</span>
+
+        </button>
+
+        <button class="report-card" id="monthlyCollectionReport">
+
+            <i class="fas fa-calendar-alt"></i>
+
+            <span>Monthly Collection</span>
+
+        </button>
+
+        <button class="report-card" id="termCollectionReport">
+
+            <i class="fas fa-graduation-cap"></i>
+
+            <span>Term Report</span>
+
+        </button>
+
+        <button class="report-card" id="defaultersReport">
+
+            <i class="fas fa-user-times"></i>
+
+            <span>Defaulters Report</span>
+
+        </button>
+
+        <button class="report-card" id="incomeReport">
+
+            <i class="fas fa-chart-line"></i>
+
+            <span>Income Report</span>
+
+        </button>
+
+        <button class="report-card" id="auditReport">
+
+            <i class="fas fa-clipboard-list"></i>
+
+            <span>Audit Report</span>
+
+        </button>
+        <button class="report-card" id="reportHistoryBtn">
+
+    <i class="fas fa-history"></i>
+
+    <span>
+        Report History
+    </span>
+
+</button>
+
+    </div>
+
+    <!-- ===========================
+     PREVIOUS REPORTS
+=========================== -->
+
+<div class="analytics-panel">
+
+    <div class="panel-header">
+
+        <h3>
+            <i class="fas fa-history"></i>
+            Previous Reports
+        </h3>
+
+        <button 
+            class="panel-btn"
+            onclick="openPreviousReports()">
+
+            View History
+
+        </button>
+
+    </div>
+
+
+    <div id="previousReportsContainer">
+
+        <p class="empty-row">
+            No previous reports available
+        </p>
+
+    </div>
+
+</div>
+    <!-- ===========================
+     REPORT HISTORY
+=========================== -->
+
+<div class="analytics-panel">
+
+    <div class="panel-header">
+
+        <h3>
+            <i class="fas fa-history"></i>
+            Previous Reports
+        </h3>
+
+        <button class="panel-btn" id="refreshReportHistory">
+
+            <i class="fas fa-sync"></i>
+            Refresh
+
+        </button>
+
+    </div>
+
+
+    <div class="table-responsive">
+
+        <table class="analytics-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>Report Name</th>
+
+                    <th>Period</th>
+
+                    <th>Generated Date</th>
+
+                    <th>Generated By</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="reportHistoryBody">
+
+                <tr>
+
+                    <td colspan="5" class="empty-row">
+
+                        No previous reports available
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
+</div>
+
+</div>
+
+
+<!-- ===========================
+     QUICK ACTIONS
+=========================== -->
+
+<div class="analytics-panel">
+
+    <div class="panel-header">
+
+        <h3>
+
+            <i class="fas fa-bolt"></i>
+
+            Quick Actions
+
+        </h3>
+
+    </div>
+
+    <div class="reports-grid">
+
+        <button class="report-card" id="printSummary">
+
+            <i class="fas fa-print"></i>
+
+            <span>Print Summary</span>
+
+        </button>
+
+        <button class="report-card" id="exportPdf">
+
+            <i class="fas fa-file-pdf"></i>
+
+            <span>Export PDF</span>
+
+        </button>
+
+        <button class="report-card" id="exportExcel">
+
+            <i class="fas fa-file-excel"></i>
+
+            <span>Export Excel</span>
+
+        </button>
+
+        <button class="report-card" id="sendReminders">
+
+            <i class="fas fa-envelope"></i>
+
+            <span>Send Fee Reminders</span>
+
+        </button>
+
+    </div>
+
+</div>
+
+<!-- REPORT MODAL -->
+<div id="reportModal" class="report-modal" style="display:none;">
+
+    <div class="report-modal-content">
+
+        <div class="report-modal-header">
+
+            <h2 id="reportModalTitle">Report</h2>
+
+            <button onclick="closeReportModal()">
+                &times;
+            </button>
+
+        </div>
+
+        <div id="reportModalBody"></div>
+
+    </div>
+
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="../js/financial-analytics.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Online Lessons - School Management System</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="../css/styles.css"
+    >
+
+    <style>
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .page-title {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.75rem;
+        }
+
+        .lesson-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .lesson-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .lesson-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .lesson-card-header h3 {
+            margin: 0 0 8px;
+            color: #2c3e50;
+        }
+
+        .lesson-card-header p {
+            margin: 0;
+            color: #6c757d;
+        }
+
+        .lesson-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            padding: 15px 0;
+            border-top: 1px solid #e9ecef;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .lesson-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .lesson-detail-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .lesson-detail-value {
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-scheduled {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .status-live {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-completed {
+            background: #eeeeee;
+            color: #555;
+        }
+
+        .status-cancelled {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .lesson-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .btn-edit {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-create-lesson {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .empty-state {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 50px 20px;
+            text-align: center;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 45px;
+            margin-bottom: 15px;
+        }
+
+        /* Modal */
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .modal.show {
+            display: block;
+        }
+
+        .modal-content {
+            background: #fff;
+            margin: 5% auto;
+            width: 90%;
+            max-width: 700px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        @media (max-width: 700px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .lesson-details {
+                grid-template-columns: 1fr;
+            }
+
+            .lesson-card-header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <!-- Sidebar -->
+
+    <div class="sidebar">
+
+        <div class="logo">
+            <h2>SchoolMS</h2>
+        </div>
+
+        <ul class="nav-links">
+
+            <li>
+                <a href="teacher.html#profile-section">
+                    <i class="fas fa-home"></i>
+                    Dashboard
+                </a>
+            </li>
+
+            <li>
+                <a href="manage-quizzes.html">
+                    <i class="fas fa-question-circle"></i>
+                    Quizzes
+                </a>
+            </li>
+
+            <li>
+                <a
+                    href="online-lessons.html"
+                    class="active"
+                >
+                    <i class="fas fa-video"></i>
+                    Online Lessons
+                </a>
+            </li>
+
+        </ul>
+
+    </div>
+
+
+    <!-- Main Content -->
+
+    <div class="main-content">
+
+        <header>
+
+            <h1>Online Lessons</h1>
+
+            <div class="user-info">
+
+                <span id="username">
+                    Teacher
+                </span>
+
+                <img
+                    src="../images/avatar.png"
+                    alt="User"
+                    class="avatar"
+                >
+
+            </div>
+
+        </header>
+
+
+        <div class="container">
+
+            <div class="page-header">
+
+                <h1 class="page-title">
+                    <i class="fas fa-video"></i>
+                    Manage Online Lessons
+                </h1>
+
+                <button
+                    id="createOnlineLessonBtn"
+                    class="btn btn-primary btn-create-lesson"
+                >
+                    <i class="fas fa-plus-circle"></i>
+                    Create Online Lesson
+                </button>
+
+            </div>
+
+
+            <!-- Lessons -->
+
+            <div id="onlineLessonsList">
+
+                <div class="loading">
+
+                    <i class="fas fa-spinner fa-spin"></i>
+
+                    Loading online lessons...
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- CREATE ONLINE LESSON MODAL -->
+
+<div
+    id="onlineLessonModal"
+    class="modal"
+>
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+
+            <h2 class="modal-title">
+
+                <i class="fas fa-video"></i>
+
+                Create Online Lesson
+
+            </h2>
+
+            <button
+                type="button"
+                id="closeOnlineLessonModal"
+                class="modal-close"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <div class="modal-body">
+
+            <form id="createOnlineLessonForm">
+
+
+                <!-- TITLE -->
+
+                <div class="form-group">
+
+                    <label for="lessonTitle">
+
+                        <i class="fas fa-heading"></i>
+
+                        Lesson Title
+
+                    </label>
+
+                    <input
+                        type="text"
+                        id="lessonTitle"
+                        class="form-control"
+                        maxlength="200"
+                        placeholder="e.g. Introduction to Algebra"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- CLASS -->
+
+                <div class="form-group">
+
+                    <label for="lessonClass">
+
+                        <i class="fas fa-users"></i>
+
+                        Class
+
+                    </label>
+
+                    <select
+                        id="lessonClass"
+                        class="form-control"
+                        required
+                    >
+
+                        <option value="">
+                            Select Class
+                        </option>
+
+                        <optgroup label="Primary School">
+
+                            <option value="Grade 1">
+                                Grade 1
+                            </option>
+
+                            <option value="Grade 2">
+                                Grade 2
+                            </option>
+
+                            <option value="Grade 3">
+                                Grade 3
+                            </option>
+
+                            <option value="Grade 4">
+                                Grade 4
+                            </option>
+
+                            <option value="Grade 5">
+                                Grade 5
+                            </option>
+
+                            <option value="Grade 6">
+                                Grade 6
+                            </option>
+
+                            <option value="Grade 7">
+                                Grade 7
+                            </option>
+
+                            <option value="Grade 8">
+                                Grade 8
+                            </option>
+
+                        </optgroup>
+
+
+                        <optgroup label="Secondary School">
+
+                            <option value="Form 1">
+                                Form 1
+                            </option>
+
+                            <option value="Form 2">
+                                Form 2
+                            </option>
+
+                            <option value="Form 3">
+                                Form 3
+                            </option>
+
+                            <option value="Form 4">
+                                Form 4
+                            </option>
+
+                        </optgroup>
+
+                    </select>
+
+                </div>
+
+
+                <!-- SUBJECT -->
+
+                <div class="form-group">
+
+                    <label for="lessonSubject">
+
+                        <i class="fas fa-book"></i>
+
+                        Subject
+
+                    </label>
+
+                    <select
+                        id="lessonSubject"
+                        class="form-control"
+                        required
+                    >
+
+                        <option value="">
+                            Select Subject
+                        </option>
+
+                        <option value="Mathematics">
+                            Mathematics
+                        </option>
+
+                        <option value="English">
+                            English
+                        </option>
+
+                        <option value="Kiswahili">
+                            Kiswahili
+                        </option>
+
+                        <option value="Science">
+                            Science
+                        </option>
+
+                        <option value="Social Studies">
+                            Social Studies
+                        </option>
+
+                        <option value="CRE">
+                            CRE
+                        </option>
+
+                        <option value="IRE">
+                            IRE
+                        </option>
+
+                        <option value="Computer Science">
+                            Computer Science
+                        </option>
+
+                        <option value="Business Studies">
+                            Business Studies
+                        </option>
+
+                        <option value="Agriculture">
+                            Agriculture
+                        </option>
+
+                        <option value="Home Science">
+                            Home Science
+                        </option>
+
+                        <option value="French">
+                            French
+                        </option>
+
+                        <option value="German">
+                            German
+                        </option>
+
+                        <option value="Arabic">
+                            Arabic
+                        </option>
+
+                        <option value="Music">
+                            Music
+                        </option>
+
+                        <option value="Art and Design">
+                            Art and Design
+                        </option>
+
+                        <option value="Physical Education">
+                            Physical Education
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- DATE -->
+
+                <div class="form-group">
+
+                    <label for="lessonDateTime">
+
+                        <i class="far fa-calendar-alt"></i>
+
+                        Date & Time
+
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        id="lessonDateTime"
+                        class="form-control"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- DURATION -->
+
+                <div class="form-group">
+
+                    <label for="lessonDuration">
+
+                        <i class="far fa-clock"></i>
+
+                        Duration (minutes)
+
+                    </label>
+
+                    <input
+                        type="number"
+                        id="lessonDuration"
+                        class="form-control"
+                        min="1"
+                        max="1440"
+                        value="60"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- MEETING -->
+
+                <div class="form-group">
+
+                    <label for="meetingProvider">
+
+                        <i class="fas fa-video"></i>
+
+                        Meeting Platform
+
+                    </label>
+
+                    <select
+                        id="meetingProvider"
+                        class="form-control"
+                    >
+
+                        <option value="external">
+                            External / Existing Link
+                        </option>
+
+                        <option value="google_meet">
+                            Google Meet
+                        </option>
+
+                        <option value="zoom">
+                            Zoom
+                        </option>
+
+                        <option value="microsoft_teams">
+                            Microsoft Teams
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div
+                    class="form-group"
+                    id="meetingUrlGroup"
+                >
+
+                    <label for="meetingUrl">
+
+                        <i class="fas fa-link"></i>
+
+                        Meeting URL
+
+                    </label>
+
+                    <input
+                        type="url"
+                        id="meetingUrl"
+                        class="form-control"
+                        placeholder="https://..."
+                    >
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div class="form-group">
+
+                    <label for="lessonDescription">
+
+                        <i class="fas fa-align-left"></i>
+
+                        Description
+
+                    </label>
+
+                    <textarea
+                        id="lessonDescription"
+                        class="form-control"
+                        rows="5"
+                        maxlength="5000"
+                        placeholder="Describe what students will learn..."
+                    ></textarea>
+
+                </div>
+
+
+                <!-- FOOTER -->
+
+                <div class="modal-footer">
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+
+                        <i class="fas fa-save"></i>
+
+                        Create Lesson
+
+                    </button>
+
+                    <button
+                        type="button"
+                        id="cancelOnlineLesson"
+                        class="btn btn-secondary"
+                    >
+
+                        <i class="fas fa-times"></i>
+
+                        Cancel
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="../js/onlineLessons.js"></script>
+
+</body>
+</html>
