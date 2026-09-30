@@ -3,7 +3,8 @@ const express = require("express");
 const {
     getTeacherIntegrations,
     connectIntegration,
-    disconnectIntegration
+    disconnectIntegration,
+    connectGoogleMeet
 } = require("../controllers/teacherMeetingIntegrationController");
 
 const { authorize } = require("../middleware/auth");
@@ -19,6 +20,14 @@ router.get(
     "/",
     authorize("teacher"),
     getTeacherIntegrations
+);
+
+// Start Google OAuth
+
+router.get(
+    "/google_meet/connect",
+    authorize("teacher"),
+    connectGoogleMeet
 );
 
 // Connect provider
