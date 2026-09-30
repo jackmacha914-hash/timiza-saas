@@ -840,6 +840,112 @@
             );
         }
 
+                const meetingProvider =
+            document.getElementById("meetingProvider");
+
+        const googleMeetConnectGroup =
+            document.getElementById(
+                "googleMeetConnectGroup"
+            );
+
+        const connectGoogleMeetBtn =
+            document.getElementById(
+                "connectGoogleMeetBtn"
+            );
+
+
+        function updateMeetingProviderUI() {
+
+            if (!meetingProvider) {
+                return;
+            }
+
+            if (
+                meetingProvider.value ===
+                "google_meet"
+            ) {
+                if (googleMeetConnectGroup) {
+                    googleMeetConnectGroup.style.display =
+                        "block";
+                }
+            } else {
+                if (googleMeetConnectGroup) {
+                    googleMeetConnectGroup.style.display =
+                        "none";
+                }
+            }
+        }
+
+
+        if (meetingProvider) {
+
+            meetingProvider.addEventListener(
+                "change",
+                updateMeetingProviderUI
+            );
+
+            updateMeetingProviderUI();
+        }
+
+
+        if (connectGoogleMeetBtn) {
+
+            connectGoogleMeetBtn.addEventListener(
+                "click",
+                async function () {
+
+                    try {
+
+                        connectGoogleMeetBtn.disabled =
+                            true;
+
+                        connectGoogleMeetBtn.innerHTML =
+                            '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+
+
+                        const data =
+                            await apiRequest(
+                                "/api/online-lessons/integrations/google_meet/connect",
+                                {
+                                    method: "GET"
+                                }
+                            );
+
+
+                        if (
+                            !data.success ||
+                            !data.authorizationUrl
+                        ) {
+                            throw new Error(
+                                data.message ||
+                                "Google authorization URL was not returned."
+                            );
+                        }
+
+
+                        window.location.href =
+                            data.authorizationUrl;
+
+
+                    } catch (error) {
+
+                        console.error(
+                            "Google Meet connection error:",
+                            error
+                        );
+
+                        alert(error.message);
+
+                        connectGoogleMeetBtn.disabled =
+                            false;
+
+                        connectGoogleMeetBtn.innerHTML =
+                            '<i class="fas fa-link"></i> Connect Google Meet';
+                    }
+                }
+            );
+        }
+
 
         document.addEventListener(
             "click",
