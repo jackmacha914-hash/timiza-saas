@@ -115,8 +115,18 @@ app.use('/api/online-lessons', protect, requireSchool, require('./routes/onlineL
 app.use('/api/online-lessons/integrations', protect, requireSchool, require('./routes/teacherMeetingIntegrationRoutes'));
 
 
+
 // -------------------------
-// FRONTEND ROUTES
+// PUBLIC LEGAL PAGES
+// -------------------------
+
+app.get('/privacy-policy', (req, res) => {
+  res.sendFile(path.join(pagesPath, 'privacy-policy.html'));
+});
+
+app.get('/terms-of-service', (req, res) => {
+  res.sendFile(path.join(pagesPath, 'terms-of-service.html'));
+});
 
 // -------------------------
 // FRONTEND ROUTES
@@ -151,7 +161,6 @@ app.get('/*.html', (req, res) => {
     }
   });
 });
-
 
 // -------------------------
 // Start server
