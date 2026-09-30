@@ -35,8 +35,6 @@ exports.createOnlineLesson = async (req, res) => {
         const {
             class: className,
             subject: subjectName,
-            classId,
-            subjectId,
             title,
             description,
             scheduledAt,
@@ -57,8 +55,8 @@ exports.createOnlineLesson = async (req, res) => {
         }
 
         if (
-            (!className && !classId) ||
-            (!subjectName && !subjectId) ||
+            !className ||
+            !subjectName ||
             !title ||
             !scheduledAt ||
             duration === undefined ||
@@ -72,68 +70,58 @@ exports.createOnlineLesson = async (req, res) => {
         }
 
         // -------------------------------------------------
-        // RESOLVE CLASS
+        // STATIC CLASS / SUBJECT VALUES
         // -------------------------------------------------
 
-        let classRecord;
+        const normalizedClass = String(className).trim();
+        const normalizedSubject = String(subjectName).trim();
 
-        if (classId) {
-            if (!isValidObjectId(classId)) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid class ID."
-                });
-            }
+        const allowedClasses = [
+            "Grade 1",
+            "Grade 2",
+            "Grade 3",
+            "Grade 4",
+            "Grade 5",
+            "Grade 6",
+            "Grade 7",
+            "Grade 8",
+            "Form 1",
+            "Form 2",
+            "Form 3",
+            "Form 4"
+        ];
 
-            classRecord = await Class.findOne({
-                _id: classId,
-                school: schoolId
-            });
-        } else {
-            classRecord = await Class.findOne({
-                school: schoolId,
-                name: String(className).trim()
-            }).sort({ academicYear: -1 });
-        }
+        const allowedSubjects = [
+            "Mathematics",
+            "English",
+            "Kiswahili",
+            "Science",
+            "Social Studies",
+            "CRE",
+            "IRE",
+            "Computer Science",
+            "Business Studies",
+            "Agriculture",
+            "Home Science",
+            "French",
+            "German",
+            "Arabic",
+            "Music",
+            "Art and Design",
+            "Physical Education"
+        ];
 
-        if (!classRecord) {
-            return res.status(404).json({
+        if (!allowedClasses.includes(normalizedClass)) {
+            return res.status(400).json({
                 success: false,
-                message: "Class not found in this school."
+                message: "Invalid class selected."
             });
         }
 
-        // -------------------------------------------------
-        // RESOLVE SUBJECT
-        // -------------------------------------------------
-
-        let subject;
-
-        if (subjectId) {
-            if (!isValidObjectId(subjectId)) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid subject ID."
-                });
-            }
-
-            subject = await Subject.findOne({
-                _id: subjectId,
-                school: schoolId,
-                active: true
-            });
-        } else {
-            subject = await Subject.findOne({
-                school: schoolId,
-                name: String(subjectName).trim(),
-                active: true
-            });
-        }
-
-        if (!subject) {
-            return res.status(404).json({
+        if (!allowedSubjects.includes(normalizedSubject)) {
+            return res.status(400).json({
                 success: false,
-                message: "Subject not found or inactive."
+                message: "Invalid subject selected."
             });
         }
 
@@ -277,9 +265,9 @@ exports.createOnlineLesson = async (req, res) => {
         const lesson = await OnlineLesson.create({
             school: schoolId,
 
-            class: classRecord._id,
+            class: normalizedClass,
 
-            subject: subject._id,
+            subject: normalizedSubject,
 
             teacher: teacher._id,
 
@@ -301,32 +289,13 @@ exports.createOnlineLesson = async (req, res) => {
         });
 
         // -------------------------------------------------
-        // POPULATE RESPONSE
+        // RETURN LESSON
         // -------------------------------------------------
-
-        const populatedLesson =
-            await OnlineLesson.findOne({
-                _id: lesson._id,
-                school: schoolId
-            })
-                .populate(
-                    "class",
-                    "name level section academicYear"
-                )
-                .populate(
-                    "subject",
-                    "name code category"
-                )
-                .populate(
-                    "teacher",
-                    "name email"
-                );
 
         return res.status(201).json({
             success: true,
-            message:
-                "Online lesson created successfully.",
-            lesson: populatedLesson
+            message: "Online lesson created successfully.",
+            lesson
         });
 
     } catch (error) {
@@ -337,8 +306,7 @@ exports.createOnlineLesson = async (req, res) => {
 
         return res.status(500).json({
             success: false,
-            message:
-                "Failed to create online lesson."
+            message: "Failed to create online lesson."
         });
     }
 };
