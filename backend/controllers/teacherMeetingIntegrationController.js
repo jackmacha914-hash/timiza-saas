@@ -1,6 +1,6 @@
 const TeacherMeetingIntegration = require("../models/TeacherMeetingIntegration");
 
-const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 
 const {
     getGoogleAuthorizationUrl
@@ -12,13 +12,24 @@ exports.connectGoogleMeet = async (req, res) => {
         const teacherId = req.user.id;
         const schoolId = req.user.school;
 
-        // Generate a random OAuth state
-        const state = crypto.randomBytes(32).toString("hex");
+        if (!teacherId || !schoolId) {
+            return res.status(403).json({
+                success: false,
+                message: "Teacher or school information is missing."
+            });
+        }
 
-        // Store the information in the server session.
-        req.session.googleOAuthState = state;
-        req.session.googleOAuthTeacherId = String(teacherId);
-        req.session.googleOAuthSchoolId = String(schoolId);
+        const state = jwt.sign(
+            {
+                teacherId: String(teacherId),
+                schoolId: String(schoolId),
+                provider: "google_meet"
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "10m"
+            }
+        );
 
         const authorizationUrl =
             getGoogleAuthorizationUrl(state);
@@ -28,7 +39,10 @@ exports.connectGoogleMeet = async (req, res) => {
             schoolId
         });
 
-        return res.redirect(authorizationUrl);
+        return res.json({
+            success: true,
+            authorizationUrl
+        });
 
     } catch (error) {
         console.error(
