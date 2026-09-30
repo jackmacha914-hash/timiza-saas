@@ -20,28 +20,28 @@ const onlineLessonSchema = new mongoose.Schema(
         },
 
 
-        // =================================================
-        // CLASS
-        // =================================================
+      // =================================================
+// CLASS
+// =================================================
 
-        class: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Class",
-            required: true,
-            index: true
-        },
+class: {
+    type: String,
+    required: true,
+    trim: true,
+    index: true
+},
 
 
-        // =================================================
-        // SUBJECT
-        // =================================================
+// =================================================
+// SUBJECT
+// =================================================
 
-        subject: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Subject",
-            required: true,
-            index: true
-        },
+subject: {
+    type: String,
+    required: true,
+    trim: true,
+    index: true
+},
 
 
         // =================================================
