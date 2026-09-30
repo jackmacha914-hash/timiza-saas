@@ -1,5 +1,48 @@
 const TeacherMeetingIntegration = require("../models/TeacherMeetingIntegration");
 
+const crypto = require("crypto");
+
+const {
+    getGoogleAuthorizationUrl
+} = require("../services/googleOAuthService");
+
+
+exports.connectGoogleMeet = async (req, res) => {
+    try {
+        const teacherId = req.user.id;
+        const schoolId = req.user.school;
+
+        // Generate a random OAuth state
+        const state = crypto.randomBytes(32).toString("hex");
+
+        // Store the information in the server session.
+        req.session.googleOAuthState = state;
+        req.session.googleOAuthTeacherId = String(teacherId);
+        req.session.googleOAuthSchoolId = String(schoolId);
+
+        const authorizationUrl =
+            getGoogleAuthorizationUrl(state);
+
+        console.log("[GOOGLE OAUTH] Starting Google connection:", {
+            teacherId,
+            schoolId
+        });
+
+        return res.redirect(authorizationUrl);
+
+    } catch (error) {
+        console.error(
+            "[GOOGLE OAUTH CONNECT ERROR]",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 // =====================================================
 // SUPPORTED PROVIDERS
 // =====================================================
