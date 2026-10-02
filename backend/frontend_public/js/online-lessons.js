@@ -1,641 +1,1273 @@
-/* =========================================================
-   STUDENT ONLINE LESSONS
-   FRONTEND VERSION - MOCK DATA
-========================================================= */
+// =====================================================
+// SCHOOLSYNC - STUDENT ONLINE LESSONS
+// =====================================================
 
-(function () {
+(() => {
+    "use strict";
 
-    'use strict';
+    const API_BASE = "/api/online-lessons";
 
-    console.log('[ONLINE LESSONS] Script loaded');
-
-
-    // =====================================================
-    // MOCK DATA
-    // Later this will come from the backend
-    // =====================================================
-
-    const mockLessons = {
-
-        today: [
-            {
-                _id: 'lesson-001',
-                subject: 'Mathematics',
-                title: 'Introduction to Algebra',
-                description: 'Learn the basic concepts of algebraic expressions and equations.',
-                teacher: 'Mr. Kamau',
-                scheduledAt: new Date().setHours(10, 0, 0, 0),
-                duration: 60,
-                status: 'scheduled',
-                meeting: {
-                    joinUrl: '#'
-                }
-            },
-            {
-                _id: 'lesson-002',
-                subject: 'Science',
-                title: 'The Human Digestive System',
-                description: 'A lesson covering the major organs involved in digestion.',
-                teacher: 'Ms. Wanjiku',
-                scheduledAt: new Date().setHours(14, 0, 0, 0),
-                duration: 45,
-                status: 'live',
-                meeting: {
-                    joinUrl: '#'
-                }
-            }
-        ],
-
-        upcoming: [
-            {
-                _id: 'lesson-003',
-                subject: 'English',
-                title: 'Creative Writing',
-                description: 'Learn how to create interesting characters and engaging stories.',
-                teacher: 'Mrs. Achieng',
-                scheduledAt: new Date(Date.now() + 86400000).setHours(9, 0, 0, 0),
-                duration: 60,
-                status: 'scheduled',
-                meeting: {
-                    joinUrl: '#'
-                }
-            },
-            {
-                _id: 'lesson-004',
-                subject: 'Geography',
-                title: 'Weather and Climate',
-                description: 'Understanding weather patterns and the factors that influence climate.',
-                teacher: 'Mr. Otieno',
-                scheduledAt: new Date(Date.now() + 172800000).setHours(11, 0, 0, 0),
-                duration: 45,
-                status: 'scheduled',
-                meeting: {
-                    joinUrl: '#'
-                }
-            }
-        ],
-
-        completed: [
-            {
-                _id: 'lesson-005',
-                subject: 'History',
-                title: 'Early African Civilizations',
-                description: 'A look at some of the major civilizations that developed in Africa.',
-                teacher: 'Mr. Mwangi',
-                scheduledAt: new Date(Date.now() - 86400000).setHours(10, 0, 0, 0),
-                duration: 60,
-                status: 'completed',
-                meeting: {
-                    joinUrl: '#'
-                }
-            }
-        ]
-
+    let initialized = false;
+    let currentLessons = {
+        today: [],
+        upcoming: [],
+        completed: []
     };
 
 
-    // =====================================================
+    // =================================================
     // INITIALIZE
-    // =====================================================
+    // =================================================
 
-    function initializeOnlineLessons() {
+    async function initializeOnlineLessons() {
 
-        console.log('[ONLINE LESSONS] Initializing...');
-
-        renderLessons(mockLessons);
-
-        const refreshButton =
-            document.getElementById('refresh-online-lessons');
-
-        if (refreshButton) {
-
-            refreshButton.addEventListener('click', function () {
-
-                renderLessons(mockLessons);
-
-                showOnlineLessonMessage(
-                    'Lessons refreshed successfully.',
-                    'success'
-                );
-
-            });
-
+        if (!initialized) {
+            setupRefreshButton();
+            initialized = true;
         }
 
+        await fetchStudentLessons();
     }
 
 
-    // =====================================================
+    // =================================================
+    // FETCH STUDENT LESSONS
+    // =================================================
+
+    async function fetchStudentLessons() {
+
+        setLoadingState();
+
+        try {
+
+            const response = await fetch(
+                `${API_BASE}/student`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Failed to load online lessons."
+                );
+            }
+
+            currentLessons = {
+                today: Array.isArray(data.today)
+                    ? data.today
+                    : [],
+
+                upcoming: Array.isArray(data.upcoming)
+                    ? data.upcoming
+                    : [],
+
+                completed: Array.isArray(data.completed)
+                    ? data.completed
+                    : []
+            };
+
+            renderLessons();
+
+        } catch (error) {
+
+            console.error(
+                "[ONLINE LESSONS] Fetch error:",
+                error
+            );
+
+            showGlobalError(
+                error.message ||
+                "Unable to load online lessons."
+            );
+        }
+    }
+
+
+    // =================================================
     // RENDER ALL LESSONS
-    // =====================================================
+    // =================================================
 
-    function renderLessons(data) {
+    function renderLessons() {
 
-        renderLessonGroup(
-            'today-lessons-list',
-            data.today,
-            'today'
-        );
+        updateStatistics();
 
         renderLessonGroup(
-            'upcoming-lessons-list',
-            data.upcoming,
-            'upcoming'
+            "today-lessons-list",
+            currentLessons.today,
+            "today"
         );
 
         renderLessonGroup(
-            'completed-lessons-list',
-            data.completed,
-            'completed'
+            "upcoming-lessons-list",
+            currentLessons.upcoming,
+            "upcoming"
         );
 
-
-        // Update statistics
-
-        setText(
-            'today-lessons-count',
-            data.today?.length || 0
+        renderLessonGroup(
+            "completed-lessons-list",
+            currentLessons.completed,
+            "completed"
         );
-
-        setText(
-            'upcoming-lessons-count',
-            data.upcoming?.length || 0
-        );
-
-        setText(
-            'completed-lessons-count',
-            data.completed?.length || 0
-        );
-
     }
 
 
-    // =====================================================
-    // RENDER LESSON GROUP
-    // =====================================================
+    // =================================================
+    // STATISTICS
+    // =================================================
 
-    function renderLessonGroup(containerId, lessons, type) {
+    function updateStatistics() {
+
+        const todayCount =
+            document.getElementById(
+                "today-lessons-count"
+            );
+
+        const upcomingCount =
+            document.getElementById(
+                "upcoming-lessons-count"
+            );
+
+        const completedCount =
+            document.getElementById(
+                "completed-lessons-count"
+            );
+
+        if (todayCount) {
+            todayCount.textContent =
+                currentLessons.today.length;
+        }
+
+        if (upcomingCount) {
+            upcomingCount.textContent =
+                currentLessons.upcoming.length;
+        }
+
+        if (completedCount) {
+            completedCount.textContent =
+                currentLessons.completed.length;
+        }
+    }
+
+
+    // =================================================
+    // RENDER LESSON GROUP
+    // =================================================
+
+    function renderLessonGroup(
+        containerId,
+        lessons,
+        groupType
+    ) {
 
         const container =
             document.getElementById(containerId);
 
         if (!container) {
-            console.warn(
-                `[ONLINE LESSONS] Container not found: ${containerId}`
+            return;
+        }
+
+        if (!lessons.length) {
+
+            container.innerHTML =
+                createEmptyState(groupType);
+
+            return;
+        }
+
+        container.innerHTML = lessons
+            .map(lesson =>
+                createLessonCard(
+                    lesson,
+                    groupType
+                )
+            )
+            .join("");
+    }
+
+
+    // =================================================
+    // LESSON CARD
+    // =================================================
+
+    function createLessonCard(
+        lesson,
+        groupType
+    ) {
+
+        const lessonId =
+            escapeHtml(
+                lesson._id || ""
             );
+
+        const title =
+            escapeHtml(
+                lesson.title ||
+                "Online Lesson"
+            );
+
+        const subject =
+            escapeHtml(
+                lesson.subject ||
+                "Subject"
+            );
+
+        const className =
+            escapeHtml(
+                lesson.class ||
+                ""
+            );
+
+        const teacher =
+            escapeHtml(
+                lesson.teacher?.name ||
+                "Teacher"
+            );
+
+        const description =
+            escapeHtml(
+                lesson.description ||
+                "No description provided."
+            );
+
+        const provider =
+            formatMeetingProvider(
+                lesson.meeting?.provider
+            );
+
+        const date =
+            formatDate(
+                lesson.scheduledAt
+            );
+
+        const time =
+            formatTime(
+                lesson.scheduledAt
+            );
+
+        const duration =
+            Number(lesson.duration) || 0;
+
+        const status =
+            String(
+                lesson.status || "scheduled"
+            ).toLowerCase();
+
+        const statusLabel =
+            formatStatus(status);
+
+        const isLive =
+            status === "live";
+
+        const isCompleted =
+            status === "completed" ||
+            Boolean(lesson.endedAt);
+
+        let actionButtons = `
+            <button
+                type="button"
+                class="lesson-btn lesson-details-btn"
+                data-lesson-id="${lessonId}"
+            >
+                <i class="bi bi-info-circle"></i>
+                Details
+            </button>
+        `;
+
+        if (!isCompleted) {
+
+            if (isLive) {
+
+                actionButtons += `
+                    <button
+                        type="button"
+                        class="lesson-btn lesson-join-btn primary"
+                        data-lesson-id="${lessonId}"
+                    >
+                        <i class="bi bi-camera-video-fill"></i>
+                        Join Now
+                    </button>
+                `;
+
+            } else if (groupType === "today") {
+
+                actionButtons += `
+                    <button
+                        type="button"
+                        class="lesson-btn lesson-join-btn"
+                        data-lesson-id="${lessonId}"
+                    >
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Join Lesson
+                    </button>
+                `;
+            }
+        }
+
+        if (
+            isCompleted &&
+            lesson.recordingUrl
+        ) {
+
+            const recordingUrl =
+                escapeAttribute(
+                    lesson.recordingUrl
+                );
+
+            actionButtons += `
+                <a
+                    href="${recordingUrl}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="lesson-btn primary"
+                >
+                    <i class="bi bi-play-circle"></i>
+                    Watch Recording
+                </a>
+            `;
+        }
+
+        return `
+            <article
+                class="online-lesson-card
+                       ${isLive ? "lesson-is-live" : ""}
+                       ${isCompleted ? "lesson-is-completed" : ""}"
+            >
+
+                <div class="lesson-card-top">
+
+                    <span class="lesson-subject">
+                        <i class="bi bi-book"></i>
+                        ${subject}
+                    </span>
+
+                    <span class="lesson-status ${status}">
+                        ${isLive
+                            ? '<span class="live-dot"></span>'
+                            : ''
+                        }
+                        ${statusLabel}
+                    </span>
+
+                </div>
+
+
+                <div class="lesson-card-body">
+
+                    <h3>
+                        ${title}
+                    </h3>
+
+                    <p class="lesson-description">
+                        ${description}
+                    </p>
+
+
+                    <div class="lesson-information">
+
+                        <div class="lesson-info-item">
+
+                            <i class="bi bi-person"></i>
+
+                            <div>
+                                <span>Teacher</span>
+                                <strong>${teacher}</strong>
+                            </div>
+
+                        </div>
+
+
+                        <div class="lesson-info-item">
+
+                            <i class="bi bi-mortarboard"></i>
+
+                            <div>
+                                <span>Class</span>
+                                <strong>${className}</strong>
+                            </div>
+
+                        </div>
+
+
+                        <div class="lesson-info-item">
+
+                            <i class="bi bi-calendar3"></i>
+
+                            <div>
+                                <span>Date</span>
+                                <strong>${date}</strong>
+                            </div>
+
+                        </div>
+
+
+                        <div class="lesson-info-item">
+
+                            <i class="bi bi-clock"></i>
+
+                            <div>
+                                <span>Time</span>
+                                <strong>${time}</strong>
+                            </div>
+
+                        </div>
+
+
+                        <div class="lesson-info-item">
+
+                            <i class="bi bi-hourglass-split"></i>
+
+                            <div>
+                                <span>Duration</span>
+                                <strong>
+                                    ${duration} minutes
+                                </strong>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="lesson-meeting">
+
+                        <i class="bi bi-camera-video"></i>
+
+                        <span>
+                            ${provider}
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="lesson-card-footer">
+
+                    ${actionButtons}
+
+                </div>
+
+            </article>
+        `;
+    }
+
+
+    // =================================================
+    // VIEW LESSON DETAILS
+    // =================================================
+
+    async function viewLessonDetails(
+        lessonId
+    ) {
+
+        if (!lessonId) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                `${API_BASE}/${encodeURIComponent(lessonId)}`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Unable to load lesson details."
+                );
+            }
+
+            showLessonDetails(
+                data.lesson
+            );
+
+        } catch (error) {
+
+            console.error(
+                "[ONLINE LESSONS] Details error:",
+                error
+            );
+
+            showGlobalError(
+                error.message
+            );
+        }
+    }
+
+
+    // =================================================
+    // SHOW DETAILS
+    // =================================================
+
+    function showLessonDetails(
+        lesson
+    ) {
+
+        if (!lesson) {
+            return;
+        }
+
+        const existingModal =
+            document.getElementById(
+                "online-lesson-details-modal"
+            );
+
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        const title =
+            escapeHtml(
+                lesson.title ||
+                "Online Lesson"
+            );
+
+        const description =
+            escapeHtml(
+                lesson.description ||
+                "No description provided."
+            );
+
+        const subject =
+            escapeHtml(
+                lesson.subject || "-"
+            );
+
+        const teacher =
+            escapeHtml(
+                lesson.teacher?.name || "-"
+            );
+
+        const className =
+            escapeHtml(
+                lesson.class || "-"
+            );
+
+        const date =
+            formatDate(
+                lesson.scheduledAt
+            );
+
+        const time =
+            formatTime(
+                lesson.scheduledAt
+            );
+
+        const duration =
+            Number(lesson.duration) || 0;
+
+        const materials =
+            Array.isArray(lesson.materials)
+                ? lesson.materials
+                : [];
+
+        const materialsHtml =
+            materials.length
+                ? materials.map(material => {
+
+                    const materialTitle =
+                        escapeHtml(
+                            material.title ||
+                            "Learning Material"
+                        );
+
+                    const materialUrl =
+                        escapeAttribute(
+                            material.url || "#"
+                        );
+
+                    const materialType =
+                        escapeHtml(
+                            material.type ||
+                            "resource"
+                        );
+
+                    return `
+                        <a
+                            href="${materialUrl}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="lesson-material"
+                        >
+                            <i class="bi bi-file-earmark-text"></i>
+
+                            <span>
+                                <strong>
+                                    ${materialTitle}
+                                </strong>
+
+                                <small>
+                                    ${materialType}
+                                </small>
+                            </span>
+
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    `;
+
+                }).join("")
+                : `
+                    <p class="no-materials">
+                        No learning materials attached.
+                    </p>
+                `;
+
+        const modal =
+            document.createElement("div");
+
+        modal.id =
+            "online-lesson-details-modal";
+
+        modal.className =
+            "lesson-modal-overlay";
+
+        modal.innerHTML = `
+
+            <div class="lesson-modal">
+
+                <div class="lesson-modal-header">
+
+                    <div>
+                        <span class="modal-eyebrow">
+                            Online Lesson
+                        </span>
+
+                        <h2>
+                            ${title}
+                        </h2>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="lesson-modal-close"
+                        id="close-lesson-details"
+                    >
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+
+                </div>
+
+
+                <div class="lesson-modal-body">
+
+                    <p class="modal-description">
+                        ${description}
+                    </p>
+
+
+                    <div class="modal-details-grid">
+
+                        <div>
+                            <span>Subject</span>
+                            <strong>${subject}</strong>
+                        </div>
+
+                        <div>
+                            <span>Teacher</span>
+                            <strong>${teacher}</strong>
+                        </div>
+
+                        <div>
+                            <span>Class</span>
+                            <strong>${className}</strong>
+                        </div>
+
+                        <div>
+                            <span>Date</span>
+                            <strong>${date}</strong>
+                        </div>
+
+                        <div>
+                            <span>Time</span>
+                            <strong>${time}</strong>
+                        </div>
+
+                        <div>
+                            <span>Duration</span>
+                            <strong>${duration} minutes</strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="modal-materials">
+
+                        <h3>
+                            <i class="bi bi-folder2-open"></i>
+                            Learning Materials
+                        </h3>
+
+                        <div class="materials-list">
+                            ${materialsHtml}
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="lesson-modal-footer">
+
+                    <button
+                        type="button"
+                        class="lesson-btn"
+                        id="close-lesson-details-footer"
+                    >
+                        Close
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+
+        const closeModal = () => {
+            modal.remove();
+        };
+
+
+        document
+            .getElementById(
+                "close-lesson-details"
+            )
+            ?.addEventListener(
+                "click",
+                closeModal
+            );
+
+
+        document
+            .getElementById(
+                "close-lesson-details-footer"
+            )
+            ?.addEventListener(
+                "click",
+                closeModal
+            );
+
+
+        modal.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    event.target === modal
+                ) {
+                    closeModal();
+                }
+
+            }
+        );
+    }
+
+
+    // =================================================
+    // JOIN LESSON
+    // =================================================
+
+    async function joinLesson(
+        lessonId
+    ) {
+
+        if (!lessonId) {
+            return;
+        }
+
+        const lesson =
+            findLessonById(
+                lessonId
+            );
+
+        if (!lesson) {
+            showGlobalError(
+                "Lesson could not be found."
+            );
+
+            return;
+        }
+
+        const meetingUrl =
+            lesson.meeting?.meetingUrl;
+
+        if (!meetingUrl) {
+
+            showGlobalError(
+                "This lesson does not have a meeting link yet."
+            );
+
             return;
         }
 
 
-        // Clear existing content
+        try {
 
-        container.innerHTML = '';
+            const response = await fetch(
+                `${API_BASE}/${encodeURIComponent(lessonId)}/join`,
+                {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message ||
+                    "Unable to record lesson attendance."
+                );
+            }
+
+            // Open the actual meeting after attendance
+            // has been successfully recorded.
+            window.open(
+                meetingUrl,
+                "_blank",
+                "noopener,noreferrer"
+            );
+
+            // Refresh status/data.
+            await fetchStudentLessons();
+
+        } catch (error) {
+
+            console.error(
+                "[ONLINE LESSONS] Join error:",
+                error
+            );
+
+            showGlobalError(
+                error.message ||
+                "Unable to join lesson."
+            );
+        }
+    }
 
 
-        // Empty state
+    // =================================================
+    // FIND LESSON
+    // =================================================
 
-        if (!lessons || lessons.length === 0) {
+    function findLessonById(
+        lessonId
+    ) {
+
+        const allLessons = [
+            ...currentLessons.today,
+            ...currentLessons.upcoming,
+            ...currentLessons.completed
+        ];
+
+        return allLessons.find(
+            lesson =>
+                String(lesson._id) ===
+                String(lessonId)
+        );
+    }
+
+
+    // =================================================
+    // REFRESH BUTTON
+    // =================================================
+
+    function setupRefreshButton() {
+
+        const button =
+            document.getElementById(
+                "refresh-online-lessons"
+            );
+
+        if (!button) {
+            return;
+        }
+
+        button.addEventListener(
+            "click",
+            async () => {
+
+                const originalHtml =
+                    button.innerHTML;
+
+                button.disabled = true;
+
+                button.innerHTML = `
+                    <i class="bi bi-arrow-clockwise spin"></i>
+                    Refreshing...
+                `;
+
+                await fetchStudentLessons();
+
+                button.disabled = false;
+
+                button.innerHTML =
+                    originalHtml;
+            }
+        );
+    }
+
+
+    // =================================================
+    // EVENTS
+    // =================================================
+
+    document.addEventListener(
+        "click",
+        event => {
+
+            const detailsButton =
+                event.target.closest(
+                    ".lesson-details-btn"
+                );
+
+            if (detailsButton) {
+
+                viewLessonDetails(
+                    detailsButton.dataset.lessonId
+                );
+
+                return;
+            }
+
+
+            const joinButton =
+                event.target.closest(
+                    ".lesson-join-btn"
+                );
+
+            if (joinButton) {
+
+                joinLesson(
+                    joinButton.dataset.lessonId
+                );
+            }
+
+        }
+    );
+
+
+    // =================================================
+    // LOADING STATE
+    // =================================================
+
+    function setLoadingState() {
+
+        const containers = [
+            "today-lessons-list",
+            "upcoming-lessons-list",
+            "completed-lessons-list"
+        ];
+
+        containers.forEach(id => {
+
+            const container =
+                document.getElementById(id);
+
+            if (!container) {
+                return;
+            }
 
             container.innerHTML = `
-                <div class="online-lessons-empty">
+                <div class="online-lessons-loading">
 
-                    <i class="bi bi-camera-video"></i>
-
-                    <h4>No lessons found</h4>
+                    <div class="spinner-border"></div>
 
                     <p>
-                        There are no ${type} online lessons at the moment.
+                        Loading online lessons...
                     </p>
 
                 </div>
             `;
-
-            return;
-        }
-
-
-        // Render cards
-
-        lessons.forEach(lesson => {
-
-            container.appendChild(
-                createLessonCard(lesson, type)
-            );
-
         });
-
     }
 
 
-    // =====================================================
-    // CREATE LESSON CARD
-    // =====================================================
+    // =================================================
+    // EMPTY STATE
+    // =================================================
 
-    function createLessonCard(lesson, type) {
+    function createEmptyState(
+        type
+    ) {
 
-        const card = document.createElement('div');
+        const messages = {
 
-        card.className = 'online-lesson-card';
+            today: {
+                icon: "bi-calendar-check",
+                title: "No lessons today",
+                message:
+                    "You do not have any online lessons scheduled for today."
+            },
 
+            upcoming: {
+                icon: "bi-calendar-event",
+                title: "No upcoming lessons",
+                message:
+                    "There are no upcoming online lessons at the moment."
+            },
 
-        const scheduledDate =
-            new Date(lesson.scheduledAt);
+            completed: {
+                icon: "bi-check-circle",
+                title: "No completed lessons",
+                message:
+                    "Your completed online lessons will appear here."
+            }
 
+        };
 
-        const formattedDate =
-            scheduledDate.toLocaleDateString(
-                'en-KE',
-                {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                }
-            );
+        const content =
+            messages[type] ||
+            messages.today;
 
+        return `
+            <div class="online-lessons-empty">
 
-        const formattedTime =
-            scheduledDate.toLocaleTimeString(
-                'en-KE',
-                {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }
-            );
-
-
-        const status =
-            lesson.status || 'scheduled';
-
-
-        const statusText =
-            status.charAt(0).toUpperCase() +
-            status.slice(1);
-
-
-        card.innerHTML = `
-
-            <div class="online-lesson-card-top">
-
-                <span class="lesson-subject">
-                    ${escapeHtml(lesson.subject || 'Subject')}
-                </span>
-
-                <h4>
-                    ${escapeHtml(lesson.title || 'Online Lesson')}
-                </h4>
-
-            </div>
-
-
-            <div class="online-lesson-card-body">
-
-                <p class="lesson-description">
-                    ${escapeHtml(
-                        lesson.description ||
-                        'No description provided.'
-                    )}
-                </p>
-
-
-                <div class="lesson-info">
-
-                    <div class="lesson-info-item">
-
-                        <i class="bi bi-person"></i>
-
-                        <span>
-                            ${escapeHtml(
-                                lesson.teacher || 'Teacher'
-                            )}
-                        </span>
-
-                    </div>
-
-
-                    <div class="lesson-info-item">
-
-                        <i class="bi bi-calendar3"></i>
-
-                        <span>
-                            ${formattedDate}
-                        </span>
-
-                    </div>
-
-
-                    <div class="lesson-info-item">
-
-                        <i class="bi bi-clock"></i>
-
-                        <span>
-                            ${formattedTime}
-                            ·
-                            ${lesson.duration || 0} minutes
-                        </span>
-
-                    </div>
-
+                <div class="empty-icon">
+                    <i class="bi ${content.icon}"></i>
                 </div>
 
+                <h3>
+                    ${content.title}
+                </h3>
 
-                <span class="lesson-status ${status}">
-
-                    <i class="bi ${
-                        status === 'live'
-                            ? 'bi-broadcast'
-                            : status === 'completed'
-                                ? 'bi-check-circle'
-                                : 'bi-clock'
-                    }"></i>
-
-                    ${statusText}
-
-                </span>
+                <p>
+                    ${content.message}
+                </p>
 
             </div>
-
-
-            <div class="online-lesson-card-footer">
-
-                ${
-                    status === 'live'
-                        ? `
-                            <button
-                                type="button"
-                                class="btn btn-danger join-lesson-btn"
-                                data-lesson-id="${lesson._id}">
-                                <i class="bi bi-camera-video-fill"></i>
-                                Join Live
-                            </button>
-                        `
-                        : status === 'scheduled'
-                            ? `
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-primary lesson-details-btn"
-                                    data-lesson-id="${lesson._id}">
-                                    <i class="bi bi-eye"></i>
-                                    View Details
-                                </button>
-                            `
-                            : `
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-secondary lesson-details-btn"
-                                    data-lesson-id="${lesson._id}">
-                                    <i class="bi bi-eye"></i>
-                                    View Lesson
-                                </button>
-                            `
-                }
-
-            </div>
-
         `;
-
-
-        // View details
-
-        const detailsButton =
-            card.querySelector('.lesson-details-btn');
-
-        if (detailsButton) {
-
-            detailsButton.addEventListener(
-                'click',
-                function () {
-
-                    const lessonId =
-                        this.dataset.lessonId;
-
-                    handleLessonDetails(lessonId);
-
-                }
-            );
-
-        }
-
-
-        // Join lesson
-
-        const joinButton =
-            card.querySelector('.join-lesson-btn');
-
-        if (joinButton) {
-
-            joinButton.addEventListener(
-                'click',
-                function () {
-
-                    const lessonId =
-                        this.dataset.lessonId;
-
-                    handleJoinLesson(lessonId);
-
-                }
-            );
-
-        }
-
-
-        return card;
-
     }
 
 
-    // =====================================================
-    // LESSON DETAILS
-    // =====================================================
+    // =================================================
+    // ERROR
+    // =================================================
 
-    function handleLessonDetails(lessonId) {
+    function showGlobalError(
+        message
+    ) {
 
-        console.log(
-            '[ONLINE LESSONS] View lesson:',
-            lessonId
-        );
-
-
-        const lesson = findLesson(lessonId);
-
-        if (!lesson) {
-
-            showOnlineLessonMessage(
-                'Lesson could not be found.',
-                'error'
-            );
-
-            return;
-        }
-
-
-        alert(
-            `Lesson: ${lesson.title}\n\n` +
-            `Subject: ${lesson.subject}\n` +
-            `Teacher: ${lesson.teacher}\n` +
-            `Duration: ${lesson.duration} minutes`
-        );
-
-    }
-
-
-    // =====================================================
-    // JOIN LESSON
-    // =====================================================
-
-    function handleJoinLesson(lessonId) {
-
-        console.log(
-            '[ONLINE LESSONS] Join lesson:',
-            lessonId
-        );
-
-
-        const lesson = findLesson(lessonId);
-
-        if (!lesson) {
-
-            showOnlineLessonMessage(
-                'Lesson could not be found.',
-                'error'
-            );
-
-            return;
-        }
-
-
-        if (
-            lesson.meeting &&
-            lesson.meeting.joinUrl &&
-            lesson.meeting.joinUrl !== '#'
-        ) {
-
-            window.open(
-                lesson.meeting.joinUrl,
-                '_blank'
-            );
-
-            return;
-
-        }
-
-
-        showOnlineLessonMessage(
-            'The online meeting link is not available yet.',
-            'error'
-        );
-
-    }
-
-
-    // =====================================================
-    // FIND LESSON
-    // =====================================================
-
-    function findLesson(lessonId) {
-
-        const allLessons = [
-
-            ...(mockLessons.today || []),
-
-            ...(mockLessons.upcoming || []),
-
-            ...(mockLessons.completed || [])
-
+        const containers = [
+            "today-lessons-list",
+            "upcoming-lessons-list",
+            "completed-lessons-list"
         ];
 
+        containers.forEach(id => {
 
-        return allLessons.find(
-            lesson => lesson._id === lessonId
+            const container =
+                document.getElementById(id);
+
+            if (!container) {
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="online-lessons-error">
+
+                    <i class="bi bi-exclamation-triangle"></i>
+
+                    <h3>
+                        Unable to load lessons
+                    </h3>
+
+                    <p>
+                        ${escapeHtml(
+                            message ||
+                            "Something went wrong."
+                        )}
+                    </p>
+
+                    <button
+                        type="button"
+                        class="lesson-btn primary"
+                        onclick="window.initializeOnlineLessons()"
+                    >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Try Again
+                    </button>
+
+                </div>
+            `;
+        });
+    }
+
+
+    // =================================================
+    // FORMATTING
+    // =================================================
+
+    function formatDate(
+        value
+    ) {
+
+        if (!value) {
+            return "-";
+        }
+
+        const date =
+            new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return "-";
+        }
+
+        return date.toLocaleDateString(
+            undefined,
+            {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+                year: "numeric"
+            }
         );
-
     }
 
 
-    // =====================================================
-    // MESSAGE
-    // =====================================================
+    function formatTime(
+        value
+    ) {
 
-    function showOnlineLessonMessage(message, type) {
+        if (!value) {
+            return "-";
+        }
 
-        console.log(
-            `[ONLINE LESSONS] ${type}: ${message}`
+        const date =
+            new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return "-";
+        }
+
+        return date.toLocaleTimeString(
+            undefined,
+            {
+                hour: "numeric",
+                minute: "2-digit"
+            }
         );
-
-        // Use the existing global message system
-        if (typeof window.showMessage === 'function') {
-
-            window.showMessage(
-                message,
-                type
-            );
-
-            return;
-        }
-
-
-        // Fallback
-
-        alert(message);
-
     }
 
 
-    // =====================================================
-    // HELPERS
-    // =====================================================
+    function formatMeetingProvider(
+        provider
+    ) {
 
-    function setText(id, value) {
+        const providers = {
 
-        const element =
-            document.getElementById(id);
+            google_meet:
+                "Google Meet",
 
-        if (element) {
-            element.textContent = value;
-        }
+            zoom:
+                "Zoom",
 
+            microsoft_teams:
+                "Microsoft Teams",
+
+            external:
+                "External Meeting",
+
+            internal:
+                "School Meeting"
+
+        };
+
+        return providers[
+            String(provider || "")
+                .toLowerCase()
+        ] || "Online Meeting";
     }
 
 
-    function escapeHtml(value) {
+    function formatStatus(
+        status
+    ) {
 
-        if (value === null || value === undefined) {
-            return '';
-        }
+        const labels = {
 
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+            scheduled:
+                "Scheduled",
 
+            live:
+                "Live Now",
+
+            completed:
+                "Completed",
+
+            cancelled:
+                "Cancelled"
+
+        };
+
+        return labels[status] ||
+            "Scheduled";
     }
 
 
-    // =====================================================
-    // MAKE FUNCTION AVAILABLE TO STUDENT.JS
-    // =====================================================
+    // =================================================
+    // SECURITY HELPERS
+    // =================================================
+
+    function escapeHtml(
+        value
+    ) {
+
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+
+    function escapeAttribute(
+        value
+    ) {
+
+        return escapeHtml(value);
+    }
+
+
+    // =================================================
+    // PUBLIC API
+    // =================================================
 
     window.initializeOnlineLessons =
         initializeOnlineLessons;
 
 
-    // =====================================================
-    // DOM READY
-    // =====================================================
+    // =================================================
+    // INITIAL LOAD
+    // =================================================
 
-    if (document.readyState === 'loading') {
-
-        document.addEventListener(
-            'DOMContentLoaded',
-            initializeOnlineLessons
-        );
-
-    } else {
-
-        initializeOnlineLessons();
-
-    }
+    document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+            initializeOnlineLessons();
+        }
+    );
 
 })();
