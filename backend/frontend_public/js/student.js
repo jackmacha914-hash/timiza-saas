@@ -435,9 +435,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Initialize report cards
                 const reportCards = new StudentReportCards();
                 reportCards.initialize();
-            } else if (sectionId === 'fee-records-section') {
-                await fetchFeeRecords();
-            }
+          } else if (sectionId === 'fee-records-section') {
+    await fetchFeeRecords();
+} else if (sectionId === 'online-lessons-section') {
+
+    if (typeof window.initializeOnlineLessons === 'function') {
+        window.initializeOnlineLessons();
+    } else {
+        console.error(
+            '[ONLINE LESSONS] initializeOnlineLessons is not available'
+        );
+    }
+
+}
         });
     });
 
