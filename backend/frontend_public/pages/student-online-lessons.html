@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Online Lessons | Student Dashboard</title>
+
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/stude.css">
+    <link rel="stylesheet" href="../css/online-lessons.css">
+
+    <!-- Bootstrap Icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    >
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+</head>
+
+<body>
+
+    <!-- ==================== PAGE HEADER ==================== -->
+
+    <header class="online-lessons-topbar">
+
+        <div class="online-lessons-topbar-left">
+
+            <a href="student.html" class="back-to-dashboard">
+                <i class="fas fa-arrow-left"></i>
+                Dashboard
+            </a>
+
+            <div class="page-title">
+                <i class="bi bi-camera-video-fill"></i>
+
+                <div>
+                    <h1>Online Lessons</h1>
+                    <p>Attend and manage your online classes</p>
+                </div>
+            </div>
+
+        </div>
+
+        <button
+            type="button"
+            class="btn btn-outline-primary"
+            id="refresh-online-lessons"
+        >
+            <i class="bi bi-arrow-clockwise"></i>
+            Refresh
+        </button>
+
+    </header>
+
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+
+    <main class="online-lessons-page">
+
+        <div class="online-lessons-container">
+
+
+            <!-- ==================== STATISTICS ==================== -->
+
+            <div class="online-lesson-stats">
+
+                <!-- Today -->
+
+                <div class="lesson-stat-card">
+
+                    <div class="lesson-stat-icon today">
+                        <i class="bi bi-calendar-day"></i>
+                    </div>
+
+                    <div class="lesson-stat-content">
+                        <span>Today</span>
+                        <strong id="today-lessons-count">0</strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Upcoming -->
+
+                <div class="lesson-stat-card">
+
+                    <div class="lesson-stat-icon upcoming">
+                        <i class="bi bi-calendar-event"></i>
+                    </div>
+
+                    <div class="lesson-stat-content">
+                        <span>Upcoming</span>
+                        <strong id="upcoming-lessons-count">0</strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Completed -->
+
+                <div class="lesson-stat-card">
+
+                    <div class="lesson-stat-icon completed">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+
+                    <div class="lesson-stat-content">
+                        <span>Completed</span>
+                        <strong id="completed-lessons-count">0</strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================== TODAY ==================== -->
+
+            <section class="online-lessons-group">
+
+                <div class="online-lessons-group-header">
+
+                    <div>
+                        <h2>
+                            <i class="bi bi-calendar-day"></i>
+                            Today's Lessons
+                        </h2>
+
+                        <p>
+                            Lessons scheduled for today
+                        </p>
+                    </div>
+
+                </div>
+
+                <div
+                    id="today-lessons-list"
+                    class="online-lessons-grid"
+                >
+                    <!-- JavaScript will populate lessons -->
+                </div>
+
+            </section>
+
+
+            <!-- ==================== UPCOMING ==================== -->
+
+            <section class="online-lessons-group">
+
+                <div class="online-lessons-group-header">
+
+                    <div>
+                        <h2>
+                            <i class="bi bi-calendar-event"></i>
+                            Upcoming Lessons
+                        </h2>
+
+                        <p>
+                            Your future online lessons
+                        </p>
+                    </div>
+
+                </div>
+
+                <div
+                    id="upcoming-lessons-list"
+                    class="online-lessons-grid"
+                >
+                    <!-- JavaScript will populate lessons -->
+                </div>
+
+            </section>
+
+
+            <!-- ==================== COMPLETED ==================== -->
+
+            <section class="online-lessons-group">
+
+                <div class="online-lessons-group-header">
+
+                    <div>
+                        <h2>
+                            <i class="bi bi-check2-circle"></i>
+                            Completed Lessons
+                        </h2>
+
+                        <p>
+                            Previously completed lessons
+                        </p>
+                    </div>
+
+                </div>
+
+                <div
+                    id="completed-lessons-list"
+                    class="online-lessons-grid"
+                >
+                    <!-- JavaScript will populate lessons -->
+                </div>
+
+            </section>
+
+
+        </div>
+
+    </main>
+
+
+    <!-- ==================== SCRIPTS ==================== -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="../js/online-lessons.js"></script>
+
+</body>
+</html>
