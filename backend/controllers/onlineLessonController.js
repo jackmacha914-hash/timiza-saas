@@ -1364,15 +1364,30 @@ exports.getStudentLessons = async (req, res) => {
             });
         }
 
-        // Find classes where this student is actually enrolled.
-        const classes = await Class.find({
+        // Find the student's class from their User account.
+        const student = await User.findOne({
+            _id: studentId,
             school: schoolId,
-            students: studentId
-        }).select("_id");
+            role: "student"
+        }).select("_id name email class classAssigned profile.class");
 
-        const classIds = classes.map((item) => item._id);
+        if (!student) {
+            return res.status(403).json({
+                message: "Student account not found."
+            });
+        }
 
-        if (classIds.length === 0) {
+        // User.class is the primary class value.
+        // Fall back to classAssigned or profile.class for older accounts.
+        const studentClass = String(
+            student.class ||
+            student.classAssigned ||
+            student.profile?.class ||
+            ""
+        ).trim();
+
+        // Student has no class assigned yet.
+        if (!studentClass) {
             return res.json({
                 today: [],
                 upcoming: [],
@@ -1380,12 +1395,12 @@ exports.getStudentLessons = async (req, res) => {
             });
         }
 
+        // Online Lessons use static class names such as:
+        // Grade 1, Grade 2, ..., Grade 8, Form 1, ..., Form 4.
         const lessons = await OnlineLesson.find({
             school: schoolId,
-            class: { $in: classIds }
+            class: studentClass
         })
-            .populate("class", "name level section academicYear")
-            .populate("subject", "name code category")
             .populate("teacher", "name email")
             .sort({ scheduledAt: 1 });
 
@@ -1402,39 +1417,45 @@ exports.getStudentLessons = async (req, res) => {
         const completed = [];
 
         for (const lesson of lessons) {
+            // Do not show cancelled lessons.
             if (lesson.status === "cancelled") {
                 continue;
             }
 
-           if (
-    lesson.status === "completed" ||
-    lesson.endedAt
-) {
-    completed.push(lesson);
-    continue;
-}
+            // Completed lessons go into Completed.
+            if (
+                lesson.status === "completed" ||
+                lesson.endedAt
+            ) {
+                completed.push(lesson);
+                continue;
+            }
 
-if (
-    lesson.scheduledAt >= startOfToday &&
-    lesson.scheduledAt <= endOfToday
-) {
-    today.push(lesson);
-    continue;
-}
+            // Lessons scheduled for today.
+            if (
+                lesson.scheduledAt >= startOfToday &&
+                lesson.scheduledAt <= endOfToday
+            ) {
+                today.push(lesson);
+                continue;
+            }
+
+            // Future lessons.
             if (lesson.scheduledAt > endOfToday) {
                 upcoming.push(lesson);
             }
         }
 
-        res.json({
+        return res.json({
             today,
             upcoming,
             completed
         });
+
     } catch (error) {
         console.error("Get student lessons error:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             message: "Failed to fetch student lessons."
         });
     }
