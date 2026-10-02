@@ -1048,15 +1048,10 @@ exports.recordStudentJoin = async (req, res) => {
         const schoolId = getSchoolId(req);
         const studentId = req.user.id;
 
-        const lesson = await OnlineLesson.findOne({
-            _id: req.params.id,
-            school: schoolId
-        }).populate("class", "students teacher");
-
-        if (!lesson) {
-            return res.status(404).json({
+        if (!schoolId) {
+            return res.status(403).json({
                 success: false,
-                message: "Online lesson not found."
+                message: "No school context."
             });
         }
 
@@ -1067,16 +1062,69 @@ exports.recordStudentJoin = async (req, res) => {
             });
         }
 
-        const enrolled = lesson.class.students.some(
-            (id) => String(id) === String(studentId)
-        );
+        const lesson = await OnlineLesson.findOne({
+            _id: req.params.id,
+            school: schoolId
+        });
 
-        if (!enrolled) {
-            return res.status(403).json({
+        if (!lesson) {
+            return res.status(404).json({
                 success: false,
-                message: "You are not enrolled in this class."
+                message: "Online lesson not found."
             });
         }
+
+        // -------------------------------------------------
+        // VERIFY STUDENT ACCOUNT
+        // -------------------------------------------------
+
+        const student = await User.findOne({
+            _id: studentId,
+            school: schoolId,
+            role: "student"
+        }).select("class classAssigned profile.class");
+
+        if (!student) {
+            return res.status(403).json({
+                success: false,
+                message: "Student account not found."
+            });
+        }
+
+        // User.class is the primary class value.
+        // Fall back for older student accounts.
+        const studentClass = String(
+            student.class ||
+            student.classAssigned ||
+            student.profile?.class ||
+            ""
+        ).trim();
+
+        if (!studentClass) {
+            return res.status(403).json({
+                success: false,
+                message: "No class is assigned to your student account."
+            });
+        }
+
+        // -------------------------------------------------
+        // VERIFY STUDENT CLASS
+        // -------------------------------------------------
+
+        const lessonClass = String(
+            lesson.class || ""
+        ).trim();
+
+        if (!lessonClass || studentClass !== lessonClass) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not enrolled in this lesson's class."
+            });
+        }
+
+        // -------------------------------------------------
+        // RECORD ATTENDANCE
+        // -------------------------------------------------
 
         let attendance = await LessonAttendance.findOne({
             school: schoolId,
@@ -1094,6 +1142,7 @@ exports.recordStudentJoin = async (req, res) => {
             });
         } else if (!attendance.joinedAt) {
             attendance.joinedAt = new Date();
+            attendance.status = "present";
             await attendance.save();
         }
 
@@ -1102,6 +1151,7 @@ exports.recordStudentJoin = async (req, res) => {
             message: "Lesson attendance recorded.",
             attendance
         });
+
     } catch (error) {
         console.error("Record student join error:", error);
 
