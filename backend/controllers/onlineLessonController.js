@@ -399,7 +399,6 @@ exports.getLessonOptions = async (req, res) => {
 // =====================================================
 // GET SINGLE LESSON
 // =====================================================
-
 exports.getOnlineLesson = async (req, res) => {
     try {
         const schoolId = getSchoolId(req);
@@ -424,8 +423,6 @@ exports.getOnlineLesson = async (req, res) => {
             _id: req.params.id,
             school: schoolId
         })
-            .populate("class", "name level section academicYear teacher students")
-            .populate("subject", "name code category")
             .populate("teacher", "name email");
 
         if (!lesson) {
@@ -440,7 +437,7 @@ exports.getOnlineLesson = async (req, res) => {
         // -------------------------------------------------
 
         if (role === "teacher") {
-            if (String(lesson.teacher._id) !== String(userId)) {
+            if (!lesson.teacher || String(lesson.teacher._id) !== String(userId)) {
                 return res.status(403).json({
                     success: false,
                     message: "You are not authorized to access this lesson."
@@ -458,14 +455,43 @@ exports.getOnlineLesson = async (req, res) => {
         // -------------------------------------------------
 
         if (role === "student") {
-            const enrolled = lesson.class.students.some(
-                (studentId) => String(studentId) === String(userId)
-            );
+            const student = await User.findOne({
+                _id: userId,
+                school: schoolId,
+                role: "student"
+            }).select("class classAssigned profile.class");
 
-            if (!enrolled) {
+            if (!student) {
                 return res.status(403).json({
                     success: false,
-                    message: "You are not enrolled in this class."
+                    message: "Student account not found."
+                });
+            }
+
+            // User.class is the primary class value.
+            // Fall back for older student accounts.
+            const studentClass = String(
+                student.class ||
+                student.classAssigned ||
+                student.profile?.class ||
+                ""
+            ).trim();
+
+            if (!studentClass) {
+                return res.status(403).json({
+                    success: false,
+                    message: "No class is assigned to your student account."
+                });
+            }
+
+            const lessonClass = String(
+                lesson.class || ""
+            ).trim();
+
+            if (!lessonClass || studentClass !== lessonClass) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You are not enrolled in this lesson's class."
                 });
             }
 
@@ -479,6 +505,7 @@ exports.getOnlineLesson = async (req, res) => {
             success: false,
             message: "You are not authorized to access online lessons."
         });
+
     } catch (error) {
         console.error("Get online lesson error:", error);
 
