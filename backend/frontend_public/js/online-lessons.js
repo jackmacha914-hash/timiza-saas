@@ -8,11 +8,68 @@
     const API_BASE = "/api/online-lessons";
 
     let initialized = false;
+
     let currentLessons = {
         today: [],
         upcoming: [],
         completed: []
     };
+
+
+    // =================================================
+    // AUTHENTICATION
+    // =================================================
+
+    function getAuthToken() {
+
+        // Check the most common SchoolSync token locations.
+        const possibleKeys = [
+            "token",
+            "authToken",
+            "accessToken",
+            "jwtToken",
+            "schoolSyncToken"
+        ];
+
+        for (const key of possibleKeys) {
+
+            const localToken =
+                localStorage.getItem(key);
+
+            if (localToken) {
+                return localToken;
+            }
+
+            const sessionToken =
+                sessionStorage.getItem(key);
+
+            if (sessionToken) {
+                return sessionToken;
+            }
+        }
+
+        return null;
+    }
+
+
+    // =================================================
+    // API HEADERS
+    // =================================================
+
+    function getAuthHeaders() {
+
+        const token = getAuthToken();
+
+        const headers = {
+            "Content-Type": "application/json"
+        };
+
+        if (token) {
+            headers["x-auth-token"] = token;
+        }
+
+        return headers;
+    }
 
 
     // =================================================
@@ -22,7 +79,9 @@
     async function initializeOnlineLessons() {
 
         if (!initialized) {
+
             setupRefreshButton();
+
             initialized = true;
         }
 
@@ -40,41 +99,75 @@
 
         try {
 
+            const token =
+                getAuthToken();
+
+            if (!token) {
+
+                throw new Error(
+                    "You are not logged in. Please log in again."
+                );
+            }
+
+
             const response = await fetch(
                 `${API_BASE}/student`,
                 {
                     method: "GET",
+
                     credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
+
+                    headers:
+                        getAuthHeaders()
                 }
             );
 
-            const data = await response.json();
+
+            const data =
+                await response.json();
+
+
+            // Authentication failure
+            if (response.status === 401) {
+
+                handleAuthenticationError(
+                    data.message
+                );
+
+                return;
+            }
+
 
             if (!response.ok) {
+
                 throw new Error(
                     data.message ||
                     "Failed to load online lessons."
                 );
             }
 
+
             currentLessons = {
-                today: Array.isArray(data.today)
-                    ? data.today
-                    : [],
 
-                upcoming: Array.isArray(data.upcoming)
-                    ? data.upcoming
-                    : [],
+                today:
+                    Array.isArray(data.today)
+                        ? data.today
+                        : [],
 
-                completed: Array.isArray(data.completed)
-                    ? data.completed
-                    : []
+                upcoming:
+                    Array.isArray(data.upcoming)
+                        ? data.upcoming
+                        : [],
+
+                completed:
+                    Array.isArray(data.completed)
+                        ? data.completed
+                        : []
             };
 
+
             renderLessons();
+
 
         } catch (error) {
 
@@ -83,11 +176,88 @@
                 error
             );
 
+
             showGlobalError(
                 error.message ||
                 "Unable to load online lessons."
             );
         }
+    }
+
+
+    // =================================================
+    // AUTH ERROR
+    // =================================================
+
+    function handleAuthenticationError(
+        message
+    ) {
+
+        console.error(
+            "[ONLINE LESSONS] Authentication error:",
+            message
+        );
+
+
+        currentLessons = {
+            today: [],
+            upcoming: [],
+            completed: []
+        };
+
+
+        const containers = [
+            "today-lessons-list",
+            "upcoming-lessons-list",
+            "completed-lessons-list"
+        ];
+
+
+        containers.forEach(id => {
+
+            const container =
+                document.getElementById(id);
+
+            if (!container) {
+                return;
+            }
+
+
+            container.innerHTML = `
+
+                <div class="online-lessons-error">
+
+                    <div class="error-icon">
+                        <i class="bi bi-shield-lock"></i>
+                    </div>
+
+                    <h3>
+                        Login Required
+                    </h3>
+
+                    <p>
+                        ${
+                            escapeHtml(
+                                message ||
+                                "Your login session is no longer valid."
+                            )
+                        }
+                    </p>
+
+                    <a
+                        href="/"
+                        class="lesson-btn primary"
+                    >
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Log In Again
+                    </a>
+
+                </div>
+            `;
+        });
+
+
+        updateStatistics();
     }
 
 
@@ -99,17 +269,20 @@
 
         updateStatistics();
 
+
         renderLessonGroup(
             "today-lessons-list",
             currentLessons.today,
             "today"
         );
 
+
         renderLessonGroup(
             "upcoming-lessons-list",
             currentLessons.upcoming,
             "upcoming"
         );
+
 
         renderLessonGroup(
             "completed-lessons-list",
@@ -130,27 +303,35 @@
                 "today-lessons-count"
             );
 
+
         const upcomingCount =
             document.getElementById(
                 "upcoming-lessons-count"
             );
+
 
         const completedCount =
             document.getElementById(
                 "completed-lessons-count"
             );
 
+
         if (todayCount) {
+
             todayCount.textContent =
                 currentLessons.today.length;
         }
 
+
         if (upcomingCount) {
+
             upcomingCount.textContent =
                 currentLessons.upcoming.length;
         }
 
+
         if (completedCount) {
+
             completedCount.textContent =
                 currentLessons.completed.length;
         }
@@ -168,28 +349,36 @@
     ) {
 
         const container =
-            document.getElementById(containerId);
+            document.getElementById(
+                containerId
+            );
+
 
         if (!container) {
             return;
         }
 
+
         if (!lessons.length) {
 
             container.innerHTML =
-                createEmptyState(groupType);
+                createEmptyState(
+                    groupType
+                );
 
             return;
         }
 
-        container.innerHTML = lessons
-            .map(lesson =>
-                createLessonCard(
-                    lesson,
-                    groupType
+
+        container.innerHTML =
+            lessons
+                .map(lesson =>
+                    createLessonCard(
+                        lesson,
+                        groupType
+                    )
                 )
-            )
-            .join("");
+                .join("");
     }
 
 
@@ -207,11 +396,13 @@
                 lesson._id || ""
             );
 
+
         const title =
             escapeHtml(
                 lesson.title ||
                 "Online Lesson"
             );
+
 
         const subject =
             escapeHtml(
@@ -219,11 +410,13 @@
                 "Subject"
             );
 
+
         const className =
             escapeHtml(
                 lesson.class ||
                 ""
             );
+
 
         const teacher =
             escapeHtml(
@@ -231,46 +424,63 @@
                 "Teacher"
             );
 
+
         const description =
             escapeHtml(
                 lesson.description ||
                 "No description provided."
             );
 
+
         const provider =
             formatMeetingProvider(
                 lesson.meeting?.provider
             );
+
 
         const date =
             formatDate(
                 lesson.scheduledAt
             );
 
+
         const time =
             formatTime(
                 lesson.scheduledAt
             );
 
+
         const duration =
-            Number(lesson.duration) || 0;
+            Number(
+                lesson.duration
+            ) || 0;
+
 
         const status =
             String(
-                lesson.status || "scheduled"
-            ).toLowerCase();
+                lesson.status ||
+                "scheduled"
+            )
+                .toLowerCase();
+
 
         const statusLabel =
-            formatStatus(status);
+            formatStatus(
+                status
+            );
+
 
         const isLive =
             status === "live";
+
 
         const isCompleted =
             status === "completed" ||
             Boolean(lesson.endedAt);
 
+
         let actionButtons = `
+
             <button
                 type="button"
                 class="lesson-btn lesson-details-btn"
@@ -279,13 +489,20 @@
                 <i class="bi bi-info-circle"></i>
                 Details
             </button>
+
         `;
+
+
+        // ---------------------------------------------
+        // JOIN BUTTON
+        // ---------------------------------------------
 
         if (!isCompleted) {
 
             if (isLive) {
 
                 actionButtons += `
+
                     <button
                         type="button"
                         class="lesson-btn lesson-join-btn primary"
@@ -294,11 +511,15 @@
                         <i class="bi bi-camera-video-fill"></i>
                         Join Now
                     </button>
+
                 `;
 
-            } else if (groupType === "today") {
+            } else if (
+                groupType === "today"
+            ) {
 
                 actionButtons += `
+
                     <button
                         type="button"
                         class="lesson-btn lesson-join-btn"
@@ -307,9 +528,15 @@
                         <i class="bi bi-box-arrow-in-right"></i>
                         Join Lesson
                     </button>
+
                 `;
             }
         }
+
+
+        // ---------------------------------------------
+        // RECORDING
+        // ---------------------------------------------
 
         if (
             isCompleted &&
@@ -321,7 +548,9 @@
                     lesson.recordingUrl
                 );
 
+
             actionButtons += `
+
                 <a
                     href="${recordingUrl}"
                     target="_blank"
@@ -331,29 +560,50 @@
                     <i class="bi bi-play-circle"></i>
                     Watch Recording
                 </a>
+
             `;
         }
 
+
         return `
+
             <article
-                class="online-lesson-card
-                       ${isLive ? "lesson-is-live" : ""}
-                       ${isCompleted ? "lesson-is-completed" : ""}"
+                class="
+                    online-lesson-card
+                    ${isLive
+                        ? "lesson-is-live"
+                        : ""
+                    }
+                    ${isCompleted
+                        ? "lesson-is-completed"
+                        : ""
+                    }
+                "
             >
 
                 <div class="lesson-card-top">
 
                     <span class="lesson-subject">
+
                         <i class="bi bi-book"></i>
+
                         ${subject}
+
                     </span>
 
-                    <span class="lesson-status ${status}">
-                        ${isLive
-                            ? '<span class="live-dot"></span>'
-                            : ''
+
+                    <span
+                        class="lesson-status ${status}"
+                    >
+
+                        ${
+                            isLive
+                                ? '<span class="live-dot"></span>'
+                                : ""
                         }
+
                         ${statusLabel}
+
                     </span>
 
                 </div>
@@ -364,6 +614,7 @@
                     <h3>
                         ${title}
                     </h3>
+
 
                     <p class="lesson-description">
                         ${description}
@@ -377,8 +628,15 @@
                             <i class="bi bi-person"></i>
 
                             <div>
-                                <span>Teacher</span>
-                                <strong>${teacher}</strong>
+
+                                <span>
+                                    Teacher
+                                </span>
+
+                                <strong>
+                                    ${teacher}
+                                </strong>
+
                             </div>
 
                         </div>
@@ -389,8 +647,15 @@
                             <i class="bi bi-mortarboard"></i>
 
                             <div>
-                                <span>Class</span>
-                                <strong>${className}</strong>
+
+                                <span>
+                                    Class
+                                </span>
+
+                                <strong>
+                                    ${className}
+                                </strong>
+
                             </div>
 
                         </div>
@@ -401,8 +666,15 @@
                             <i class="bi bi-calendar3"></i>
 
                             <div>
-                                <span>Date</span>
-                                <strong>${date}</strong>
+
+                                <span>
+                                    Date
+                                </span>
+
+                                <strong>
+                                    ${date}
+                                </strong>
+
                             </div>
 
                         </div>
@@ -413,8 +685,15 @@
                             <i class="bi bi-clock"></i>
 
                             <div>
-                                <span>Time</span>
-                                <strong>${time}</strong>
+
+                                <span>
+                                    Time
+                                </span>
+
+                                <strong>
+                                    ${time}
+                                </strong>
+
                             </div>
 
                         </div>
@@ -425,10 +704,15 @@
                             <i class="bi bi-hourglass-split"></i>
 
                             <div>
-                                <span>Duration</span>
+
+                                <span>
+                                    Duration
+                                </span>
+
                                 <strong>
                                     ${duration} minutes
                                 </strong>
+
                             </div>
 
                         </div>
@@ -456,6 +740,7 @@
                 </div>
 
             </article>
+
         `;
     }
 
@@ -472,31 +757,64 @@
             return;
         }
 
+
         try {
 
-            const response = await fetch(
-                `${API_BASE}/${encodeURIComponent(lessonId)}`,
-                {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                }
-            );
+            const token =
+                getAuthToken();
 
-            const data = await response.json();
+
+            if (!token) {
+
+                handleAuthenticationError(
+                    "Your login session could not be found."
+                );
+
+                return;
+            }
+
+
+            const response =
+                await fetch(
+                    `${API_BASE}/${encodeURIComponent(lessonId)}`,
+                    {
+                        method: "GET",
+
+                        credentials: "include",
+
+                        headers:
+                            getAuthHeaders()
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (response.status === 401) {
+
+                handleAuthenticationError(
+                    data.message
+                );
+
+                return;
+            }
+
 
             if (!response.ok) {
+
                 throw new Error(
                     data.message ||
                     "Unable to load lesson details."
                 );
             }
 
+
             showLessonDetails(
                 data.lesson
             );
+
 
         } catch (error) {
 
@@ -505,8 +823,10 @@
                 error
             );
 
+
             showGlobalError(
-                error.message
+                error.message ||
+                "Unable to load lesson details."
             );
         }
     }
@@ -524,14 +844,17 @@
             return;
         }
 
+
         const existingModal =
             document.getElementById(
                 "online-lesson-details-modal"
             );
 
+
         if (existingModal) {
             existingModal.remove();
         }
+
 
         const title =
             escapeHtml(
@@ -539,104 +862,148 @@
                 "Online Lesson"
             );
 
+
         const description =
             escapeHtml(
                 lesson.description ||
                 "No description provided."
             );
 
+
         const subject =
             escapeHtml(
-                lesson.subject || "-"
+                lesson.subject ||
+                "-"
             );
+
 
         const teacher =
             escapeHtml(
-                lesson.teacher?.name || "-"
+                lesson.teacher?.name ||
+                "-"
             );
+
 
         const className =
             escapeHtml(
-                lesson.class || "-"
+                lesson.class ||
+                "-"
             );
+
 
         const date =
             formatDate(
                 lesson.scheduledAt
             );
 
+
         const time =
             formatTime(
                 lesson.scheduledAt
             );
 
+
         const duration =
-            Number(lesson.duration) || 0;
+            Number(
+                lesson.duration
+            ) || 0;
+
 
         const materials =
-            Array.isArray(lesson.materials)
+            Array.isArray(
+                lesson.materials
+            )
                 ? lesson.materials
                 : [];
 
+
         const materialsHtml =
             materials.length
-                ? materials.map(material => {
 
-                    const materialTitle =
-                        escapeHtml(
-                            material.title ||
-                            "Learning Material"
-                        );
+                ? materials
+                    .map(material => {
 
-                    const materialUrl =
-                        escapeAttribute(
-                            material.url || "#"
-                        );
+                        const materialTitle =
+                            escapeHtml(
+                                material.title ||
+                                "Learning Material"
+                            );
 
-                    const materialType =
-                        escapeHtml(
-                            material.type ||
-                            "resource"
-                        );
 
-                    return `
-                        <a
-                            href="${materialUrl}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="lesson-material"
-                        >
-                            <i class="bi bi-file-earmark-text"></i>
+                        const materialUrl =
+                            escapeAttribute(
+                                material.url ||
+                                "#"
+                            );
 
-                            <span>
-                                <strong>
-                                    ${materialTitle}
-                                </strong>
 
-                                <small>
-                                    ${materialType}
-                                </small>
-                            </span>
+                        const materialType =
+                            escapeHtml(
+                                material.type ||
+                                "resource"
+                            );
 
-                            <i class="bi bi-box-arrow-up-right"></i>
-                        </a>
-                    `;
 
-                }).join("")
+                        return `
+
+                            <a
+                                href="${materialUrl}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="lesson-material"
+                            >
+
+                                <i
+                                    class="bi bi-file-earmark-text"
+                                ></i>
+
+
+                                <span>
+
+                                    <strong>
+                                        ${materialTitle}
+                                    </strong>
+
+                                    <small>
+                                        ${materialType}
+                                    </small>
+
+                                </span>
+
+
+                                <i
+                                    class="bi bi-box-arrow-up-right"
+                                ></i>
+
+                            </a>
+
+                        `;
+
+                    })
+                    .join("")
+
                 : `
+
                     <p class="no-materials">
                         No learning materials attached.
                     </p>
+
                 `;
 
+
         const modal =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
+
 
         modal.id =
             "online-lesson-details-modal";
 
+
         modal.className =
             "lesson-modal-overlay";
+
 
         modal.innerHTML = `
 
@@ -645,6 +1012,7 @@
                 <div class="lesson-modal-header">
 
                     <div>
+
                         <span class="modal-eyebrow">
                             Online Lesson
                         </span>
@@ -652,14 +1020,18 @@
                         <h2>
                             ${title}
                         </h2>
+
                     </div>
+
 
                     <button
                         type="button"
                         class="lesson-modal-close"
                         id="close-lesson-details"
                     >
+
                         <i class="bi bi-x-lg"></i>
+
                     </button>
 
                 </div>
@@ -675,33 +1047,80 @@
                     <div class="modal-details-grid">
 
                         <div>
-                            <span>Subject</span>
-                            <strong>${subject}</strong>
+
+                            <span>
+                                Subject
+                            </span>
+
+                            <strong>
+                                ${subject}
+                            </strong>
+
                         </div>
 
-                        <div>
-                            <span>Teacher</span>
-                            <strong>${teacher}</strong>
-                        </div>
 
                         <div>
-                            <span>Class</span>
-                            <strong>${className}</strong>
+
+                            <span>
+                                Teacher
+                            </span>
+
+                            <strong>
+                                ${teacher}
+                            </strong>
+
                         </div>
 
-                        <div>
-                            <span>Date</span>
-                            <strong>${date}</strong>
-                        </div>
 
                         <div>
-                            <span>Time</span>
-                            <strong>${time}</strong>
+
+                            <span>
+                                Class
+                            </span>
+
+                            <strong>
+                                ${className}
+                            </strong>
+
                         </div>
 
+
                         <div>
-                            <span>Duration</span>
-                            <strong>${duration} minutes</strong>
+
+                            <span>
+                                Date
+                            </span>
+
+                            <strong>
+                                ${date}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                Time
+                            </span>
+
+                            <strong>
+                                ${time}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                Duration
+                            </span>
+
+                            <strong>
+                                ${duration} minutes
+                            </strong>
+
                         </div>
 
                     </div>
@@ -710,12 +1129,20 @@
                     <div class="modal-materials">
 
                         <h3>
-                            <i class="bi bi-folder2-open"></i>
+
+                            <i
+                                class="bi bi-folder2-open"
+                            ></i>
+
                             Learning Materials
+
                         </h3>
 
+
                         <div class="materials-list">
+
                             ${materialsHtml}
+
                         </div>
 
                     </div>
@@ -736,9 +1163,13 @@
                 </div>
 
             </div>
+
         `;
 
-        document.body.appendChild(modal);
+
+        document.body.appendChild(
+            modal
+        );
 
 
         const closeModal = () => {
@@ -773,9 +1204,9 @@
                 if (
                     event.target === modal
                 ) {
+
                     closeModal();
                 }
-
             }
         );
     }
@@ -793,12 +1224,15 @@
             return;
         }
 
+
         const lesson =
             findLessonById(
                 lessonId
             );
 
+
         if (!lesson) {
+
             showGlobalError(
                 "Lesson could not be found."
             );
@@ -806,8 +1240,10 @@
             return;
         }
 
+
         const meetingUrl =
             lesson.meeting?.meetingUrl;
+
 
         if (!meetingUrl) {
 
@@ -821,36 +1257,71 @@
 
         try {
 
-            const response = await fetch(
-                `${API_BASE}/${encodeURIComponent(lessonId)}/join`,
-                {
-                    method: "POST",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                }
-            );
+            const token =
+                getAuthToken();
 
-            const data = await response.json();
+
+            if (!token) {
+
+                handleAuthenticationError(
+                    "Your login session could not be found."
+                );
+
+                return;
+            }
+
+
+            const response =
+                await fetch(
+                    `${API_BASE}/${encodeURIComponent(lessonId)}/join`,
+                    {
+                        method: "POST",
+
+                        credentials: "include",
+
+                        headers:
+                            getAuthHeaders()
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (response.status === 401) {
+
+                handleAuthenticationError(
+                    data.message
+                );
+
+                return;
+            }
+
 
             if (!response.ok) {
+
                 throw new Error(
                     data.message ||
                     "Unable to record lesson attendance."
                 );
             }
 
-            // Open the actual meeting after attendance
-            // has been successfully recorded.
+
+            // -----------------------------------------
+            // Attendance successfully recorded
+            // -----------------------------------------
+
             window.open(
                 meetingUrl,
                 "_blank",
                 "noopener,noreferrer"
             );
 
-            // Refresh status/data.
+
+            // Refresh lesson information.
             await fetchStudentLessons();
+
 
         } catch (error) {
 
@@ -858,6 +1329,7 @@
                 "[ONLINE LESSONS] Join error:",
                 error
             );
+
 
             showGlobalError(
                 error.message ||
@@ -876,10 +1348,15 @@
     ) {
 
         const allLessons = [
+
             ...currentLessons.today,
+
             ...currentLessons.upcoming,
+
             ...currentLessons.completed
+
         ];
+
 
         return allLessons.find(
             lesson =>
@@ -900,9 +1377,11 @@
                 "refresh-online-lessons"
             );
 
+
         if (!button) {
             return;
         }
+
 
         button.addEventListener(
             "click",
@@ -911,16 +1390,28 @@
                 const originalHtml =
                     button.innerHTML;
 
-                button.disabled = true;
+
+                button.disabled =
+                    true;
+
 
                 button.innerHTML = `
-                    <i class="bi bi-arrow-clockwise spin"></i>
+
+                    <i
+                        class="bi bi-arrow-clockwise spin"
+                    ></i>
+
                     Refreshing...
+
                 `;
+
 
                 await fetchStudentLessons();
 
-                button.disabled = false;
+
+                button.disabled =
+                    false;
+
 
                 button.innerHTML =
                     originalHtml;
@@ -942,6 +1433,7 @@
                     ".lesson-details-btn"
                 );
 
+
             if (detailsButton) {
 
                 viewLessonDetails(
@@ -956,6 +1448,7 @@
                 event.target.closest(
                     ".lesson-join-btn"
                 );
+
 
             if (joinButton) {
 
@@ -975,30 +1468,43 @@
     function setLoadingState() {
 
         const containers = [
+
             "today-lessons-list",
+
             "upcoming-lessons-list",
+
             "completed-lessons-list"
+
         ];
+
 
         containers.forEach(id => {
 
             const container =
                 document.getElementById(id);
 
+
             if (!container) {
                 return;
             }
 
-            container.innerHTML = `
-                <div class="online-lessons-loading">
 
-                    <div class="spinner-border"></div>
+            container.innerHTML = `
+
+                <div
+                    class="online-lessons-loading"
+                >
+
+                    <div
+                        class="spinner-border"
+                    ></div>
 
                     <p>
                         Loading online lessons...
                     </p>
 
                 </div>
+
             `;
         });
     }
@@ -1015,54 +1521,86 @@
         const messages = {
 
             today: {
-                icon: "bi-calendar-check",
-                title: "No lessons today",
+
+                icon:
+                    "bi-calendar-check",
+
+                title:
+                    "No lessons today",
+
                 message:
                     "You do not have any online lessons scheduled for today."
+
             },
+
 
             upcoming: {
-                icon: "bi-calendar-event",
-                title: "No upcoming lessons",
+
+                icon:
+                    "bi-calendar-event",
+
+                title:
+                    "No upcoming lessons",
+
                 message:
                     "There are no upcoming online lessons at the moment."
+
             },
 
+
             completed: {
-                icon: "bi-check-circle",
-                title: "No completed lessons",
+
+                icon:
+                    "bi-check-circle",
+
+                title:
+                    "No completed lessons",
+
                 message:
                     "Your completed online lessons will appear here."
+
             }
 
         };
+
 
         const content =
             messages[type] ||
             messages.today;
 
+
         return `
-            <div class="online-lessons-empty">
+
+            <div
+                class="online-lessons-empty"
+            >
 
                 <div class="empty-icon">
-                    <i class="bi ${content.icon}"></i>
+
+                    <i
+                        class="bi ${content.icon}"
+                    ></i>
+
                 </div>
+
 
                 <h3>
                     ${content.title}
                 </h3>
+
 
                 <p>
                     ${content.message}
                 </p>
 
             </div>
+
         `;
     }
 
 
     // =================================================
-    // ERROR
+    // ERROR STATE
     // =================================================
 
     function showGlobalError(
@@ -1070,53 +1608,76 @@
     ) {
 
         const containers = [
+
             "today-lessons-list",
+
             "upcoming-lessons-list",
+
             "completed-lessons-list"
+
         ];
+
 
         containers.forEach(id => {
 
             const container =
                 document.getElementById(id);
 
+
             if (!container) {
                 return;
             }
 
-            container.innerHTML = `
-                <div class="online-lessons-error">
 
-                    <i class="bi bi-exclamation-triangle"></i>
+            container.innerHTML = `
+
+                <div
+                    class="online-lessons-error"
+                >
+
+                    <i
+                        class="bi bi-exclamation-triangle"
+                    ></i>
+
 
                     <h3>
                         Unable to load lessons
                     </h3>
 
+
                     <p>
-                        ${escapeHtml(
-                            message ||
-                            "Something went wrong."
-                        )}
+                        ${
+                            escapeHtml(
+                                message ||
+                                "Something went wrong."
+                            )
+                        }
                     </p>
+
 
                     <button
                         type="button"
                         class="lesson-btn primary"
                         onclick="window.initializeOnlineLessons()"
                     >
-                        <i class="bi bi-arrow-clockwise"></i>
+
+                        <i
+                            class="bi bi-arrow-clockwise"
+                        ></i>
+
                         Try Again
+
                     </button>
 
                 </div>
+
             `;
         });
     }
 
 
     // =================================================
-    // FORMATTING
+    // DATE FORMATTING
     // =================================================
 
     function formatDate(
@@ -1127,12 +1688,20 @@
             return "-";
         }
 
+
         const date =
             new Date(value);
 
-        if (Number.isNaN(date.getTime())) {
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
             return "-";
         }
+
 
         return date.toLocaleDateString(
             undefined,
@@ -1146,6 +1715,10 @@
     }
 
 
+    // =================================================
+    // TIME FORMATTING
+    // =================================================
+
     function formatTime(
         value
     ) {
@@ -1154,12 +1727,20 @@
             return "-";
         }
 
+
         const date =
             new Date(value);
 
-        if (Number.isNaN(date.getTime())) {
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
             return "-";
         }
+
 
         return date.toLocaleTimeString(
             undefined,
@@ -1170,6 +1751,10 @@
         );
     }
 
+
+    // =================================================
+    // MEETING PROVIDER
+    // =================================================
 
     function formatMeetingProvider(
         provider
@@ -1194,12 +1779,18 @@
 
         };
 
+
         return providers[
-            String(provider || "")
-                .toLowerCase()
+            String(
+                provider || ""
+            ).toLowerCase()
         ] || "Online Meeting";
     }
 
+
+    // =================================================
+    // STATUS
+    // =================================================
 
     function formatStatus(
         status
@@ -1221,25 +1812,43 @@
 
         };
 
+
         return labels[status] ||
             "Scheduled";
     }
 
 
     // =================================================
-    // SECURITY HELPERS
+    // SECURITY / HTML ESCAPING
     // =================================================
 
     function escapeHtml(
         value
     ) {
 
-        return String(value ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        return String(
+            value ?? ""
+        )
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
     }
 
 
@@ -1247,7 +1856,9 @@
         value
     ) {
 
-        return escapeHtml(value);
+        return escapeHtml(
+            value
+        );
     }
 
 
@@ -1266,7 +1877,9 @@
     document.addEventListener(
         "DOMContentLoaded",
         () => {
+
             initializeOnlineLessons();
+
         }
     );
 
